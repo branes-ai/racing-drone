@@ -10,11 +10,43 @@ That makes it the ideal forcing function for the Branes.AI platform. Every weakn
 
 ## How the platform fits together
 
-The Branes.AI platform is modeled on the mammalian nervous system. This repo is the whole organism; the sister repos provide its brain and its reflexes:
+The Branes.AI stack has four tiers. This repo sits in the top one:
+
+```text
++--------------+ +-------------------+ +-----------+ +------------+
+| racing-drone | | interceptor-drone | | isr-drone | | nano-drone | ...  Mission
++--------------+ +-------------------+ +-----------+ +------------+
+        |                  |                 |              |
+        v                  v                 v              v
++---------------------+ +---------------------+ +---------------------+
+|    Branes Cortex    | |   Branes Synapse    | |    Branes Reflex    |  Platform
+| perception (VIO,    | | tensor graph engine | | stabilization, MPC, |
+| SLAM), VLA, world   | | for GGUF models,    | | state propagation,  |
+| model, planning     | | static memory plan  | | fault recovery      |
++---------------------+ +---------------------+ +---------------------+
+           |                       |                       |
+           v                       v                       v
++---------------------------------+ +---------------------------------+
+|              MTL5               | |            Universal            |  Math
+| high-performance linear algebra | |       computer arithmetic       |
++---------------------------------+ +---------------------------------+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
++-----------+ +-------------------+ +-------------------+ +-----------+
+|    CPU    | |     CPU + GPU     | |     CPU + KPU     | |    KPU    |  Hardware
++-----------+ +-------------------+ +-------------------+ +-----------+
+```
+
+- **Mission**: one repo per vehicle and mission (`racing-drone`, `interceptor-drone`, `isr-drone`, `nano-drone`, ...). It owns the mission capability and composes platform components; algorithms do not live there.
+- **Platform**: three sister repos, `cortex`, `synapse`, and `reflex`, that provide the functionality and services a mission is built from. None of them sits above the others.
+- **Math**: [MTL5](https://github.com/stillwater-sc/mtl5) provides high-performance linear algebra and [Universal](https://github.com/stillwater-sc/universal) provides computer arithmetic (posits, intervals, mixed precision, hardware-aligned types).
+- **Hardware**: the targets the stack runs on: CPU, CPU + GPU, CPU + KPU, and KPU.
+
+The platform is modeled on the mammalian nervous system. This repo is the whole organism; the sister repos provide its brain, its reflexes, and the synapses that run its learned models:
 
 | Repo | Biological analogue | What it provides to the racing drone | Time scale |
 |---|---|---|---|
 | [`cortex`](https://github.com/branes-ai/cortex) | Cerebral cortex | Perception (visual-inertial odometry, gate detection, SLAM), world model, path planning | ~5–100 Hz |
+| [`synapse`](https://github.com/branes-ai/synapse) | The synapses: where signals are transmitted and computed | Execution of learned models (for example gate-detection or policy networks) as static, allocation-free compute graphs | Deterministic |
 | [`reflex`](https://github.com/branes-ai/reflex) | Brainstem, spinal cord, autonomic system | Stabilization, trajectory tracking (PID → MPC → non-linear MPC), fault detection and recovery, safety envelopes | ~100 Hz–8 kHz, hard real-time |
 | **`racing-drone`** (this repo) | The whole organism | Mission logic, vehicle integration, airframe and sensor configuration, simulation and flight testing | — |
 
