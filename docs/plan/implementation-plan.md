@@ -61,11 +61,11 @@ This is the critical-path phase. Steps 1–2 can start in parallel with Phase 1.
    - cut the front-end frame time from 38 ms to < 8 ms (detect only in feature-starved cells, run detection on the accelerator);
    - add rolling-shutter support (EST-09).
 6. **Baselines B2m `gate-ekf-mpcc` and B2 `vio-gate-mpcc`.**
-- **Exit (gate P3):** in rendered SITL (L3), B2 achieves ≥ 90 % two-lap success at the qualification speed on the nominal, course-uncertainty, and sensor-degradation groups. The other requirements:
+- **Decision at P3, before the gate:** run the B2 vs. B2m comparison under [ADR 0004](../adr/0004-gate-relative-hybrid-estimation.md). It selects the **primary racing baseline**: B2 if `VioGateEkf` passes the promotion criterion, otherwise B2m. Record the result in a new ADR. From here on, "B2" in later phases means the selected primary baseline.
+- **Exit (gate P3):** in rendered SITL (L3), the selected primary baseline (B2 or B2m) achieves ≥ 90 % two-lap success at the qualification speed on the nominal, course-uncertainty, and sensor-degradation groups. The other requirements:
   - measured camera-to-motor latency p99 ≤ 29 ms;
   - EST-04 / EST-05 met;
   - true gate-crossing error |bias| + 3σ ≤ 0.575 m.
-- **Decision at P3 (not a gate):** run the B2 vs. B2m comparison. If `VioGateEkf` fails the promotion criterion in [ADR 0004](../adr/0004-gate-relative-hybrid-estimation.md), B2m becomes the primary racing baseline, and the result is recorded in a new ADR.
 
 ### Phase 4: FPV, pilot, and the FC integration (reflex + racing-drone)
 
@@ -77,7 +77,7 @@ This is the critical-path phase. Steps 1–2 can start in parallel with Phase 1.
 |---|---|---|---|
 | Kill switch, arming, RC input (FPV-05, SAF-04) | FC: Betaflight | FC: reflex | Unaffected |
 | Mode manager / pilot arbiter, takeover (FPV-04, FPV-08) | FC: Betaflight modes (switch-selected); autonomy sub-states on the companion | FC: reflex | Interim: Betaflight drops to its failsafe (or `MANUAL` if the pilot has the switch). Final: reflex `SAF-01` failsafe |
-| Companion heartbeat and command-stream loss (SAF-01) | FC: Betaflight detects command-stream loss like RX loss, then its failsafe (*to verify in HIL*) | FC: reflex, 50 ms timeout | Configured failsafe within 50 ms |
+| Companion heartbeat and command-stream loss (SAF-01) | FC: Betaflight detects command-stream loss like RX loss, then its failsafe (*to verify in HIL*) | FC: reflex, 50 ms timeout | Final: configured failsafe within 50 ms. Interim: **unverified** until the HIL check passes; no Betaflight flight before it does |
 | Geofence (SAF-02), estimator-health ladder (SAF-03) | Companion: reflex | Companion: reflex | Not enforceable; covered by the SAF-01 failsafe |
 | DAA safety filter (DAA-04), envelope filter | Companion: reflex | Companion: reflex | Not enforceable; covered by the SAF-01 failsafe |
 

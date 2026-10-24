@@ -52,8 +52,8 @@ The test-venue mocap is used **only to score** flights, never as an input (SYS-0
 | GateNet | Labeled real and synthetic sets, by distance, angle, lighting, blur | Corner RMS ≤ 2 px at ≤ 10 m; recall ≥ 98 % at ≤ 8 m |
 | Gate PnP | Synthetic projections with noise; rolling shutter on/off | Pose error matches the predicted covariance (NEES) |
 | Estimators | UZH-FPV racing sequences, EuRoC, own logs; synthetic world | EST-04 / EST-05 thresholds |
-| IMU saturation | Synthetic maneuver at 7 g peak body acceleration, plus injected motor vibration of 12 g amplitude at 150–400 Hz. The total true specific force exceeds 16 g. The accelerometer model clips **per axis at ±16 g**, the RP-1 sensor's physical range, so clipping happens wherever |true| > 16 g on an axis. A control run with clipping disabled gives the nominal error | No divergence; position error ≤ 2× the control run; saturation detected within 2 ms of onset |
-| DroneNet + tracker | Rendered and real drones at 2–20 m | Detection range for P_d ≥ 0.9 per DAA-06; track continuity |
+| IMU saturation | Synthetic maneuver at 7 g peak body acceleration, plus injected motor vibration of 12 g amplitude at 150–400 Hz. The total true specific force exceeds 16 g. The accelerometer model clips **per axis at ±16 g**, the RP-1 sensor's physical range, so clipping happens wherever the true value on an axis exceeds ±16 g. A control run with clipping disabled gives the nominal error | No divergence; position error ≤ 2× the control run; saturation detected within 2 ms of onset |
+| DroneNet + tracker | Rendered and real drones at 2–20 m | DAA-11: confirmed-track probability ≥ 0.9 at the requirements §6.3 detection distances (≥ 5 m at 10 m/s closing, ≥ 10 m at 20 m/s), within the DAA-06 envelope; track continuity |
 | CBF filter | Random states and conflicts; worst-case runtime | Never violates separation when feasible; bounded runtime |
 | Mode manager | Exhaustive transition table, including invalid ones | Matches the state machine; no unhandled input |
 
@@ -82,7 +82,7 @@ This table is the **single acceptance contract**. The implementation plan's exit
 | P0 | CI green on GCC, Clang, and MSVC; config round-trip; `null` baseline builds every harness target; replaying a synthetic log twice gives bit-identical output |
 | P1 | B0: ≥ 99 % success at ≤ 5 m/s, nominal group, 500 seeds |
 | P2 | B1: gap_to_optimal ≤ 10 %; mpc_solve p99 ≤ 5 ms; gate_error 3σ ≤ 0.25 m |
-| P3 | B2: ≥ 90 % success at the qualification speed, nominal + course-uncertainty + sensor-degradation groups (L3); measured camera-to-motor latency p99 ≤ 29 ms; EST-04 / EST-05; true gate-crossing error \|bias\| + 3σ ≤ 0.575 m. (The B2 vs. B2m comparison of ADR 0004 is run here, but is a decision, not a gate) |
+| P3 | The primary baseline selected under ADR 0004 (B2, or B2m if `VioGateEkf` is not promoted; the comparison runs first): ≥ 90 % success at the qualification speed, nominal + course-uncertainty + sensor-degradation groups (L3); measured camera-to-motor latency p99 ≤ 29 ms; EST-04 / EST-05; true gate-crossing error \|bias\| + 3σ ≤ 0.575 m. From P3 on, "B2" in later gates means the selected primary baseline |
 | P4 | All fault and pilot scenarios pass in L2 and L4, in both profiles, with the expected outcomes in implementation plan Phase 4; kill and command-stream-loss failsafe ≤ 50 ms measured on hardware |
 | P5 | ≥ 80 % success over ≥ 20 flights at the qualification speed; sim-vs-real lap time within 5 % |
 | P6 | DAA-05 over the DAA matrix (§7); DAA-08; B4 vs. B2 empty-course lap time ≤ +2 % |
@@ -140,6 +140,7 @@ Each step needs the previous one passed and a test card signed off. A safety pil
 | CTL-03..05 / CTL-08 | §4 MPCC; §6 P2 |
 | FPV-04 / FPV-05 | §5 pilot group; §8 steps 1 and 4 |
 | DAA-01..08 | §7 matrix; §6 P6 |
+| DAA-11 | §4 DroneNet + tracker |
 | SAF-01..04 | §5 faults group; §8 step 6 |
 
 The full matrix is maintained as `docs/plan/traceability.csv` once the test IDs exist.

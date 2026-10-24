@@ -84,7 +84,7 @@ Algorithms do not live here. Perception and planning go in `cortex`, control and
 
 ## Roadmap
 
-The detailed plan is in [`docs/plan/implementation-plan.md`](docs/plan/implementation-plan.md), with requirements in [`docs/requirements/mission-requirements.md`](docs/requirements/mission-requirements.md). Each phase ends in a *baseline* (a named composition of components; see [`docs/arch/framework-architecture.md`](docs/arch/framework-architecture.md)) that runs in the scenario suite:
+The detailed plan is in [`docs/plan/implementation-plan.md`](docs/plan/implementation-plan.md), with requirements in [`docs/requirements/mission-requirements.md`](docs/requirements/mission-requirements.md). Phases 1–7 each end in a *baseline* (a named composition of components; see [`docs/arch/framework-architecture.md`](docs/arch/framework-architecture.md)) that runs in the scenario suite. Phases 0 and 8 are infrastructure phases with their own gates:
 
 0. **Framework skeleton:** slots, data contracts, vehicle/course/scenario/baseline files, logging and replay.
 1. **Simulation and B0:** `reflex` dynamics model and SITL; ground-truth state with cascaded PID.

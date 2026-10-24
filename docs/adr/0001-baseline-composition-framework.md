@@ -10,7 +10,7 @@ This repo has to deliver one racing mission, and also be the framework that late
 
 ## Decision
 
-- Every swappable component role is a **slot**, defined as a C++20 concept in `branes::racing::slots`. There are seven slots: `Estimator`, `GateDetector`, `Planner`, `Controller`, `SafetyFilter`, `DaaTracker`, and `FcBridge`. This list is the registry; the architecture §3 defines the same seven concepts.
+- Every swappable component role is a **slot**, defined as a C++20 concept in namespace `branes::racing`, declared in `<branes/racing/slots/*.hpp>`. There are seven slots: `Estimator`, `GateDetector`, `Planner`, `Controller`, `SafetyFilter`, `DaaTracker`, and `FcBridge`. This list is the registry; the architecture §3 defines the same seven concepts.
 - The **mode manager and pilot arbiter** is *not* a slot. It is FC-resident safety logic in reflex, the same for every baseline. The baseline cannot replace it, only configure it (league or development profile, failsafe actions).
 - A **baseline** is a named composition of slot implementations plus parameter files, described by `baselines/<name>.yaml`.
 - All harnesses (replay, SITL, HIL, flight) take a baseline and nothing else.

@@ -137,6 +137,7 @@ Priority: **M** = must, **S** = should, **C** = could. Verification: **T** = tes
 | DAA-07 | Right-of-way rule: the overtaking drone is responsible for separation, as in crewed aviation | M | A | racing-drone |
 | DAA-08 | False alerts that cause an avoidance maneuver ≤ 1 per 10 laps on an empty course | S | T | cortex |
 | DAA-09 | The DAA sensor interface accepts extra sensors (stereo, ToF, radar, event camera, cooperative position broadcasts) in baselines whose rules allow them | S | I | cortex |
+| DAA-11 | Probability of a confirmed track ≥ 0.9 for a 0.3 m drone by the detection distances of §6.3 (≥ 5 m at 10 m/s closing speed, ≥ 10 m at 20 m/s), in the DAA-06 envelope under nominal lighting. P_d is measured per encounter: the fraction of encounters where the track is confirmed at or beyond that distance | M | T | cortex |
 | DAA-10 | The DAA design can be traced to ASTM F3442/F3442M (DAA performance for small UAS), so it carries over to non-racing missions (ISR, interceptor) | C | A | racing-drone |
 
 ### 5.6 Safety and fault handling (SAF)
