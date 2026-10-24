@@ -84,14 +84,19 @@ Algorithms do not live here. Perception and planning go in `cortex`, control and
 
 ## Roadmap
 
-The racing drone grows alongside the control stack in `reflex`:
+The detailed plan is in [`docs/plan/implementation-plan.md`](docs/plan/implementation-plan.md), with requirements in [`docs/requirements/mission-requirements.md`](docs/requirements/mission-requirements.md). Phases 1–7 each end in a *baseline* (a named composition of components; see [`docs/arch/framework-architecture.md`](docs/arch/framework-architecture.md)) that runs in the scenario suite. Phases 0 and 8 are infrastructure phases with their own gates:
 
-1. **Simulated hover and waypoint flight:** cascaded PID from `reflex`, ground-truth state, closed loop in SITL.
-2. **Estimated-state flight:** replace ground truth with `cortex` visual-inertial odometry; fly a fixed gate course in simulation.
-3. **Gate-aware racing:** gate detection and minimum-time trajectory planning in `cortex`, linear MPC tracking in `reflex`.
-4. **Aggressive racing:** non-linear MPC flying near actuator saturation to push lap times toward the time-optimal limit.
-5. **Real hardware:** HIL, then tethered and free flight on a physical racing airframe with the Branes.AI flight computer.
-6. **Robustness:** motor-loss and sensor-fault recovery from `reflex`, so the drone degrades gracefully instead of crashing.
+0. **Framework skeleton:** slots, data contracts, vehicle/course/scenario/baseline files, logging and replay.
+1. **Simulation and B0:** `reflex` dynamics model and SITL; ground-truth state with cascaded PID.
+2. **Time-optimal control (B1):** time-optimal planning in `cortex`, MPCC + INDI in `reflex`, still on ground-truth state.
+3. **Vision-only flight (B2):** gate detection (`synapse` vision ops + `cortex`), gate PnP fused with `cortex` VIO; no external pose.
+4. **FPV and pilot:** FPV video and OSD, human pilot modes, bumpless takeover, failsafes, HIL.
+5. **Real hardware:** a staged flight-test progression up to the qualification speed.
+6. **Detect and avoid (B4):** drone detection and tracking, MPC separation constraints, a CBF safety filter in `reflex`.
+7. **Learned-control baseline (B3), optional:** an RL policy behind the same controller slot, benchmarked head-to-head against MPCC.
+8. **Platform hardening:** reflex firmware replaces Betaflight on the FC, the hot path moves to the KPU, and motor-failure recovery is added.
+
+Every phase has an acceptance gate in [`docs/plan/test-plan.md`](docs/plan/test-plan.md) §6.
 
 ## Status
 
