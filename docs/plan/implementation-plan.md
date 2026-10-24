@@ -111,7 +111,8 @@ Phase 7 runs in parallel after Phase 3. No other phase waits for it, and the mis
 
 - **Training.** RL (PPO) in a GPU-parallel simulator, with the reflex dynamics as the reference model and domain randomization at 30–50 % (MonoRace values).
 - **Baseline B3 `<est>-gcnet`:** the estimator selected under ADR 0004 with the learned controller, so B3 vs. the primary baseline changes only the controller slot.
-- **Deployment.** `LearnedPolicy` through synapse on the companion. Optionally, a motor-command policy on the FC (MonoRace runs at 500 Hz on an STM32H7).
+- **Deployment (B3).** `LearnedPolicy` through synapse on the companion. It outputs collective thrust and body rates through the same `FcBridge` and FC INDI + rate loop as B2, so B3 vs. the primary baseline changes only the controller. Gate P7 applies to B3.
+- **Variant B3m (separate, optional).** A motor-command policy on the FC, MonoRace-style (500 Hz on an STM32H7). It replaces the FC inner loop, so its comparison measures controller *and* inner-loop differences. It has its own scoreboard entry and is not covered by gate P7.
 - **Exit (gate P7, non-blocking):** a head-to-head scoreboard of B2 vs. B3 on the full scenario suite. Decide (as an ADR) which controller is primary for racing, and whether MPCC remains the DAA-capable controller.
 
 ### Phase 8: platform hardening

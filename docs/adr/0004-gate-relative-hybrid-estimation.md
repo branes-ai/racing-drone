@@ -11,7 +11,7 @@ MonoRace won with gate PnP and a model-based EKF, and no VIO. It crashed after m
 ## Decision
 
 - Two estimator implementations behind the `Estimator` slot:
-  - `GateEkf`: MonoRace-style. 16 states, drag-model prediction, IMU-saturation switching, delay compensation.
+  - `GateEkf`: MonoRace-style. 16 states, drag-model prediction, delay compensation, and IMU-saturation switching. During saturation, prediction uses the model's specific force instead of the accelerometer, and the position and attitude covariance is inflated so that vision updates dominate. `VioGateEkf` uses the same switching.
   - `VioGateEkf`: the cortex MSCKF fused with gate PnP and the same model and saturation handling.
 - Both express their state in the **course frame**, anchored to the gate map.
 - **Promotion criterion.** `VioGateEkf` is the primary estimator only if it beats `GateEkf` as follows:

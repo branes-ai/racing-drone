@@ -22,7 +22,7 @@ This repo has to deliver one racing mission, and also be the framework that late
 | `flight_stack_<name>` (flight) | `--course`, `--vehicle` | — | No scenario file: nothing is simulated |
 | `flight_stack_<name>` (HIL) | `--course`, `--vehicle`, `--scenario` | — | The scenario drives the simulated sensors. Its course and vehicle must match the explicit ones, or the stack refuses to start |
 
-- Every run logs the hashes of the baseline, course, vehicle, and scenario files, so the scoreboard compares like with like.
+- Every run logs the hashes of the baseline, course, vehicle, and scenario files, so the scoreboard compares like with like. A run with no scenario file (flight) logs the sentinel scenario hash `none`. The scoreboard groups flight runs by baseline, course, and vehicle only.
 - Every baseline is scored by the same scoreboard schema on the same scenario suite.
 - Implementations live in cortex, reflex, or synapse. This repo holds only oracles (ground truth, oracle gates and intruders) and glue.
 
