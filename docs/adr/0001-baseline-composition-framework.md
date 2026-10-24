@@ -13,7 +13,16 @@ This repo has to deliver one racing mission, and also be the framework that late
 - Every swappable component role is a **slot**, defined as a C++20 concept in namespace `branes::racing`, declared in `<branes/racing/slots/*.hpp>`. There are seven slots: `Estimator`, `GateDetector`, `Planner`, `Controller`, `SafetyFilter`, `DaaTracker`, and `FcBridge`. This list is the registry; the architecture §3 defines the same seven concepts.
 - The **mode manager and pilot arbiter** is *not* a slot. It is FC-resident safety logic in reflex, the same for every baseline. The baseline cannot replace it, only configure it (league or development profile, failsafe actions).
 - A **baseline** is a named composition of slot implementations plus parameter files, described by `baselines/<name>.yaml`.
-- All harnesses (replay, SITL, HIL, flight) take a baseline and nothing else.
+- The harnesses (replay, SITL, HIL, flight) take the baseline as their only *algorithm* input. Mission inputs are separate files, and the harness selects them as follows:
+
+| Harness | Required inputs | Optional | Rules |
+|---|---|---|---|
+| `sitl_<name>` | `--scenario` | — | The scenario file names its course and vehicle and adds randomization and seed. `--course` / `--vehicle` are rejected, to keep one source of truth |
+| `replay_<name>` | `--log` | `--course`, `--vehicle` | The log header records the course and vehicle hashes. Overrides are allowed only for what-if replays, and the result is marked *non-reference* |
+| `flight_stack_<name>` (flight) | `--course`, `--vehicle` | — | No scenario file: nothing is simulated |
+| `flight_stack_<name>` (HIL) | `--course`, `--vehicle`, `--scenario` | — | The scenario drives the simulated sensors. Its course and vehicle must match the explicit ones, or the stack refuses to start |
+
+- Every run logs the hashes of the baseline, course, vehicle, and scenario files, so the scoreboard compares like with like.
 - Every baseline is scored by the same scoreboard schema on the same scenario suite.
 - Implementations live in cortex, reflex, or synapse. This repo holds only oracles (ground truth, oracle gates and intruders) and glue.
 

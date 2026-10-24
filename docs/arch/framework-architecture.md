@@ -225,10 +225,11 @@ The tracker runs best-effort at camera rate (30–90 Hz); the safety filter runs
 
 | Condition | Safety filter behavior |
 |---|---|
+| **No `ConflictSet` received yet** (startup, or after a tracker restart) | Initial state `DAA_INIT`, handled like a stale empty set (below): speed capped at `v_daa_unavailable`, DAA reported *unavailable*. The `AUTONOMOUS` launch is held on the pad until 3 consecutive fresh `tracker_ok` sets have arrived (a SAF-06 preflight item). After a restart in flight, the stale-data rules apply from the moment of the restart |
 | Age ≤ **25 ms** (≈ 2 camera frames) | Use as is. Predictions are propagated to the current time |
 | 25 ms < age ≤ **100 ms**, or `tracker_ok == false` (the tracker missed its budget) | Use the last set, with each intruder tube inflated by ½·a_max·age² (a_max from the intruder model). Raise the OSD alert. Log the event |
 | Age > 100 ms with conflicts present in the last fresh set | **Conservative mode.** Cap the commanded speed so that the ownship can stop before the last-known conflict region. Request `HOLD` if no fresh set arrives within 0.5 s |
-| Age > 100 ms with an empty last set | **Conservative mode as well.** A stale empty set does not show that no intruder is present; it can come from a tracker failure. Cap the commanded speed at `v_daa_unavailable` (configured; default 10 m/s, the top of the declared envelope). Report DAA as *unavailable* on the OSD and in telemetry. Request `HOLD` if no fresh set arrives within 0.5 s |
+| Age > 100 ms with an empty last set | **Conservative mode as well.** A stale empty set does not show that no intruder is present; it can come from a tracker failure. Cap the commanded speed at `v_daa_unavailable` (configured; default 5 m/s). Capping the ownship's speed does not bound the closing speed of a crossing intruder. So while DAA is unavailable, the DAA-06 envelope and the DAA-05 target **do not apply** (DAA-06 says so explicitly), and the cap only reduces the ownship's share of any closing speed. Report DAA as *unavailable* on the OSD and in telemetry. Request `HOLD` if no fresh set arrives within 0.5 s |
 | A fresh set arrives after conservative mode | Leave conservative mode, provided the tracker has been `tracker_ok` for at least 3 consecutive sets |
 | Fresh, empty set | No known intruders. This says nothing about undetected intruders |
 

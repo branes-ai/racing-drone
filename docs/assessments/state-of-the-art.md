@@ -121,8 +121,10 @@ The pixel-budget analysis in requirements §6.3 shows a drone ≈ 9 px wide at 1
 | **B1** `gt-mpcc` | Ground-truth state, time-optimal reference, MPCC + INDI | Control upper bound. Lap-time reference |
 | **B2** `vio-gate-mpcc` | VIO + gate-PnP EKF, MPCC + INDI | **The primary racing baseline** (SYS-01), *conditional*: only if `VioGateEkf` passes the ADR 0004 promotion criterion |
 | **B2m** `gate-ekf-mpcc` | MonoRace-style gate-PnP EKF (no VIO), MPCC | Ablation: what VIO buys us. Becomes the primary racing baseline if B2 fails the ADR 0004 comparison |
-| **B3** `vio-gate-gcnet` | Same estimator as B2, learned G&CNet controller | Head-to-head comparison against SOTA learned control |
-| **B4** `vio-gate-mpcc-daa` | B2 + detect, track, MPC constraints, CBF filter | Multi-drone racing and DAA |
+| **B3** `<est>-gcnet` | The estimator selected under ADR 0004 (`vio-gate` or `gate-ekf`), learned G&CNet controller | Head-to-head comparison against SOTA learned control. Like-for-like with the selected primary baseline |
+| **B4** `<est>-mpcc-daa` | The selected primary baseline (B2 or B2m) + detect, track, MPC constraints, CBF filter | Multi-drone racing and DAA |
+
+`<est>` is fixed once by the ADR 0004 decision at P3, for example `gate-ekf-mpcc-daa` if B2m is selected. B3 and B4 always use the selected estimator, so their comparisons with the primary baseline change one slot only.
 
 ## Sources
 

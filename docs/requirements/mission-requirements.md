@@ -133,7 +133,7 @@ Priority: **M** = must, **S** = should, **C** = could. Verification: **T** = tes
 | DAA-03 | Avoid predicted conflicts through constraints in the planner or MPC (preferred: keep racing) | M | T | cortex / reflex |
 | DAA-04 | A last-resort safety filter in reflex acts on minimum separation independent of the MPC, for example with a control-barrier-function QP or a precomputed escape maneuver. Its assumptions and stale-data behavior are defined in the architecture (§8) | M | T | reflex |
 | DAA-05 | Minimum separation ≥ 1.0 m center to center in ≥ 99 % of simulated in-envelope encounters in the DAA scenario matrix (TP §7). This is a statistical acceptance target measured in simulation, not a runtime guarantee | M | T | racing-drone |
-| DAA-06 | Declared performance envelope: forward-hemisphere encounters at relative closing speed ≤ 10 m/s (overtaking and following), and crossings ≤ 20 m/s. Faster encounters, and encounters outside the camera FOV, are out of scope with the minimum sensor set and must be documented as such | M | A | racing-drone |
+| DAA-06 | Declared performance envelope, **applicable only while DAA is available** (fresh `ConflictSet`s, architecture §8): forward-hemisphere encounters at relative closing speed ≤ 10 m/s (overtaking and following), and crossings ≤ 20 m/s. While DAA is unavailable (startup, stale data, tracker failure), no envelope is claimed; the vehicle runs in conservative mode and reports DAA unavailable. Faster encounters, and encounters outside the camera FOV, are out of scope with the minimum sensor set and must be documented as such | M | A | racing-drone |
 | DAA-07 | Right-of-way rule: the overtaking drone is responsible for separation, as in crewed aviation | M | A | racing-drone |
 | DAA-08 | False alerts that cause an avoidance maneuver ≤ 1 per 10 laps on an empty course | S | T | cortex |
 | DAA-09 | The DAA sensor interface accepts extra sensors (stereo, ToF, radar, event camera, cooperative position broadcasts) in baselines whose rules allow them | S | I | cortex |
@@ -149,7 +149,7 @@ Priority: **M** = must, **S** = should, **C** = could. Verification: **T** = tes
 | SAF-03 | An estimator-health monitor (innovation / NIS gating, staleness) drives the degradation ladder: race → hold → land → disarm. Runs on the companion. If the companion is lost, SAF-01 applies | M | T | reflex (companion) |
 | SAF-04 | RC link-loss behavior is configurable per mode | M | T | reflex (FC) |
 | SAF-05 | Detect motor or ESC failure from RPM telemetry, and fly reduced-authority recovery when possible | C | T | reflex |
-| SAF-06 | Preflight checks: sensors alive, calibration loaded, estimator converged, course loaded, link quality OK, battery OK | M | T | racing-drone |
+| SAF-06 | Preflight checks: sensors alive, calibration loaded, estimator converged, course loaded, link quality OK, battery OK, and (in baselines with DAA) 3 consecutive fresh `tracker_ok` conflict sets | M | T | racing-drone |
 
 ### 5.7 Compute, timing, and software (SW)
 

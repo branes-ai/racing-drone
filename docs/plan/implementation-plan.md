@@ -82,7 +82,7 @@ This is the critical-path phase. Steps 1–2 can start in parallel with Phase 1.
 | DAA safety filter (DAA-04), envelope filter | Companion: reflex | Companion: reflex | Not enforceable; covered by the SAF-01 failsafe |
 
 - **Expected fault outcomes** (test plan §5 faults group):
-  - **Companion crash or FC link loss:** the FC reaches the configured failsafe within 50 ms in both configurations. A development-profile pilot can then take `MANUAL`.
+  - **Companion crash or FC link loss:** with `ReflexFc`, the FC reaches the configured failsafe within 50 ms. With the interim Betaflight FC, that is the *expected* outcome only once the HIL check passes; until then it is unverified, and no Betaflight flight happens. In both cases, a development-profile pilot can then take `MANUAL`.
   - **RC loss:** the per-mode SAF-04 action applies. In `AUTONOMOUS` under the league profile, the race continues and the kill path is lost, so the venue rules decide whether that is allowed.
   - The interim row for SAF-01 is the one unverified assumption about Betaflight. HIL must show it before any flight.
 - **FPV.** Separate FPV camera and VTX. MSP DisplayPort OSD with the autonomy state (FPV-01/02). Onboard recording of the navigation camera.
@@ -102,7 +102,7 @@ This is the critical-path phase. Steps 1–2 can start in parallel with Phase 1.
 - **cortex:** `ImmTracker` with bearing and apparent-size ranging, and conflict prediction over the MPC horizon (DAA-02).
 - **reflex:** time-varying separation constraints in MPCC (DAA-03). The CBF safety filter with a bounded-time QP or closed form (DAA-04).
 - **racing-drone `sim/`:** multi-drone scenarios. Intruders flown by B1 or B2 instances, or scripted (overtake, follow, cross, a drone stalled in a gate).
-- **Baseline B4 `vio-gate-mpcc-daa`.**
+- **Baseline B4 `<est>-mpcc-daa`:** the selected primary baseline (B2 or B2m, per ADR 0004) plus DAA, so the B4 vs. primary comparison changes only the DAA slots.
 - **Exit (gate P6):** DAA-05 (≥ 99 % of in-envelope simulated encounters with separation ≥ 1.0 m) across the DAA scenario matrix. DAA-08 false-alert rate. B4 lap time on an empty course within 2 % of B2's (DAA must cost almost nothing when there is no conflict).
 
 ### Phase 7: learned-control baseline B3 (synapse + racing-drone), optional and non-blocking
@@ -110,6 +110,7 @@ This is the critical-path phase. Steps 1–2 can start in parallel with Phase 1.
 Phase 7 runs in parallel after Phase 3. No other phase waits for it, and the mission can complete without it. Its gate applies only if the phase is run.
 
 - **Training.** RL (PPO) in a GPU-parallel simulator, with the reflex dynamics as the reference model and domain randomization at 30–50 % (MonoRace values).
+- **Baseline B3 `<est>-gcnet`:** the estimator selected under ADR 0004 with the learned controller, so B3 vs. the primary baseline changes only the controller slot.
 - **Deployment.** `LearnedPolicy` through synapse on the companion. Optionally, a motor-command policy on the FC (MonoRace runs at 500 Hz on an STM32H7).
 - **Exit (gate P7, non-blocking):** a head-to-head scoreboard of B2 vs. B3 on the full scenario suite. Decide (as an ADR) which controller is primary for racing, and whether MPCC remains the DAA-capable controller.
 
