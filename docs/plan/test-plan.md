@@ -52,7 +52,7 @@ The test-venue mocap is used **only to score** flights, never as an input (SYS-0
 | GateNet | Labeled real and synthetic sets, by distance, angle, lighting, blur | Corner RMS ≤ 2 px at ≤ 10 m; recall ≥ 98 % at ≤ 8 m |
 | Gate PnP | Synthetic projections with noise; rolling shutter on/off | Pose error matches the predicted covariance (NEES) |
 | Estimators | UZH-FPV racing sequences, EuRoC, own logs; synthetic world | EST-04 / EST-05 thresholds |
-| IMU saturation | Synthetic 7 g maneuver with a ±16 g sensor clipped below truth | No divergence; position error ≤ 2× nominal |
+| IMU saturation | Synthetic maneuver at 7 g peak body acceleration, plus injected motor vibration of 12 g amplitude at 150–400 Hz. The total true specific force exceeds 16 g. The accelerometer model clips **per axis at ±16 g**, the RP-1 sensor's physical range, so clipping happens wherever |true| > 16 g on an axis. A control run with clipping disabled gives the nominal error | No divergence; position error ≤ 2× the control run; saturation detected within 2 ms of onset |
 | DroneNet + tracker | Rendered and real drones at 2–20 m | Detection range for P_d ≥ 0.9 per DAA-06; track continuity |
 | CBF filter | Random states and conflicts; worst-case runtime | Never violates separation when feasible; bounded runtime |
 | Mode manager | Exhaustive transition table, including invalid ones | Matches the state machine; no unhandled input |
@@ -69,21 +69,25 @@ Scenarios are YAML files in `scenarios/`, each run over N seeds.
 | Dynamics mismatch | Mass ±10 %, inertia ±20 %, drag ±30 %, motor time constant ±30 %, battery sag, ground effect at the start |
 | Timing | Extra 5 / 10 / 20 ms latency; companion CPU contention; dropped FC packets |
 | Faults | Companion crash; FC link loss; RC loss in each mode; geofence approach; one motor degraded at 70 % |
-| Pilot | Takeover at each phase of the lap; ASSISTED laps with scripted stick inputs; kill switch at full speed |
+| Pilot | Development profile: takeover at each phase of the lap; `ASSISTED` laps with scripted stick inputs; kill switch at full speed. League profile: stick and mode-switch inputs during an autonomous heat are ignored, and the kill switch still works (FPV-08) |
 
 **Randomization levels:** *nominal* (the expected real-world variation) for the SYS-09 gate, and *stress* (2× nominal) for reporting only.
 
 ## 6. Acceptance gates per phase
 
+This table is the **single acceptance contract**. The implementation plan's exit lines summarize it.
+
 | Phase | Gate (must pass to exit) |
 |---|---|
+| P0 | CI green on GCC, Clang, and MSVC; config round-trip; `null` baseline builds every harness target; replaying a synthetic log twice gives bit-identical output |
 | P1 | B0: ≥ 99 % success at ≤ 5 m/s, nominal group, 500 seeds |
 | P2 | B1: gap_to_optimal ≤ 10 %; mpc_solve p99 ≤ 5 ms; gate_error 3σ ≤ 0.25 m |
-| P3 | B2: ≥ 90 % success at the qualification speed, nominal + course-uncertainty + sensor-degradation groups (L3); latency p99 ≤ 27 ms; EST-04 / EST-05 |
-| P4 | All fault and pilot scenarios pass in L2 and L4; kill ≤ 50 ms measured on hardware |
+| P3 | B2: ≥ 90 % success at the qualification speed, nominal + course-uncertainty + sensor-degradation groups (L3); measured camera-to-motor latency p99 ≤ 29 ms; EST-04 / EST-05; true gate-crossing error \|bias\| + 3σ ≤ 0.575 m. (The B2 vs. B2m comparison of ADR 0004 is run here, but is a decision, not a gate) |
+| P4 | All fault and pilot scenarios pass in L2 and L4, in both profiles, with the expected outcomes in implementation plan Phase 4; kill and command-stream-loss failsafe ≤ 50 ms measured on hardware |
 | P5 | ≥ 80 % success over ≥ 20 flights at the qualification speed; sim-vs-real lap time within 5 % |
 | P6 | DAA-05 over the DAA matrix (§7); DAA-08; B4 vs. B2 empty-course lap time ≤ +2 % |
-| P7 | Scoreboard B2 vs. B3, all groups |
+| P7 (optional, non-blocking) | Scoreboard B2 vs. B3, all groups. Applies only if Phase 7 is run; no other phase waits for it |
+| P8 | `ReflexFc`: P4 and P5 re-passed with no regression (success within 2 pp; failsafe latency ≤ 50 ms). KPU: P3 gate passes, with a latency and energy report vs. the Orin. One motor at 70 %: controlled landing in ≥ 95 % of seeds |
 
 ## 7. DAA scenario matrix
 
@@ -128,7 +132,10 @@ Each step needs the previous one passed and a test card signed off. A safety pil
 | SYS-01 / SYS-09 | §5 nominal group, §6 P3 / P5 gates, §8 step 5 |
 | SYS-02 | Inspection of the baseline files and build: no external-pose inputs exist in `msg/` |
 | EST-04 / EST-05 | §4 estimators; §8 step 3 |
+| EST-04 + CTL-08 combined (gate clearance) | §3 `gate_error` (true): \|bias\| + 3σ ≤ 0.575 m per gate (requirements §6.2) |
 | EST-06 / SW-02 | §3 `latency`; §5 timing group |
+| SYS-08 | Replay-complete check: zero dropped hot-path records (ADR 0006) |
+| FPV-08 | §5 pilot group, league profile |
 | EST-07 / EST-08 | §4 IMU saturation; §5 sensor-degradation group |
 | CTL-03..05 / CTL-08 | §4 MPCC; §6 P2 |
 | FPV-04 / FPV-05 | §5 pilot group; §8 steps 1 and 4 |

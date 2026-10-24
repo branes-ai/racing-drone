@@ -8,7 +8,7 @@
 
 `racing-drone` contains no algorithms (README: "Algorithms do not live here"). It defines:
 
-1. **Slots**: C++20 concepts for each component role (estimator, gate detector, planner, controller, DAA, pilot arbiter).
+1. **Slots**: C++20 concepts for each swappable component role: estimator, gate detector, planner, controller, safety filter, DAA tracker, and FC bridge ([ADR 0001](../adr/0001-baseline-composition-framework.md) is the registry). The mode manager and pilot arbiter is not a slot. It is fixed FC-resident safety logic (§7).
 2. **Data contracts**: the plain structs passed between slots, with timestamps and frames defined once.
 3. **Descriptions**: vehicle, course, and scenario files.
 4. **Baselines**: named compositions that fill each slot with an implementation from cortex, reflex, or synapse, plus their parameters.
@@ -73,7 +73,7 @@ A new racing baseline (a new estimator, a learned controller, an extra sensor) i
 
 - **Hot path.** Camera → perception → estimator → MPC → safety filter → FC. It runs in one companion process with pre-allocated, lock-free single-producer queues. There is no middleware hop on the hot path ([ADR 0006](../adr/0006-hot-path-in-process-zenoh-off-path.md)).
 - **Off the hot path.** Telemetry, logs, OSD content, the ground station, and parameter upload go over Zenoh (cortex ADR 0014).
-- **The FC never depends on the companion to stay safe** (reflex principle). Kill, RC takeover, and failsafes are FC-only paths.
+- **The FC never depends on the companion to stay stable** (reflex principle). Kill, RC takeover, arming, and the loss-of-companion failsafe are FC-only paths. The geofence, health ladder, and DAA filter need the companion's estimate, so they run on the companion. Losing the companion triggers the FC failsafe ([ADR 0002](../adr/0002-companion-mpc-fc-rate-loop.md)).
 
 ## 3. Slots
 
@@ -120,6 +120,13 @@ concept DaaTracker = requires(A a, const IntruderDetections<T>& det, const State
     { a.conflicts(x) } -> std::same_as<ConflictSet<T>>;      // predictions over the horizon
 };
 
+template <class B, class T>
+concept FcBridge = requires(B b, const ThrustRates<T>& u, Timestamp now) {
+    b.send(u, now);                                           // also serves as the companion heartbeat
+    { b.poll_imu() } -> std::same_as<std::optional<ImuSample<T>>>;   // FC-relayed, FC-timestamped
+    { b.fc_status() } -> std::same_as<FcStatus>;              // mode, arming, RC state, link health
+};
+
 }  // namespace branes::racing
 ```
 
@@ -131,18 +138,21 @@ concept DaaTracker = requires(A a, const IntruderDetections<T>& det, const State
 | `Controller` | `CascadedPid`, `Mpcc`, `TrackingNmpc`, `LearnedPolicy` | reflex (+ synapse for the policy) |
 | `SafetyFilter` | `PassThrough`, `CbfFilter` | reflex |
 | `DaaTracker` | `None`, `OracleIntruders` (SITL), `ImmTracker` | racing-drone, cortex |
-| FC firmware | `BetaflightBridge` (interim), `ReflexFc` | racing-drone, reflex |
+| `FcBridge` | `SimFc` (SITL), `BetaflightBridge` (interim), `ReflexFcBridge` | racing-drone, reflex |
 
 A **learned controller** is a `Controller`, so it receives the same state and reference and is scored the same way. MonoRace's motor-level policy bypasses the FC rate loop. It is supported as a `Controller` with a `motor_commands` output variant that the FC accepts only in a configured mode.
 
 ## 4. Data contracts
 
-Defined once in `branes::racing::msg`. They are plain `repr(C)`-compatible structs, so they can cross the Rust core and Zenoh unchanged (cortex ADR 0010).
+Defined once in `branes::racing::msg`. Every struct except `CameraFrame` is a plain `repr(C)`-compatible value type, so it can cross the Rust core and Zenoh unchanged (cortex ADR 0010).
+
+`CameraFrame` is an **in-process view only**. It holds a non-owning pointer into a driver or Resource Manager buffer, so it never crosses a process boundary or Zenoh, and it is never written to a log as-is. Its wire form is `CameraFrameRecord`: an owning header (the same timing fields) plus encoded image bytes (raw or compressed, as declared). The explicit conversions are `to_record(const CameraFrame&, Encoder&)` for logging and telemetry, and `view_of(const CameraFrameRecord&)` for replay.
 
 | Struct | Contents | Frame / time |
 |---|---|---|
 | `ImuSample` | Gyro, accelerometer, saturation flags, temperature | Body frame. FC timestamp, mapped to companion time |
-| `CameraFrame` | Image view (non-owning), exposure start and duration, per-row readout time, corruption flag | Sensor timestamp at mid-exposure |
+| `CameraFrame` | Image view (non-owning, in-process only), exposure start and duration, per-row readout time, corruption flag | Sensor timestamp at mid-exposure |
+| `CameraFrameRecord` | Owning wire and log form of `CameraFrame`: the same header plus encoded bytes | Same |
 | `GateObservations` | Per gate: id hypothesis, 4 corners (px) + covariance, mask quality | Image frame |
 | `StateEstimate` | p, v, q, ω, biases, covariance, validity time | Course frame (gate-map origin) |
 | `Reference` | Time- or progress-parameterized states, gate passing times | Course frame |
@@ -158,8 +168,11 @@ courses/a2rl-2025.yaml   gates (pose, inner size, order), laps, start pad, fligh
 scenarios/*.yaml         course + vehicle + randomization (gate pose noise, lighting, wind, sensor
                          faults, intruder trajectories) + seed
 baselines/b2-vio-gate-mpcc.yaml
-                         slot -> implementation + parameter files
+                         composition: slot -> implementation (compile time)
+                         parameters:  parameter files (load time)
 ```
+
+Each baseline file becomes its own build targets (`flight_stack_<name>`, `replay_<name>`, `sitl_<name>`). The composition hash is checked at startup. [ADR 0001](../adr/0001-baseline-composition-framework.md) has the mapping rules.
 
 One loader validates every file against a schema at startup. A config change means a restart, with no live reconfiguration (cortex ADR 0005).
 
@@ -171,11 +184,11 @@ One loader validates every file against a schema at startup. A config change mea
 | Companion RT core | IMU propagation, estimator, MPC, safety filter, FC link | IMU rate / 100–200 Hz | CPU (isolated core, SCHED_FIFO) |
 | Companion accelerator | GateNet + DroneNet (shared backbone) | 90 Hz | GPU / KPU via synapse |
 | Companion best effort | VIO front end, planner replan, DAA tracker | 30–90 Hz | CPU |
-| Companion background | Logging (MCAP-style), Zenoh telemetry, OSD composition | 10–50 Hz | CPU |
+| Companion background | Replay recorder (drains the per-channel rings to NVMe, [ADR 0006](../adr/0006-hot-path-in-process-zenoh-off-path.md)), Zenoh telemetry, OSD composition | 10–50 Hz | CPU |
 
 ## 7. Mode manager and pilot arbitration
 
-The arbiter lives on the FC (reflex), because it must work when the companion is dead.
+The arbiter lives on the FC (reflex), because it must work when the companion is dead. It is configured with a **profile**. In the *development* profile everything below is enabled. In the *league* profile, stick takeover and `ASSISTED` are disabled during an autonomous heat, and only the kill switch is honored (FPV-08).
 
 ```text
            arm switch                   autonomy switch + preflight OK
@@ -197,12 +210,28 @@ DISARMED ----------------> MANUAL ------------------------------------> AUTONOMO
 ```text
 camera --> DroneNet --> ImmTracker --> ConflictSet --+--> MPCC constraints     (strategic: keep racing)
                                                      |
-                                                     +--> CBF safety filter    (tactical: guaranteed separation)
+                                                     +--> CBF safety filter    (tactical: last-resort separation)
                                                      |
                                                      +--> OSD alert to pilot   (situational awareness)
 ```
 
-The CBF filter runs every control cycle in bounded time. It changes the MPC output only when the predicted separation would fall below the threshold, so a stalled or diverged MPC cannot remove the DAA guarantee.
+The CBF filter runs every control cycle in bounded time. It changes the MPC output only when the predicted separation would fall below the threshold, so a stalled or diverged MPC does not disable the tactical layer.
+
+There is **no runtime guarantee of separation**. The target is statistical (DAA-05, measured in simulation), and it holds only under the assumptions in [ADR 0005](../adr/0005-layered-daa.md).
+
+### Conflict-data contract
+
+The tracker runs best-effort at camera rate (30–90 Hz); the safety filter runs on the RT core at 100–200 Hz. So every `ConflictSet` carries its `valid_at` timestamp and a `tracker_ok` flag, and the filter applies these rules:
+
+| Condition | Safety filter behavior |
+|---|---|
+| Age ≤ **25 ms** (≈ 2 camera frames) | Use as is. Predictions are propagated to the current time |
+| 25 ms < age ≤ **100 ms**, or `tracker_ok == false` (the tracker missed its budget) | Use the last set, with each intruder tube inflated by ½·a_max·age² (a_max from the intruder model). Raise the OSD alert. Log the event |
+| Age > 100 ms with conflicts present in the last fresh set | **Conservative mode.** Cap the commanded speed so that the ownship can stop before the last-known conflict region. Request `HOLD` if the condition lasts more than 0.5 s |
+| Age > 100 ms with an empty last set | Continue racing, but report DAA as *unavailable* on the OSD and in telemetry |
+| Fresh, empty set | No known intruders. This says nothing about undetected intruders |
+
+A tracker deadline miss counts as stale data. It never blocks the safety filter.
 
 ## 9. Repository layout
 

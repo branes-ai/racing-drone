@@ -93,7 +93,10 @@ The detailed plan is in [`docs/plan/implementation-plan.md`](docs/plan/implement
 4. **FPV and pilot:** FPV video and OSD, human pilot modes, bumpless takeover, failsafes, HIL.
 5. **Real hardware:** a staged flight-test progression up to the qualification speed.
 6. **Detect and avoid (B4):** drone detection and tracking, MPC separation constraints, a CBF safety filter in `reflex`.
-7. **Learned-control baseline (B3):** an RL policy behind the same controller slot, benchmarked head-to-head against MPCC.
+7. **Learned-control baseline (B3), optional:** an RL policy behind the same controller slot, benchmarked head-to-head against MPCC.
+8. **Platform hardening:** reflex firmware replaces Betaflight on the FC, the hot path moves to the KPU, and motor-failure recovery is added.
+
+Every phase has an acceptance gate in [`docs/plan/test-plan.md`](docs/plan/test-plan.md) §6.
 
 ## Status
 

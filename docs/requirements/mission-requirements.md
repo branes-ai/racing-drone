@@ -20,13 +20,13 @@ The profile is modeled on the Abu Dhabi Autonomous Racing League (A2RL) drone ch
 
 | Parameter | Reference value | Source / rationale |
 |---|---|---|
-| Venue | Indoor hall, about 76 × 18 × 5.4 m flight volume | MonoRace paper (A2RL 2025 track) |
-| Course | 11 gates, two laps, gate inner opening 1.5 m | MonoRace paper |
+| Venue | Indoor hall, about 76 × 18 × 5.4 m flight volume | MonoRace paper, A2RL 2025 track ([survey \[2\]](../assessments/state-of-the-art.md#sources)) |
+| Course | 11 gates, two laps, gate inner opening 1.5 m | MonoRace paper ([survey \[2\]](../assessments/state-of-the-art.md#sources)) |
 | Gate map | Nominal gate poses known in advance. As-built poses may differ by up to ±0.5 m and ±10° | Assumption: real courses are set up by hand |
-| Top speed | 28 m/s (≈100 km/h), the MonoRace peak | MonoRace paper |
-| Peak acceleration | ≈7 g during maneuvers | MonoRace paper (saturated a ±16 g accelerometer) |
-| Lap-time benchmark | Two-lap completion 16.56 s (MonoRace best, A2RL 2025); fastest lap 12.03 s (TII Racing, A2RL 2026) | MonoRace paper; A2RL 2026 press |
-| Allowed sensors (league rules) | One forward-facing monocular RGB camera and one IMU. No stereo, LiDAR, external compute, or human RC during autonomous heats | A2RL 2026 rules as reported |
+| Top speed | 28 m/s (≈100 km/h), the MonoRace peak | MonoRace paper ([survey \[2\]](../assessments/state-of-the-art.md#sources)) |
+| Peak acceleration | ≈7 g during maneuvers | MonoRace paper ([survey \[2\]](../assessments/state-of-the-art.md#sources)). The ±16 g accelerometer still saturated, which points to vibration peaks on top of the maneuver load |
+| Lap-time benchmark | Two-lap completion 16.56 s (MonoRace best, A2RL 2025); fastest lap 12.03 s (TII Racing, A2RL 2026) | MonoRace paper, results section ([survey \[2\]](../assessments/state-of-the-art.md#sources); <https://arxiv.org/html/2601.15222>, accessed 2026-10-23); A2RL 2026 coverage ([survey \[6\]](../assessments/state-of-the-art.md#sources)) |
+| Allowed sensors (league rules) | One forward-facing monocular RGB camera and one IMU. No stereo, LiDAR, external compute, or human RC during autonomous heats | As reported in A2RL 2026 coverage ([survey \[6\]](../assessments/state-of-the-art.md#sources), accessed 2026-10-23). **The official rulebook has not been located; obtaining it is an open action (§7)** |
 | Race formats | Single-drone time trial; multi-drone head-to-head; AI vs. human pilot | A2RL |
 | Lighting | Indoor event lighting, with flicker, glare, and LED gate markers possible | Assumption |
 | RF environment | Crowded 2.4 / 5.8 GHz spectrum; camera EMI observed (8–75 % of frames corrupted on some MonoRace flights) | MonoRace paper |
@@ -111,15 +111,18 @@ Priority: **M** = must, **S** = should, **C** = could. Verification: **T** = tes
 
 ### 5.4 FPV, pilot interface, and modes (FPV)
 
+**Scope.** League rules forbid human RC during autonomous heats (§2). FPV-03 and FPV-04 therefore apply in the **development profile**: development, testing, practice, and non-league missions. In the **league profile**, FPV-08 applies instead. The active profile is part of the mission configuration and is logged.
+
 | ID | Requirement | Pri | Ver | Owner |
 |---|---|---|---|---|
 | FPV-01 | Stream live FPV video to the pilot, glass-to-glass latency ≤ 40 ms, separate from the navigation camera pipeline (navigation latency must not depend on the video link) | M | T | racing-drone |
 | FPV-02 | Overlay an OSD with mode, battery, link quality, the autonomy state (next gate, estimator health), and DAA alerts | S | D | racing-drone |
-| FPV-03 | Support a human pilot on an RC link (ELRS/CRSF, ≥ 250 Hz) in every mode in §4 | M | T | reflex |
-| FPV-04 | The pilot can switch between `AUTONOMOUS` and `MANUAL` at any time, with no thrust or attitude transient larger than one stick-induced transient (bumpless transfer) | M | T | reflex |
+| FPV-03 | Development profile: support a human pilot on an RC link (ELRS/CRSF, ≥ 250 Hz) in every mode in §4 | M | T | reflex |
+| FPV-04 | Development profile: the pilot can switch between `AUTONOMOUS` and `MANUAL` at any time, with no thrust or attitude transient larger than one stick-induced transient (bumpless transfer) | M | T | reflex |
 | FPV-05 | A kill switch on the RC link stops the motors within 50 ms through the FC alone, independent of the companion software | M | T | reflex |
 | FPV-06 | Record the navigation camera onboard, and the FPV feed, for post-flight analysis | S | I | racing-drone |
 | FPV-07 | Log the pilot's commands during `MANUAL`, so human laps can be used as reference data and compared with autonomous laps | C | T | racing-drone |
+| FPV-08 | League profile: during an autonomous heat, RC input is limited to what the league rules allow (at minimum the FPV-05 kill switch). Stick takeover and `ASSISTED` are disabled, and the FC ignores other RC channels | M | T | reflex |
 
 ### 5.5 Detect and avoid (DAA)
 
@@ -128,8 +131,8 @@ Priority: **M** = must, **S** = should, **C** = could. Verification: **T** = tes
 | DAA-01 | Detect other drones and unexpected obstacles in the navigation camera's field of view with mono vision only (SYS-03) | M | T | cortex |
 | DAA-02 | Track detected intruders and predict their trajectories with uncertainty over the MPC horizon | M | T | cortex |
 | DAA-03 | Avoid predicted conflicts through constraints in the planner or MPC (preferred: keep racing) | M | T | cortex / reflex |
-| DAA-04 | A last-resort safety filter in reflex enforces minimum separation independent of the MPC, for example with a control-barrier-function QP or a precomputed escape maneuver | M | T | reflex |
-| DAA-05 | Minimum separation ≥ 1.0 m center to center in ≥ 99 % of simulated encounters in the DAA scenario matrix (TP §7) | M | T | racing-drone |
+| DAA-04 | A last-resort safety filter in reflex acts on minimum separation independent of the MPC, for example with a control-barrier-function QP or a precomputed escape maneuver. Its assumptions and stale-data behavior are defined in the architecture (§8) | M | T | reflex |
+| DAA-05 | Minimum separation ≥ 1.0 m center to center in ≥ 99 % of simulated in-envelope encounters in the DAA scenario matrix (TP §7). This is a statistical acceptance target measured in simulation, not a runtime guarantee | M | T | racing-drone |
 | DAA-06 | Declared performance envelope: forward-hemisphere encounters at relative closing speed ≤ 10 m/s (overtaking and following), and crossings ≤ 20 m/s. Faster encounters, and encounters outside the camera FOV, are out of scope with the minimum sensor set and must be documented as such | M | A | racing-drone |
 | DAA-07 | Right-of-way rule: the overtaking drone is responsible for separation, as in crewed aviation | M | A | racing-drone |
 | DAA-08 | False alerts that cause an avoidance maneuver ≤ 1 per 10 laps on an empty course | S | T | cortex |
@@ -140,10 +143,10 @@ Priority: **M** = must, **S** = should, **C** = could. Verification: **T** = tes
 
 | ID | Requirement | Pri | Ver | Owner |
 |---|---|---|---|---|
-| SAF-01 | Losing the companion heartbeat for more than 50 ms puts the FC into a configurable failsafe (level-and-descend or disarm, per venue rules) | M | T | reflex |
-| SAF-02 | Geofence on the course flight volume. A breach forces `HOLD`, then `LAND` | M | T | reflex |
-| SAF-03 | An estimator-health monitor (innovation / NIS gating, staleness) drives the degradation ladder: race → hold → land → disarm | M | T | reflex |
-| SAF-04 | RC link-loss behavior is configurable per mode | M | T | reflex |
+| SAF-01 | Losing the companion heartbeat (or command stream) for more than 50 ms puts the FC into a configurable failsafe (level-and-descend or disarm, per venue rules). This is the loss-of-companion behavior for every companion-side safety function (SAF-02, SAF-03, DAA-04) | M | T | reflex (FC) |
+| SAF-02 | Geofence on the course flight volume. A breach forces `HOLD`, then `LAND`. Runs on the companion (it needs the position estimate). If the companion is lost, SAF-01 applies | M | T | reflex (companion) |
+| SAF-03 | An estimator-health monitor (innovation / NIS gating, staleness) drives the degradation ladder: race → hold → land → disarm. Runs on the companion. If the companion is lost, SAF-01 applies | M | T | reflex (companion) |
+| SAF-04 | RC link-loss behavior is configurable per mode | M | T | reflex (FC) |
 | SAF-05 | Detect motor or ESC failure from RPM telemetry, and fly reduced-authority recovery when possible | C | T | reflex |
 | SAF-06 | Preflight checks: sensors alive, calibration loaded, estimator converged, course loaded, link quality OK, battery OK | M | T | racing-drone |
 
@@ -171,8 +174,12 @@ At 28 m/s the vehicle moves 2.8 cm per millisecond. For a 30 ms stale estimate t
 | Gate segmentation and corners | 6 ms | GPU, or a KPU once Synapse can run CNNs |
 | PnP, EKF/VIO update, delay compensation | 2 ms | The VIO front end runs in parallel |
 | MPC solve | 5 ms | Real-time iteration at ≥ 100 Hz |
+| Safety filter (CBF, geofence, envelope) | 0.5 ms | Bounded-time QP or closed form |
+| Queues, scheduling, and wake-up jitter (all hops) | 1.5 ms | Isolated cores, SCHED_FIFO, lock-free queues |
 | Companion → FC link and FC loop | 1 ms | Serial at ≥ 1 Mbaud |
-| **Total, camera → motor** | **≤ 27 ms** | MonoRace reports 17 ms image delay in its SITL model |
+| **Total, camera → motor** | **≤ 29 ms** | MonoRace reports 17 ms image delay in its SITL model |
+
+The per-stage values are *allocations*. Each is replaced by a measured p99 as the stage is built (SW-02). The acceptance quantity is the **measured end-to-end p99**, camera mid-exposure to motor command, at ≤ 29 ms. Stage p99s do not add up to the end-to-end p99, which is why it is measured directly.
 
 IMU → motor through the FC rate loop: ≤ 1 ms.
 
@@ -182,12 +189,19 @@ IMU → motor through the FC rate loop: ≤ 1 ms.
 
 The gate inner opening is 1.5 m and the vehicle, props included, is about 0.35 m across. That leaves 0.575 m margin on each side.
 
-| Contributor | 3σ allocation |
-|---|---|
-| Estimation error at the gate plane (EST-04) | 0.30 m |
-| Tracking error at the gate plane (CTL-08) | 0.25 m |
-| Gate map residual after online correction | 0.15 m |
-| **Root sum of squares** | **0.42 m < 0.575 m** |
+| Contributor | 3σ allocation | Error model |
+|---|---|---|
+| Estimation error at the gate plane (EST-04) | 0.30 m | Zero-mean random, per crossing |
+| Tracking error at the gate plane (CTL-08) | 0.25 m | Zero-mean random, per crossing |
+| Gate map residual after online correction | 0.15 m | **Bias**: systematic per gate, and can correlate with estimation error, because the estimator is anchored to the same gates |
+
+How the contributors combine:
+
+- **Independent random terms:** root sum of squares, √(0.30² + 0.25²) = 0.39 m.
+- **Map residual:** treated as a bias and added linearly, 0.39 + 0.15 = **0.54 m < 0.575 m**. That leaves a 0.035 m margin, which is thin.
+- **All three fully correlated** (worst case): 0.70 m, which exceeds the margin.
+
+The allocations are therefore design guidance only, not proof of clearance. The acceptance quantity is the **measured true gate-crossing error** (test plan §3 `gate_error`, true vs. gate center). It is measured over the randomized scenario suite, so all correlations are included: |bias| + 3σ must be ≤ 0.575 m per gate. If the margin proves too thin, the first lever is tighter online gate-map correction.
 
 ### 6.3 DAA detection-range budget
 
@@ -203,7 +217,7 @@ The time needed to resolve a conflict is:
 
 At 10 m/s closing speed that needs detection at ≥ 5 m; at 20 m/s, ≥ 10 m.
 
-A 0.3 m drone at 10 m subtends about 1.7°. The RP-1 camera has about 5.3 px/deg (820 px / 155°), so the target is only **about 9 px wide**. Detection at range with the wide-FOV navigation camera is therefore the hardest DAA problem. That is why DAA-06 limits the guaranteed envelope, and DAA-09 lets other baselines add a narrow-FOV or ranging sensor.
+A 0.3 m drone at 10 m subtends about 1.7°. The RP-1 camera has about 5.3 px/deg (820 px / 155°), so the target is only **about 9 px wide**. Detection at range with the wide-FOV navigation camera is therefore the hardest DAA problem. That is why DAA-06 limits the declared envelope, and DAA-09 lets other baselines add a narrow-FOV or ranging sensor.
 
 ## 7. Open questions
 
@@ -212,3 +226,4 @@ A 0.3 m drone at 10 m subtends about 1.7°. The RP-1 camera has about 5.3 px/deg
 3. **Venue rules.** For the human-pilot channel: does the target league allow pilot takeover during an autonomous heat, or only a kill switch?
 4. **Head-to-head DAA.** Are other teams' drones broadcasting position (cooperative DAA), or is DAA purely non-cooperative?
 5. **Course knowledge.** Is the gate map exact (surveyed), or nominal only? This changes how much online map correction CTL-02 needs.
+6. **Rulebook.** Obtain the official A2RL drone rulebook. The sensor and RC rules in §2 are taken from press coverage.
