@@ -129,7 +129,9 @@ TEST_CASE("Reference: I2 strictly increasing time, I3 non-decreasing progress", 
     REQUIRE_FALSE(valid(r));  // I1
 }
 
-TEST_CASE("ThrustRates: I1 thrust ≥ 0, I2 motors in [0, 1]", "[msg]") {
+// Test names stay ASCII: CTest passes them back to Catch2 as filters, and
+// Windows mangles non-ASCII command-line characters (≥ became =).
+TEST_CASE("ThrustRates: I1 thrust >= 0, I2 motors in [0, 1]", "[msg]") {
     ThrustRates<double> u{};
     REQUIRE(valid(u));
     u.thrust = -1.0;

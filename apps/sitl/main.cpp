@@ -71,6 +71,13 @@ int main(int argc, char** argv) {
         return fail("cannot read the scenario's input files");
     }
 
+    // Validate everything before LogWriter::open truncates --out.
+    auto sensors =
+        racing::harness::SyntheticSensors::create(*vehicle, scenario->duration_s, scenario->seed, control_hz);
+    if (!sensors) {
+        return fail(sensors.error());
+    }
+
     racing::log::LogHeader header;
     header.baseline_name = std::string(racing::baseline::name);
     header.composition_hash = std::string(racing::baseline::composition_hash);
@@ -86,12 +93,6 @@ int main(int argc, char** argv) {
 
     racing::baseline::Composition<double> stack(course->map);
     racing::harness::Runner runner(stack);
-    auto sensors =
-        racing::harness::SyntheticSensors::create(*vehicle, scenario->duration_s, scenario->seed, control_hz);
-    if (!sensors) {
-        return fail(sensors.error());
-    }
-
     std::uint64_t ticks = 0;
     while (auto ev = sensors->next()) {
         writer->write(ev->channel, ev->t, ev->payload);

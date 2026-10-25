@@ -16,7 +16,9 @@
 #include "racing_baseline.hpp"
 
 #include <charconv>
+#include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <string>
 
 namespace racing = branes::racing;
@@ -87,6 +89,11 @@ int main(int argc, char** argv) {
         if (!same_file(*course_path, scenario->course_path) || !same_file(*vehicle_path, scenario->vehicle_path)) {
             return fail("the scenario's course / vehicle differ from --course / --vehicle");
         }
+    }
+
+    // Tick times are i · period; keep the last one inside int64 (no signed overflow).
+    if (cycles > 0 && cycles - 1 > std::numeric_limits<std::int64_t>::max() / *period) {
+        return fail("--cycles too large for the control rate (tick time would overflow)");
     }
 
     racing::baseline::Composition<double> stack(course->map);
