@@ -1,0 +1,16 @@
+# Changelog
+
+## 0.1.0 (2026-10-25)
+
+
+### Features
+
+* phase 0 framework skeleton with the null baseline ([#5](https://github.com/branes-ai/racing-drone/issues/5)) ([1c1dcd2](https://github.com/branes-ai/racing-drone/commit/1c1dcd265df74ea00e5a96435929a083aa0e6bbc))
+
+
+### Documentation
+
+* racing mission requirements, state of the art, architecture, and plans ([#4](https://github.com/branes-ai/racing-drone/issues/4)) ([180e41c](https://github.com/branes-ai/racing-drone/commit/180e41cd4e383af5065442995fe409b381fe2af1))
+* **readme:** four-tier stack diagram ([#2](https://github.com/branes-ai/racing-drone/issues/2)) ([8c95fc0](https://github.com/branes-ai/racing-drone/commit/8c95fc023c911ee49a29b2d55a9eb2f63062f90c))
+* **readme:** qualify hardware targets and explain the stack diagram arrows ([#3](https://github.com/branes-ai/racing-drone/issues/3)) ([af6a96c](https://github.com/branes-ai/racing-drone/commit/af6a96ca7c7da52d6d87cc08508d13c48a218a64))
+* record the racing-drone vision in the readme ([#1](https://github.com/branes-ai/racing-drone/issues/1)) ([6498553](https://github.com/branes-ai/racing-drone/commit/6498553048f00cf46324e6520295a6f200b33fa4))
