@@ -1,0 +1,42 @@
+# RP-1, the A2RL-class reference vehicle (docs/requirements/mission-requirements.md §3).
+#
+# Mass, camera, and IMU rates follow the published A2RL 2025 drone (MonoRace
+# paper). Inertia, rotor, drag, and noise values are PLACEHOLDER estimates for a
+# 5-inch, ~1 kg racing quadrotor; they are identified from thrust-stand and
+# flight data in Phase 5 (implementation plan).
+#
+# Body frame: x forward, y left, z up. Camera frame: z forward, x right, y down.
+name: rp1
+mass_kg: 0.966
+inertia_kgm2: [0.0030, 0.0030, 0.0050]   # placeholder
+arm_length_m: 0.11                       # placeholder
+rotor_count: 4
+rotor:
+  thrust_coefficient: 8.9e-7             # placeholder: ~12 N at ~3665 rad/s
+  torque_coefficient: 0.016              # placeholder
+  max_thrust_n: 12.0                     # placeholder: thrust-to-weight ~5
+  time_constant_s: 0.02                  # placeholder
+drag:
+  linear: [0.30, 0.30, 0.50]             # placeholder
+  quadratic: [0.030, 0.030, 0.050]       # placeholder
+imu:
+  rate_hz: 1000                          # A2RL 2025: accelerometer 1 kHz (gyro 2 kHz)
+  gyro_range_rad_s: 34.9                 # ±2000 °/s
+  accel_range_m_s2: 156.9                # ±16 g — saturates in flight (EST-07)
+  gyro_noise_density: 1.7e-4             # placeholder
+  accel_noise_density: 2.0e-3            # placeholder
+camera:
+  model: equidistant                     # 155° × 115° field of view: fisheye
+  width: 820
+  height: 616
+  format: mono8
+  fx: 303.0                              # equidistant: (820/2) / (155°/2 in rad)
+  fy: 303.0
+  cx: 410.0
+  cy: 308.0
+  distortion: [0.0, 0.0, 0.0, 0.0]       # placeholder until calibrated
+  rate_hz: 90
+  shutter: rolling                       # IMX219
+  row_readout_ns: 18000                  # ~11 ms readout over 616 rows
+  translation_body_m: [0.08, 0.0, 0.02]  # placeholder
+  rotation_body_wxyz: [0.5, -0.5, 0.5, -0.5]  # camera z → body x (looking forward), no uptilt

@@ -1,0 +1,7 @@
+# Smoke scenario for the framework gate (test plan §6, P0): a short run of the
+# RP-1 vehicle at rest on the approximate A2RL course.
+name: null-smoke
+course: ../courses/a2rl-2025.yaml
+vehicle: ../vehicles/rp1.yaml
+duration_s: 0.2
+seed: 20261024

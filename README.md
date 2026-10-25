@@ -98,9 +98,43 @@ The detailed plan is in [`docs/plan/implementation-plan.md`](docs/plan/implement
 
 Every phase has an acceptance gate in [`docs/plan/test-plan.md`](docs/plan/test-plan.md) §6.
 
+## Building and testing
+
+`racing-drone` is C++20 and builds with CMake ≥ 4.0 and Ninja, on GCC, Clang, and MSVC, using the same presets as the sibling repos.
+
+```bash
+cmake --preset gcc-debug              # also: gcc-release, clang-debug, clang-release, msvc, msvc-ninja, ...
+cmake --build --preset gcc-debug
+ctest --preset gcc-debug
+```
+
+Every baseline in [`baselines/`](baselines/) becomes three executables: `flight_stack_<name>`, `replay_<name>`, and `sitl_<name>` ([ADR 0001](docs/adr/0001-baseline-composition-framework.md)). With the `null` baseline:
+
+```bash
+B=build/gcc-debug/apps
+$B/sitl_null --scenario scenarios/null-smoke.yaml --out run.brlog         # simulate, log every input and output
+$B/replay_null --log run.brlog --out replay.brlog --verify                # reproduce the outputs record for record
+$B/flight_stack_null --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
+```
+
+## Repository layout
+
+```text
+racing-drone/
+├── apps/         # harness sources (flight_stack, replay, sitl), built once per baseline
+├── baselines/    # one YAML per baseline: slot composition + parameters
+├── cmake/        # deps, warnings, slot registry, baseline target generation
+├── courses/      # course files (gates, sequence, laps, geofence)
+├── docs/         # requirements, assessments, architecture, plans, ADRs
+├── scenarios/    # SITL scenarios (course + vehicle + duration + seed)
+├── sdk/          # branes::racing: data contracts, slots, Stack, config loaders, log, harness pieces
+├── tests/        # Catch2 unit tests, baseline tests, phase gates
+└── vehicles/     # vehicle files (mass, inertia, rotors, drag, IMU, camera)
+```
+
 ## Status
 
-Early stage. The repository has just been created. Build system, simulation harness, and first integration with `cortex` and `reflex` will follow.
+Phase 0 (framework skeleton) is in place: the data contracts and the seven slot concepts; vehicle, course, scenario, and baseline files with validating loaders; the replay log; and the three harnesses, all running the `null` baseline. Gate P0 ([test plan §6](docs/plan/test-plan.md)) runs in CI: SITL → replay twice → byte-identical logs. Phase 1 adds the `reflex` dynamics model and SITL, and the first real baseline (B0).
 
 ## License
 
