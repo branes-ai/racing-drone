@@ -1,0 +1,28 @@
+# Approximation of the A2RL 2025 course: 11 gates with 1.5 m inner openings,
+# two laps, in the published 76 × 18 × 5.4 m flight volume (MonoRace paper).
+# The real gate layout is not public; this oval is a stand-in for framework
+# tests and early SITL work, not a reproduction of the competition track.
+#
+# Course frame: x along the hall, y across it, z up; origin at a floor corner.
+# A gate's x axis is its normal, pointing in the direction of travel.
+name: a2rl-2025-approx
+laps: 2
+geofence:
+  min_m: [0.0, 0.0, 0.0]
+  max_m: [76.0, 18.0, 5.4]
+start:
+  position_m: [3.0, 4.0, 0.1]
+  yaw_rad: 0.0
+gates:
+  - {id: 1, center_m: [10.0, 4.0, 2.0], yaw_rad: 0.0, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 2, center_m: [25.0, 4.0, 2.0], yaw_rad: 0.0, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 3, center_m: [40.0, 4.0, 2.0], yaw_rad: 0.0, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 4, center_m: [55.0, 4.0, 2.0], yaw_rad: 0.0, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 5, center_m: [68.0, 4.0, 2.0], yaw_rad: 0.0, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 6, center_m: [72.0, 9.0, 2.0], yaw_rad: 1.5707963267948966, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 7, center_m: [60.0, 14.0, 2.0], yaw_rad: 3.141592653589793, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 8, center_m: [45.0, 14.0, 2.0], yaw_rad: 3.141592653589793, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 9, center_m: [30.0, 14.0, 2.0], yaw_rad: 3.141592653589793, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 10, center_m: [15.0, 14.0, 2.0], yaw_rad: 3.141592653589793, inner_width_m: 1.5, inner_height_m: 1.5}
+  - {id: 11, center_m: [5.0, 9.0, 2.0], yaw_rad: -1.5707963267948966, inner_width_m: 1.5, inner_height_m: 1.5}
+sequence: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
