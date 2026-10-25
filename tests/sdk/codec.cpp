@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 using namespace branes::racing;
@@ -101,4 +102,27 @@ TEST_CASE("codec: wrong size and invalid values are rejected", "[codec]") {
     f.header = FrameHeader{Timestamp{0}, 0, 0, 2, 2, 2, PixelFormat::mono8, false};
     f.bytes.resize(3);  // needs 4
     REQUIRE_FALSE(codec::decode_frame(codec::encode(f)));
+}
+
+TEST_CASE("codec: NaN and Inf are rejected in every decoder", "[codec]") {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+
+    ImuSample<double> s{};
+    s.accel[1] = nan;
+    REQUIRE_FALSE(codec::decode_imu(codec::encode(s)));
+    s = ImuSample<double>{};
+    s.temperature = inf;
+    REQUIRE_FALSE(codec::decode_imu(codec::encode(s)));
+
+    StateEstimate<double> x{};
+    x.velocity[0] = inf;
+    REQUIRE_FALSE(codec::decode_state(codec::encode(x)));
+    x = StateEstimate<double>{};
+    x.gyro_bias[2] = nan;
+    REQUIRE_FALSE(codec::decode_state(codec::encode(x)));
+
+    ThrustRates<double> u{};
+    u.body_rates[0] = -inf;
+    REQUIRE_FALSE(codec::decode_command(codec::encode(u)));
 }

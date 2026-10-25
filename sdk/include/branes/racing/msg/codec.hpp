@@ -12,6 +12,8 @@
 #include <branes/racing/msg/sensors.hpp>
 #include <branes/racing/util/bytes.hpp>
 
+#include <array>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <span>
@@ -33,6 +35,22 @@ inline Vec3<double> get_vec3(ByteReader& r) {
     }
     return v;
 }
+inline bool finite(const Vec3<double>& v) noexcept {
+    return std::isfinite(v[0]) && std::isfinite(v[1]) && std::isfinite(v[2]);
+}
+inline bool finite(const Quat<double>& q) noexcept {
+    return std::isfinite(q.w) && std::isfinite(q.x) && std::isfinite(q.y) && std::isfinite(q.z);
+}
+template <std::size_t N>
+inline bool finite(const std::array<double, N>& a) noexcept {
+    for (const double v : a) {
+        if (!std::isfinite(v)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline void put(ByteWriter& w, const Quat<double>& q) {
     w.f64(q.w);
     w.f64(q.x);
@@ -96,7 +114,9 @@ inline std::optional<FrameHeader> get_frame_header(ByteReader& r) {
     s.accel = detail::get_vec3(r);
     s.saturated = r.u8();
     s.temperature = r.f64();
-    if (!r.done() || !valid(s)) {
+    // Every decoded double must be finite: a corrupt log must not feed NaN / Inf into the stack.
+    if (!r.done() || !detail::finite(s.gyro) || !detail::finite(s.accel) || !std::isfinite(s.temperature) ||
+        !valid(s)) {
         return std::nullopt;
     }
     return s;
@@ -157,7 +177,9 @@ inline std::optional<FrameHeader> get_frame_header(ByteReader& r) {
     for (double& c : x.covariance) {
         c = r.f64();
     }
-    if (!r.done() || !valid(x)) {
+    if (!r.done() || !detail::finite(x.position) || !detail::finite(x.velocity) || !detail::finite(x.attitude) ||
+        !detail::finite(x.body_rates) || !detail::finite(x.accel_bias) || !detail::finite(x.gyro_bias) ||
+        !detail::finite(x.covariance) || !valid(x)) {
         return std::nullopt;
     }
     return x;
@@ -191,7 +213,8 @@ inline std::optional<FrameHeader> get_frame_header(ByteReader& r) {
     for (double& m : u.motors) {
         m = r.f64();
     }
-    if (!r.done() || !valid(u)) {
+    if (!r.done() || !std::isfinite(u.thrust) || !detail::finite(u.body_rates) || !detail::finite(u.motors) ||
+        !valid(u)) {
         return std::nullopt;
     }
     return u;

@@ -94,7 +94,9 @@ struct CameraFrame {
 };
 
 [[nodiscard]] constexpr bool valid(const FrameHeader& h) noexcept {
-    return h.stride >= h.width * bytes_per_pixel(h.format) && h.exposure_ns >= 0 && h.row_readout_ns >= 0;
+    // 64-bit product: width · bpp can wrap in 32 bits for a corrupt header.
+    return std::uint64_t{h.stride} >= std::uint64_t{h.width} * bytes_per_pixel(h.format) && h.exposure_ns >= 0 &&
+           h.row_readout_ns >= 0;
 }
 
 [[nodiscard]] constexpr bool valid(const CameraFrame& f) noexcept {

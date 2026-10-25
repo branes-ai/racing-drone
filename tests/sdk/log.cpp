@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <system_error>
 #include <vector>
 
 using namespace branes::racing;
@@ -44,6 +45,12 @@ void write_sample(const std::filesystem::path& p) {
     REQUIRE_FALSE(w->is_open());
 }
 
+/// Remove a test file without throwing (on Windows a still-open file cannot be removed).
+void cleanup(const std::filesystem::path& p) {
+    std::error_code ec;
+    std::filesystem::remove(p, ec);
+}
+
 std::vector<char> read_all(const std::filesystem::path& p) {
     std::ifstream in(p, std::ios::binary);
     return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
@@ -55,17 +62,21 @@ TEST_CASE("log: header and records round-trip", "[log]") {
     const auto p = temp_file("roundtrip");
     write_sample(p);
 
-    auto r = LogReader::open(p);
-    REQUIRE(r);
-    REQUIRE(r->header() == sample_header());
     std::vector<LogRecord> recs;
-    for (;;) {
-        auto rec = r->next();
-        REQUIRE(rec);
-        if (!rec->has_value()) {
-            break;
+    {
+        // Scoped: the reader closes its file before cleanup() (Windows cannot
+        // remove an open file).
+        auto r = LogReader::open(p);
+        REQUIRE(r);
+        REQUIRE(r->header() == sample_header());
+        for (;;) {
+            auto rec = r->next();
+            REQUIRE(rec);
+            if (!rec->has_value()) {
+                break;
+            }
+            recs.push_back(**rec);
         }
-        recs.push_back(**rec);
     }
     REQUIRE(recs.size() == 3u);
     CHECK(recs[0].channel == Channel::imu);
@@ -74,7 +85,7 @@ TEST_CASE("log: header and records round-trip", "[log]") {
     CHECK(recs[1].channel == Channel::tick);
     CHECK(recs[1].payload.empty());
     CHECK(recs[2].t == Timestamp{20});
-    std::filesystem::remove(p);
+    cleanup(p);
 }
 
 TEST_CASE("log: identical writes give byte-identical files", "[log]") {
@@ -83,8 +94,8 @@ TEST_CASE("log: identical writes give byte-identical files", "[log]") {
     write_sample(a);
     write_sample(b);
     REQUIRE(read_all(a) == read_all(b));
-    std::filesystem::remove(a);
-    std::filesystem::remove(b);
+    cleanup(a);
+    cleanup(b);
 }
 
 TEST_CASE("log: a moved-from writer no longer owns the file", "[log]") {
@@ -95,7 +106,7 @@ TEST_CASE("log: a moved-from writer no longer owns the file", "[log]") {
     REQUIRE(moved.is_open());
     REQUIRE_FALSE(w->is_open());
     REQUIRE(moved.close());
-    std::filesystem::remove(p);
+    cleanup(p);
 }
 
 TEST_CASE("log: bad magic, truncation, and missing files are errors", "[log]") {
@@ -109,18 +120,20 @@ TEST_CASE("log: bad magic, truncation, and missing files are errors", "[log]") {
     const auto r = LogReader::open(bad);
     REQUIRE_FALSE(r);
     CHECK(r.error().message == "not a racing log (bad magic)");
-    std::filesystem::remove(bad);
+    cleanup(bad);
 
     const auto cut = temp_file("truncated");
     write_sample(cut);
     const auto size = std::filesystem::file_size(cut);
     std::filesystem::resize_file(cut, size - 2);  // cut into the last payload
-    auto reader = LogReader::open(cut);
-    REQUIRE(reader);
-    REQUIRE(*reader->next());  // records 1 and 2 are intact
-    REQUIRE(*reader->next());
-    const auto last = reader->next();
-    REQUIRE_FALSE(last);
-    CHECK(last.error().message == "truncated record payload");
-    std::filesystem::remove(cut);
+    {
+        auto reader = LogReader::open(cut);  // scoped: closed before cleanup()
+        REQUIRE(reader);
+        REQUIRE(*reader->next());  // records 1 and 2 are intact
+        REQUIRE(*reader->next());
+        const auto last = reader->next();
+        REQUIRE_FALSE(last);
+        CHECK(last.error().message == "truncated record payload");
+    }
+    cleanup(cut);
 }

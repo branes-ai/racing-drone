@@ -146,6 +146,10 @@ Quat<double> get_quat(const YAML::Node& n, std::string_view prefix, const std::s
     return q;
 }
 
+std::string rate_message() {
+    return "must be in [" + std::to_string(kMinRateHz) + ", " + std::to_string(kMaxRateHz) + "] Hz";
+}
+
 void require(bool condition, std::string key, std::string message) {
     if (!condition) {
         throw Fail{std::move(key), std::move(message)};
@@ -310,7 +314,7 @@ result<VehicleConfig, ConfigError> parse_vehicle(std::string_view yaml, std::str
         v.imu.accel_range = get_double(imu, "imu", "accel_range_m_s2");
         v.imu.gyro_noise_density = get_double(imu, "imu", "gyro_noise_density");
         v.imu.accel_noise_density = get_double(imu, "imu", "accel_noise_density");
-        require(v.imu.rate_hz > 0, "imu.rate_hz", "must be > 0");
+        require(checked_period_ns(v.imu.rate_hz).has_value(), "imu.rate_hz", rate_message());
         require(v.imu.gyro_range > 0, "imu.gyro_range_rad_s", "must be > 0");
         require(v.imu.accel_range > 0, "imu.accel_range_m_s2", "must be > 0");
         require(v.imu.gyro_noise_density >= 0, "imu.gyro_noise_density", "must be ≥ 0");
@@ -349,7 +353,7 @@ result<VehicleConfig, ConfigError> parse_vehicle(std::string_view yaml, std::str
         v.camera.rotation_body = get_quat(cam, "camera", "rotation_body_wxyz");
         require(v.camera.width > 0 && v.camera.height > 0, "camera", "width and height must be > 0");
         require(v.camera.fx > 0 && v.camera.fy > 0, "camera", "fx and fy must be > 0");
-        require(v.camera.rate_hz > 0, "camera.rate_hz", "must be > 0");
+        require(checked_period_ns(v.camera.rate_hz).has_value(), "camera.rate_hz", rate_message());
         require(v.camera.row_readout_ns >= 0, "camera.row_readout_ns", "must be ≥ 0");
         require(v.camera.shutter == Shutter::rolling || v.camera.row_readout_ns == 0,
                 "camera.row_readout_ns",
@@ -551,7 +555,9 @@ parse_scenario(std::string_view yaml, std::string_view origin, const std::filesy
         require(std::filesystem::is_regular_file(s.course_path, ec), "course", "no file " + s.course_path.string());
         require(std::filesystem::is_regular_file(s.vehicle_path, ec), "vehicle", "no file " + s.vehicle_path.string());
         s.duration_s = get_double(root, "", "duration_s");
-        require(s.duration_s > 0, "duration_s", "must be > 0");
+        require(s.duration_s > 0 && s.duration_s <= kMaxDurationS,
+                "duration_s",
+                "must be in (0, " + std::to_string(kMaxDurationS) + "] s");
         s.seed = get_uint(root, "", "seed", std::numeric_limits<std::uint64_t>::max());
         return s;
     });

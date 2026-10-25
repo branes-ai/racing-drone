@@ -51,9 +51,6 @@ int main(int argc, char** argv) {
         return fail(baseline.error());
     }
     const double control_hz = racing::config::numeric_parameter(*baseline, "control_rate_hz").value_or(100.0);
-    if (!(control_hz > 0)) {
-        return fail("parameter control_rate_hz must be > 0");
-    }
 
     auto scenario = racing::config::load_scenario(*scenario_path);
     if (!scenario) {
@@ -89,10 +86,14 @@ int main(int argc, char** argv) {
 
     racing::baseline::Composition<double> stack(course->map);
     racing::harness::Runner runner(stack);
-    racing::harness::SyntheticSensors sensors(*vehicle, scenario->duration_s, scenario->seed, control_hz);
+    auto sensors =
+        racing::harness::SyntheticSensors::create(*vehicle, scenario->duration_s, scenario->seed, control_hz);
+    if (!sensors) {
+        return fail(sensors.error());
+    }
 
     std::uint64_t ticks = 0;
-    while (auto ev = sensors.next()) {
+    while (auto ev = sensors->next()) {
         writer->write(ev->channel, ev->t, ev->payload);
         auto outputs = runner.feed(racing::log::LogRecord{ev->channel, ev->t, std::move(ev->payload)});
         if (!outputs) {

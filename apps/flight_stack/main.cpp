@@ -15,6 +15,7 @@
 
 #include "racing_baseline.hpp"
 
+#include <charconv>
 #include <cstdio>
 #include <string>
 
@@ -44,13 +45,10 @@ int main(int argc, char** argv) {
     }
     long long cycles = 0;
     if (const auto c = args->value("cycles")) {
-        try {
-            cycles = std::stoll(*c);
-        } catch (const std::exception&) {
-            return fail("--cycles must be an integer");
-        }
-        if (cycles < 0) {
-            return fail("--cycles must be >= 0");
+        // The whole argument must be the number: "10x" and "1e3" are rejected.
+        const auto [end, ec] = std::from_chars(c->data(), c->data() + c->size(), cycles);
+        if (ec != std::errc{} || end != c->data() + c->size() || cycles < 0) {
+            return fail("--cycles must be a non-negative integer");
         }
     }
 
@@ -60,8 +58,10 @@ int main(int argc, char** argv) {
         return fail(baseline.error());
     }
     const double control_hz = racing::config::numeric_parameter(*baseline, "control_rate_hz").value_or(100.0);
-    if (!(control_hz > 0)) {
-        return fail("parameter control_rate_hz must be > 0");
+    const auto period = racing::checked_period_ns(control_hz);
+    if (!period) {
+        return fail("parameter control_rate_hz must be in [" + std::to_string(racing::kMinRateHz) + ", " +
+                    std::to_string(racing::kMaxRateHz) + "] Hz");
     }
 
     auto course = racing::config::load_course(*course_path);
@@ -90,9 +90,8 @@ int main(int argc, char** argv) {
     }
 
     racing::baseline::Composition<double> stack(course->map);
-    const std::int64_t period = racing::period_ns(control_hz);
     for (long long i = 0; i < cycles; ++i) {
-        (void)stack.on_tick(racing::Timestamp{i * period});
+        (void)stack.on_tick(racing::Timestamp{i * *period});
     }
     std::printf("flight_stack_%s: course %s, vehicle %s, %lld cycles at %.0f Hz\n",
                 std::string(racing::baseline::name).c_str(),

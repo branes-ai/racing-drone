@@ -10,6 +10,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
+#include <string>
 #include <vector>
 
 using namespace branes::racing;
@@ -58,13 +59,15 @@ TEST_CASE("Stack: null composition produces valid, time-stamped outputs", "[stac
 TEST_CASE("SyntheticSensors: deterministic, time-ordered, IMU before camera before tick", "[stack]") {
     const auto vehicle = config::load_vehicle(src / "vehicles/rp1.yaml");
     REQUIRE(vehicle);
-    harness::SyntheticSensors a(*vehicle, 0.05, 7, 100.0);
-    harness::SyntheticSensors b(*vehicle, 0.05, 7, 100.0);
+    auto a = harness::SyntheticSensors::create(*vehicle, 0.05, 7, 100.0);
+    auto b = harness::SyntheticSensors::create(*vehicle, 0.05, 7, 100.0);
+    REQUIRE(a);
+    REQUIRE(b);
     std::int64_t last = -1;
     int last_rank = 0;
     std::size_t imu = 0, frames = 0, ticks = 0;
-    while (auto ea = a.next()) {
-        const auto eb = b.next();
+    while (auto ea = a->next()) {
+        const auto eb = b->next();
         REQUIRE(eb);
         REQUIRE(ea->channel == eb->channel);
         REQUIRE(ea->t == eb->t);
@@ -84,7 +87,7 @@ TEST_CASE("SyntheticSensors: deterministic, time-ordered, IMU before camera befo
             ++ticks;
         }
     }
-    REQUIRE_FALSE(b.next());
+    REQUIRE_FALSE(b->next());
     CHECK(imu == 50u);    // 1 kHz × 50 ms
     CHECK(frames == 5u);  // 90 Hz × 50 ms, frames at 0, 11.1, ..., 44.4 ms
     CHECK(ticks == 5u);   // 100 Hz × 50 ms
@@ -93,10 +96,12 @@ TEST_CASE("SyntheticSensors: deterministic, time-ordered, IMU before camera befo
 TEST_CASE("SyntheticSensors: a different seed changes the IMU noise", "[stack]") {
     const auto vehicle = config::load_vehicle(src / "vehicles/rp1.yaml");
     REQUIRE(vehicle);
-    harness::SyntheticSensors a(*vehicle, 0.01, 1, 100.0);
-    harness::SyntheticSensors b(*vehicle, 0.01, 2, 100.0);
-    const auto ea = a.next();
-    const auto eb = b.next();
+    auto a = harness::SyntheticSensors::create(*vehicle, 0.01, 1, 100.0);
+    auto b = harness::SyntheticSensors::create(*vehicle, 0.01, 2, 100.0);
+    REQUIRE(a);
+    REQUIRE(b);
+    const auto ea = a->next();
+    const auto eb = b->next();
     REQUIRE(ea);
     REQUIRE(eb);
     REQUIRE(ea->channel == log::Channel::imu);
@@ -116,4 +121,29 @@ TEST_CASE("Args: values, flags, and the allowed set", "[stack]") {
     CHECK_FALSE(harness::Args::parse(2, missing, {}));
     const char* positional[] = {"prog", "stray"};
     CHECK_FALSE(harness::Args::parse(2, positional, {}));
+}
+
+TEST_CASE("SyntheticSensors::create rejects rates and durations with no representable period", "[stack]") {
+    const auto vehicle = config::load_vehicle(src / "vehicles/rp1.yaml");
+    REQUIRE(vehicle);
+    CHECK(harness::SyntheticSensors::create(*vehicle, 0.1, 1, 100.0));
+    CHECK_FALSE(harness::SyntheticSensors::create(*vehicle, 0.1, 1, 1e12));  // period would round to 0 ns
+    CHECK_FALSE(harness::SyntheticSensors::create(*vehicle, 0.1, 1, 1e-9));  // period would overflow int64
+    CHECK_FALSE(harness::SyntheticSensors::create(*vehicle, 0.0, 1, 100.0));
+    CHECK_FALSE(harness::SyntheticSensors::create(*vehicle, 1e300, 1, 100.0));  // end time would overflow
+    auto fast = *vehicle;
+    fast.imu.rate_hz = 1e12;
+    CHECK_FALSE(harness::SyntheticSensors::create(fast, 0.1, 1, 100.0));
+}
+
+TEST_CASE("Runner rejects a tick earlier than the previous one", "[stack]") {
+    const auto course = config::load_course(src / "courses/a2rl-2025.yaml");
+    REQUIRE(course);
+    NullStack<double> stack(course->map);
+    harness::Runner runner(stack);
+    REQUIRE(runner.feed(log::LogRecord{log::Channel::tick, Timestamp{100}, {}}));
+    REQUIRE(runner.feed(log::LogRecord{log::Channel::tick, Timestamp{100}, {}}));  // equal is fine
+    const auto back = runner.feed(log::LogRecord{log::Channel::tick, Timestamp{50}, {}});
+    REQUIRE_FALSE(back);
+    CHECK(back.error().find("earlier than the previous tick") != std::string::npos);
 }

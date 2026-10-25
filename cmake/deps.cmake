@@ -11,8 +11,9 @@
 
 include(FetchContent)
 
-# Don't re-run `git fetch` on every build.
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "" FORCE)
+# Don't re-run `git fetch` on every build. Not FORCEd, so a dependency bump in an
+# existing build tree can re-enable fetching with -DFETCHCONTENT_UPDATES_DISCONNECTED=OFF.
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Skip FetchContent update steps")
 
 # ── jbeder/yaml-cpp — vehicle / course / scenario / baseline files (MIT) ──
 # Same pin as cortex. SYSTEM so its headers don't trip our warnings-as-errors

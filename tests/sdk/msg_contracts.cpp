@@ -64,6 +64,10 @@ TEST_CASE("CameraFrame: I1 data present iff pixels, I2 stride covers a row", "[m
     CameraFrame narrow = f;
     narrow.header.format = PixelFormat::rgb8;  // needs stride 12
     REQUIRE_FALSE(valid(narrow));              // I2
+
+    // I2 in 64-bit: 0x55555556 · 3 wraps to 2 in 32 bits, which would pass a 32-bit check.
+    const FrameHeader wrap{Timestamp{0}, 0, 0, 0x55555556u, 1, 2, PixelFormat::rgb8, false};
+    REQUIRE_FALSE(valid(wrap));
 }
 
 TEST_CASE("CameraFrameRecord: to_record and view_of round-trip", "[msg]") {

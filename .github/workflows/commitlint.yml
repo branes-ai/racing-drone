@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  # The action lists the PR's commits through the API (needed in private repos).
+  pull-requests: read
 
 jobs:
   commitlint:

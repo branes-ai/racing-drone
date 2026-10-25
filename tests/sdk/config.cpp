@@ -73,6 +73,7 @@ TEST_CASE("vehicle: invariant violations name the key", "[config]") {
         {"rotor_count: 4", "rotor_count: 6", "rotor_count"},
         {"time_constant_s: 0.02", "time_constant_s: -0.02", "rotor.time_constant_s"},
         {"rate_hz: 90", "rate_hz: 0", "camera.rate_hz"},
+        {"rate_hz: 1000 ", "rate_hz: 1e12 ", "imu.rate_hz"},
         {"rotation_body_wxyz: [0.5, -0.5, 0.5, -0.5]", "rotation_body_wxyz: [1, 1, 0, 0]", "camera.rotation_body_wxyz"},
         {"shutter: rolling", "shutter: diagonal", "camera.shutter"},
     };

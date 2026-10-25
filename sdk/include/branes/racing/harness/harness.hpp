@@ -172,6 +172,13 @@ public:
             break;
         }
         case log::Channel::tick: {
+            // The log is untrusted input: check the stack's I2 precondition here
+            // and report a violation, rather than relying on its assert.
+            if (last_tick_ && rec.t < *last_tick_) {
+                return std::string("tick at t=" + std::to_string(rec.t.ns) +
+                                   " is earlier than the previous tick (t=" + std::to_string(last_tick_->ns) + ")");
+            }
+            last_tick_ = rec.t;
             const TickOutput<double> y = stack_.on_tick(rec.t);
             out.push_back(Output{log::Channel::state, rec.t, codec::encode(y.state)});
             out.push_back(Output{log::Channel::command, rec.t, codec::encode(y.command)});
@@ -185,6 +192,7 @@ public:
 
 private:
     StackT& stack_;
+    std::optional<Timestamp> last_tick_;
 };
 
 // ── synthetic sensors (null SITL) ───────────────────────────────────
@@ -212,23 +220,34 @@ struct SensorEvent {
 /// ----------
 ///   I1: events come out in non-decreasing time; at equal times the order is
 ///       IMU, then camera, then tick                  — constrains next_*
-///   I2: every period is > 0                          — constrains *_period_
+///   I2: every period is > 0 (create() validates; next() also checks)
+///                                                    — constrains *_period_
 class SyntheticSensors {
 public:
-    /// Pre: vehicle loaded (its invariants hold); duration_s > 0; control_hz > 0.
-    SyntheticSensors(const config::VehicleConfig& vehicle, double duration_s, std::uint64_t seed, double control_hz)
-        : vehicle_(vehicle), rng_(seed), imu_period_(period_ns(vehicle.imu.rate_hz)),
-          frame_period_(period_ns(vehicle.camera.rate_hz)), tick_period_(period_ns(control_hz)),
-          end_(static_cast<std::int64_t>(duration_s * 1e9)) {
-        assert(imu_period_ > 0 && frame_period_ > 0 && tick_period_ > 0);  // I2
-        // White noise of density d sampled at rate f has σ = d·√f; a uniform
-        // variable on [−a, a) has σ = a/√3.
-        gyro_amp_ = vehicle.imu.gyro_noise_density * std::sqrt(vehicle.imu.rate_hz) * std::sqrt(3.0);
-        accel_amp_ = vehicle.imu.accel_noise_density * std::sqrt(vehicle.imu.rate_hz) * std::sqrt(3.0);
+    /// Validate the rates and duration, then build the stream. Rejects any rate
+    /// outside [kMinRateHz, kMaxRateHz] and any duration outside
+    /// (0, kMaxDurationS], so every period is a positive, representable number
+    /// of nanoseconds (I2) and the end time fits int64.
+    [[nodiscard]] static result<SyntheticSensors, std::string>
+    create(const config::VehicleConfig& vehicle, double duration_s, std::uint64_t seed, double control_hz) {
+        const auto imu = checked_period_ns(vehicle.imu.rate_hz);
+        const auto frame = checked_period_ns(vehicle.camera.rate_hz);
+        const auto tick = checked_period_ns(control_hz);
+        if (!imu || !frame || !tick) {
+            return std::string("IMU, camera, and control rates must be in [" + std::to_string(kMinRateHz) + ", " +
+                               std::to_string(kMaxRateHz) + "] Hz");
+        }
+        if (!(duration_s > 0 && duration_s <= kMaxDurationS)) {
+            return std::string("duration must be in (0, " + std::to_string(kMaxDurationS) + "] s");
+        }
+        return SyntheticSensors(vehicle, static_cast<std::int64_t>(duration_s * 1e9), seed, *imu, *frame, *tick);
     }
 
     /// The next event, or nullopt once every stream has passed the end.
     [[nodiscard]] std::optional<SensorEvent> next() {
+        if (imu_period_ <= 0 || frame_period_ <= 0 || tick_period_ <= 0) {
+            return std::nullopt;  // I2 runtime defense: never loop on a zero period
+        }
         const std::int64_t t = std::min({next_imu_, next_frame_, next_tick_});
         if (t >= end_) {
             return std::nullopt;
@@ -246,6 +265,21 @@ public:
     }
 
 private:
+    SyntheticSensors(const config::VehicleConfig& vehicle,
+                     std::int64_t end_ns,
+                     std::uint64_t seed,
+                     std::int64_t imu_period,
+                     std::int64_t frame_period,
+                     std::int64_t tick_period)
+        : vehicle_(vehicle), rng_(seed), imu_period_(imu_period), frame_period_(frame_period),
+          tick_period_(tick_period), end_(end_ns) {
+        assert(imu_period_ > 0 && frame_period_ > 0 && tick_period_ > 0);  // I2
+        // White noise of density d sampled at rate f has σ = d·√f; a uniform
+        // variable on [−a, a) has σ = a/√3.
+        gyro_amp_ = vehicle.imu.gyro_noise_density * std::sqrt(vehicle.imu.rate_hz) * std::sqrt(3.0);
+        accel_amp_ = vehicle.imu.accel_noise_density * std::sqrt(vehicle.imu.rate_hz) * std::sqrt(3.0);
+    }
+
     ImuSample<double> imu_at(std::int64_t t) {
         constexpr double g = 9.80665;
         ImuSample<double> s{};
