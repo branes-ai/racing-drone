@@ -13,7 +13,7 @@ This plan replaces Phase 0's `SyntheticSensors` (a vehicle at rest) with closed-
 | Item | What | State |
 |---|---|---|
 | [racing-drone#16](https://github.com/branes-ai/racing-drone/issues/16) | This plan: SITL harness, sensor models, oracle gates, faults, scoreboard | Open |
-| racing-drone PR (see below) | The implementation; this document lands with it | — |
+| [racing-drone#18](https://github.com/branes-ai/racing-drone/pull/18) | The implementation; this document lands with it | Open |
 | [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | Next: B0 `gt-pid` baseline and gate P1, which consume this harness | Open |
 
 ### What it builds on (merged)
