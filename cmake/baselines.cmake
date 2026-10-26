@@ -12,7 +12,8 @@
 #      computes at startup,
 #   4. generates <build>/generated/<name>/racing_baseline.hpp, which defines
 #      branes::racing::baseline::{name, composition_hash, Composition<T>},
-#   5. adds flight_stack_<name>, replay_<name>, and sitl_<name>.
+#   5. adds flight_stack_<name>, replay_<name>, sitl_<name>, and
+#      sitl_batch_<name> (many seeds in-process, for the phase gates).
 include_guard(GLOBAL)
 
 function(racing_add_baseline name)
@@ -88,16 +89,18 @@ function(racing_add_baseline name)
     configure_file(${PROJECT_SOURCE_DIR}/cmake/racing_baseline.hpp.in ${gen_dir}/racing_baseline.hpp @ONLY)
 
     # ── 5. harness targets ──────────────────────────────────────────────
-    foreach(harness flight_stack replay sitl)
+    foreach(harness flight_stack replay sitl sitl_batch)
         set(target ${harness}_${name})
         add_executable(${target} ${PROJECT_SOURCE_DIR}/apps/${harness}/main.cpp)
         target_include_directories(${target} PRIVATE ${gen_dir})
-        target_link_libraries(${target} PRIVATE branes::racing)
+        target_link_libraries(${target} PRIVATE branes::racing branes::racing_glue)
         target_compile_definitions(${target} PRIVATE
             RACING_BASELINES_DIR="${PROJECT_SOURCE_DIR}/baselines")
         racing_set_warnings(${target})
         set_target_properties(${target} PROPERTIES FOLDER "Baselines/${name}")
     endforeach()
-    # SITL closes the loop on the reflex dynamics (sim/).
+    # SITL closes the loop on the reflex dynamics (sim/); the batch runs seeds
+    # on worker threads.
     target_link_libraries(sitl_${name} PRIVATE branes::racing_sim)
+    target_link_libraries(sitl_batch_${name} PRIVATE branes::racing_sim Threads::Threads)
 endfunction()

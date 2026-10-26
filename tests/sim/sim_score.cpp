@@ -9,6 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -148,4 +149,31 @@ TEST_CASE("score: the JSON line names every field", "[sim][score]") {
         INFO(j);
         CHECK(j.find(key) != std::string::npos);
     }
+}
+
+TEST_CASE("score: max speed is reported, and exceeding the speed limit fails the run", "[sim][score]") {
+    // fly() moves 0.1 m per 10 ms, but the speed is the truth's velocity field.
+    const auto run = [](std::optional<double> limit, double vx) {
+        Scorer s(line(1), limit);
+        s.on_truth(at(0, 0, 0, 0.1, true));
+        double t = 0.5;
+        for (double x = 0; x <= 25 + 1e-9; x += 0.1) {
+            TruthState<double> p = at(t, x, 0, 2);
+            p.velocity = {vx, 0, 0};
+            s.on_truth(p);
+            t += 0.01;
+        }
+        return s.score();
+    };
+    const Score fast = run(std::nullopt, 6.0);
+    CHECK(fast.success);  // no limit
+    CHECK(fast.max_speed_m_s == 6.0);
+    const Score limited = run(5.0, 6.0);
+    CHECK_FALSE(limited.success);
+    CHECK(limited.speed_limit_exceeded);
+    CHECK(limited.failure.find("speed limit") != std::string::npos);
+    CHECK(limited.laps_completed == 1);  // the laps still count
+    const Score within = run(5.0, 5.0);
+    CHECK(within.success);  // at the limit is within it
+    CHECK(to_json(within).find("\"max_speed_m_s\":5.000000,\"speed_limit_exceeded\":false") != std::string::npos);
 }

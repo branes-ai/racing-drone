@@ -132,13 +132,15 @@ concept FcBridge = requires(B b, const ThrustRates<T>& u, Timestamp now) {
 
 | Slot | First implementations | Repo |
 |---|---|---|
-| `Estimator` | `GroundTruth` (SITL only), `VioGateEkf` (MSCKF + gate PnP + drag model), `GateEkf` (MonoRace-style) | racing-drone (GT), cortex |
+| `Estimator` | `GroundTruthEstimator` (SITL only), `VioGateEkf` (MSCKF + gate PnP + drag model), `GateEkf` (MonoRace-style) | racing-drone (GT), cortex |
 | `GateDetector` | `OracleGates` (SITL projection), `GateNetCorners` | racing-drone, cortex + synapse |
-| `Planner` | `WaypointPlanner`, `TimeOptimalSampler`, `OfflineCpc` | cortex |
-| `Controller` | `CascadedPid`, `Mpcc`, `TrackingNmpc`, `LearnedPolicy` | reflex (+ synapse for the policy) |
+| `Planner` | `WaypointPlanner`, `TimeOptimalSampler`, `OfflineCpc` | racing-drone (`WaypointPlanner`, until the cortex planners land in Phase 2), cortex |
+| `Controller` | `CascadedPid`, `Mpcc`, `TrackingNmpc`, `LearnedPolicy` | reflex (+ synapse for the policy); `CascadedPid` is a racing-drone adapter around the reflex loops |
 | `SafetyFilter` | `PassThrough`, `CbfFilter` | reflex |
 | `DaaTracker` | `None`, `OracleIntruders` (SITL), `ImmTracker` | racing-drone, cortex |
 | `FcBridge` | `BetaflightBridge` (interim), `ReflexFcBridge` | racing-drone, reflex |
+
+Slots are built by `Stack::create()` from a `SlotContext` (the vehicle file, the baseline file, and the course). A slot with a `from_context()` factory is built from it, and any other slot is default-constructed. A slot that declares `process_truth()` receives the simulated true state from the SITL log's `truth` channel. Only SITL logs carry truth, so such a slot is SITL-only by construction (SYS-02); B0's `GroundTruthEstimator` is one ([B0 plan](../plan/b0/README.md)).
 
 In SITL the baseline's `FcBridge` stays unchanged (SYS-07). The SITL harness takes each tick's command and hands it to `sim::SimFc`, the simulated flight controller on the far side of the link, which runs the reflex rate loop and mixer on the plant ([SITL plan](../plan/sitl/README.md)). `SimFc` is therefore part of the simulator, not a slot implementation.
 
@@ -249,6 +251,7 @@ racing-drone/
 │   ├── mission/              # race state machine: preflight, arm, start, gate sequence, finish, land
 │   └── compose/              # baseline wiring (compile-time composition)
 ├── baselines/                # one YAML + optional glue per baseline (b0 … b4)
+│   └── glue/                 # slot adapters around platform components (CascadedPid → reflex)
 ├── vehicles/  courses/  scenarios/
 ├── sim/                      # SITL harness: reflex dynamics + renderer bridge + sensor models + fault injection
 ├── apps/

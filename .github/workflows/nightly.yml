@@ -1,0 +1,31 @@
+name: Nightly gates
+
+# The phase gates too long for every PR (docs/plan/b0/): gate P1 in full,
+# 500 nominal seeds of baseline B0. Runs on main every night, and on demand.
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Nightly gates (Linux - gcc-release)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          persist-credentials: false
+      - name: Install CMake 4.x + Ninja
+        uses: lukka/get-cmake@fffaaafeea488556c2c12dad60690008bc1caacb  # v4.4.2
+        with:
+          cmakeVersion: "~4.0.0"
+      - name: Configure
+        run: cmake --preset gcc-release -DRACING_NIGHTLY_TESTS=ON
+      - name: Build
+        run: cmake --build --preset gcc-release
+      - name: Gate P1 (500 seeds)
+        run: ctest --preset gcc-release -L nightly --output-on-failure

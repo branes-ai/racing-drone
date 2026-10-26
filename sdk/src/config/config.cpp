@@ -576,7 +576,10 @@ result<ScenarioConfig, ConfigError>
 parse_scenario(std::string_view yaml, std::string_view origin, const std::filesystem::path& base_dir) {
     return guarded<ScenarioConfig>(origin, [&]() -> ScenarioConfig {
         const YAML::Node root = parse_root(yaml);
-        only_keys(root, "", {"name", "course", "vehicle", "duration_s", "seed", "sim", "randomization", "faults"});
+        only_keys(
+            root,
+            "",
+            {"name", "course", "vehicle", "duration_s", "seed", "speed_limit_m_s", "sim", "randomization", "faults"});
         ScenarioConfig s;
         s.name = get_string(root, "", "name");
         s.course_ref = get_string(root, "", "course");
@@ -591,6 +594,11 @@ parse_scenario(std::string_view yaml, std::string_view origin, const std::filesy
                 "duration_s",
                 "must be in (0, " + std::to_string(kMaxDurationS) + "] s");
         s.seed = get_uint(root, "", "seed", std::numeric_limits<std::uint64_t>::max());
+        if (root["speed_limit_m_s"]) {
+            const double v = get_double(root, "", "speed_limit_m_s");
+            require(v > 0, "speed_limit_m_s", "must be > 0");
+            s.speed_limit_m_s = v;
+        }
 
         if (const YAML::Node sim = root["sim"]) {
             only_keys(sim,
@@ -726,6 +734,9 @@ std::string emit_scenario(const ScenarioConfig& s) {
     out << YAML::Key << "vehicle" << YAML::Value << s.vehicle_ref;
     out << YAML::Key << "duration_s" << YAML::Value << s.duration_s;
     out << YAML::Key << "seed" << YAML::Value << s.seed;
+    if (s.speed_limit_m_s) {
+        out << YAML::Key << "speed_limit_m_s" << YAML::Value << *s.speed_limit_m_s;
+    }
     out << YAML::Key << "sim" << YAML::Value << YAML::BeginMap;
     out << YAML::Key << "physics_rate_hz" << YAML::Value << s.sim.physics_rate_hz;
     out << YAML::Key << "command_timeout_s" << YAML::Value << s.sim.command_timeout_s;
