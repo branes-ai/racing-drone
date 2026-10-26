@@ -14,6 +14,7 @@
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/msg/geometry.hpp>
 #include <branes/racing/msg/sensors.hpp>
+#include <branes/racing/msg/time.hpp>
 #include <branes/racing/result.hpp>
 
 #include <array>
@@ -23,6 +24,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace branes::racing::config {
 
@@ -65,12 +67,21 @@ struct DragParams {
     friend bool operator==(const DragParams&, const DragParams&) = default;
 };
 
+/// Largest IMU latency a vehicle file may give [s].
+inline constexpr double kMaxImuLatencyS = 0.1;
+
 struct ImuParams {
     double rate_hz{0};
     double gyro_range{0};           ///< per axis [rad/s]
     double accel_range{0};          ///< per axis [m/s²]
     double gyro_noise_density{0};   ///< [rad/s/√Hz]
     double accel_noise_density{0};  ///< [m/s²/√Hz]
+    // Optional (default 0), used by the SITL IMU model (sim/imu.hpp).
+    double gyro_bias_random_walk{0};     ///< [rad/s²/√Hz]
+    double accel_bias_random_walk{0};    ///< [m/s³/√Hz]
+    double initial_gyro_bias_sigma{0};   ///< turn-on bias, 1σ per axis [rad/s]
+    double initial_accel_bias_sigma{0};  ///< turn-on bias, 1σ per axis [m/s²]
+    double latency_s{0};                 ///< measurement → delivery [s], ≤ kMaxImuLatencyS
 
     friend bool operator==(const ImuParams&, const ImuParams&) = default;
 };
@@ -137,10 +148,63 @@ struct CourseConfig {
 
 // ── Scenario ────────────────────────────────────────────────────────
 
+/// SITL settings of a scenario (`sim:`), all optional.
+struct SimParams {
+    double physics_rate_hz{1000};      ///< plant and simulated-FC step rate
+    double command_timeout_s{0.1};     ///< simulated FC: no command for longer → rotors off
+    double fc_gyro_lowpass_hz{100};    ///< simulated FC's gyro filter cutoff
+    double oracle_corner_sigma_px{1};  ///< oracle gate corners: 1σ per coordinate [px]
+    bool test_pattern_frames{false};   ///< camera records carry a test-pattern image (else header only)
+
+    friend bool operator==(const SimParams&, const SimParams&) = default;
+};
+
+/// Per-run randomization (`randomization:`), drawn from the seed. Each field
+/// is a half-width: a parameter p becomes p·(1 + u), u uniform in [−f, f].
+struct Randomization {
+    double mass{0};
+    double inertia{0};
+    double drag{0};
+    double motor_time_constant{0};
+    double start_xy_m{0};     ///< start position jitter per axis [m]
+    double start_yaw_rad{0};  ///< start yaw jitter [rad]
+
+    friend bool operator==(const Randomization&, const Randomization&) = default;
+};
+
+enum class FaultType : std::uint8_t {
+    imu_bias_step,    ///< add `gyro` / `accel` to the IMU biases at t_s
+    camera_corrupt,   ///< mark each frame corrupted with `probability`
+    camera_blackout,  ///< deliver no frames
+    command_delay,    ///< delay commands to the simulated FC by `delay_s`
+    link_loss,        ///< drop commands to the simulated FC
+    motor_scale,      ///< rotor `rotor` delivers `scale` of its commanded thrust
+};
+
+/// One timed fault (`faults:` entry). Active on [t_s, until_s); until_s
+/// defaults to the end of the run. imu_bias_step acts once, at t_s.
+struct FaultEvent {
+    FaultType type{FaultType::link_loss};
+    double t_s{0};
+    double until_s{kMaxDurationS};
+    Vec3<double> gyro{};     ///< imu_bias_step [rad/s]
+    Vec3<double> accel{};    ///< imu_bias_step [m/s²]
+    double probability{0};   ///< camera_corrupt, ∈ [0, 1]
+    double delay_s{0};       ///< command_delay, ∈ [0, 1] s
+    std::uint32_t rotor{0};  ///< motor_scale, < 4
+    double scale{1};         ///< motor_scale, ∈ [0, 1]
+
+    friend bool operator==(const FaultEvent&, const FaultEvent&) = default;
+};
+
+[[nodiscard]] std::string_view name_of(FaultType t) noexcept;
+
 /// scenarios/<name>.yaml. Course and vehicle paths are relative to the scenario
 /// file's directory.
 ///
-/// Invariants: the course and vehicle files exist; duration_s > 0; seed is given.
+/// Invariants: the course and vehicle files exist; duration_s > 0; seed is given;
+/// sim rates and limits are in range; randomization fractions ∈ [0, 1); every
+/// fault has 0 ≤ t_s < until_s and its own fields in range.
 struct ScenarioConfig {
     std::string name;
     std::string course_ref;              ///< as written in the file
@@ -149,6 +213,9 @@ struct ScenarioConfig {
     std::filesystem::path vehicle_path;  ///< resolved
     double duration_s{0};
     std::uint64_t seed{0};
+    SimParams sim;                   ///< optional `sim:` block
+    Randomization randomization;     ///< optional `randomization:` block
+    std::vector<FaultEvent> faults;  ///< optional `faults:` list, in file order
 
     friend bool operator==(const ScenarioConfig&, const ScenarioConfig&) = default;
 };

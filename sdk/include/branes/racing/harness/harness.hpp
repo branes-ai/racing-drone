@@ -184,6 +184,10 @@ public:
             out.push_back(Output{log::Channel::command, rec.t, codec::encode(y.command)});
             break;
         }
+        case log::Channel::truth:
+        case log::Channel::oracle_gates:
+        case log::Channel::sim_config:
+            break;  // sim channels: recorded, not consumed by the stack (yet)
         default:
             return std::string("not an input channel");
         }

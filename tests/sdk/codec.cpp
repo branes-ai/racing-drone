@@ -126,3 +126,53 @@ TEST_CASE("codec: NaN and Inf are rejected in every decoder", "[codec]") {
     u.body_rates[0] = -inf;
     REQUIRE_FALSE(codec::decode_command(codec::encode(u)));
 }
+
+TEST_CASE("codec: TruthState and GateObservations round trip", "[codec]") {
+    TruthState<double> x{};
+    x.t = Timestamp{123};
+    x.position = {1.5, -2.25, 3.0};
+    x.velocity = {0.1, 0.2, -0.3};
+    x.attitude = Quat<double>{0.6, 0.8, 0.0, 0.0};
+    x.body_rates = {0.01, -0.02, 0.03};
+    x.rotor_speeds = {1600.0, 1601.5, 1599.25, 1600.125};
+    x.on_ground = true;
+    const auto xb = codec::decode_truth(codec::encode(x));
+    REQUIRE(xb);
+    REQUIRE(*xb == x);
+
+    GateObservations<double> g{};
+    g.count = 2;
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        g.gates[i].gate_id = static_cast<std::int32_t>(7 + i);
+        g.gates[i].quality = 1;
+        g.gates[i].corners[2] = {410.5, 300.25 + i};
+        g.gates[i].covariance[9] = 1.0;
+    }
+    const auto gb = codec::decode_gates(codec::encode(g));
+    REQUIRE(gb);
+    REQUIRE(*gb == g);
+    REQUIRE(codec::encode(GateObservations<double>{}).size() == 4);  // only the count when empty
+}
+
+TEST_CASE("codec: invalid truth and gate records are rejected", "[codec]") {
+    TruthState<double> x{};
+    x.attitude = Quat<double>{2.0, 0.0, 0.0, 0.0};  // not unit
+    REQUIRE_FALSE(codec::decode_truth(codec::encode(x)));
+    x = TruthState<double>{};
+    x.rotor_speeds[3] = -1.0;  // I2
+    REQUIRE_FALSE(codec::decode_truth(codec::encode(x)));
+    x = TruthState<double>{};
+    x.position[1] = std::numeric_limits<double>::quiet_NaN();
+    REQUIRE_FALSE(codec::decode_truth(codec::encode(x)));
+
+    GateObservations<double> g{};
+    g.count = 1;
+    g.gates[0].quality = 2;  // I2: outside [0, 1]
+    REQUIRE_FALSE(codec::decode_gates(codec::encode(g)));
+    g.gates[0].quality = 1;
+    g.gates[0].corners[0][1] = std::numeric_limits<double>::infinity();
+    REQUIRE_FALSE(codec::decode_gates(codec::encode(g)));
+    ByteWriter w;
+    w.u32(kMaxVisibleGates + 1);  // too many gates
+    REQUIRE_FALSE(codec::decode_gates(w.take()));
+}

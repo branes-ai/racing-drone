@@ -134,7 +134,7 @@ racing-drone/
 
 ## Status
 
-Phase 0 (framework skeleton) is in place: the data contracts and the seven slot concepts; vehicle, course, scenario, and baseline files with validating loaders; the replay log; and the three harnesses, all running the `null` baseline. Gate P0 ([test plan §6](docs/plan/test-plan.md)) runs in CI: SITL → replay twice → byte-identical logs. Phase 1 adds the `reflex` dynamics model and SITL, and the first real baseline (B0).
+Phase 0 (framework skeleton) is in place: the data contracts and the seven slot concepts; vehicle, course, scenario, and baseline files with validating loaders; the replay log; and the three harnesses, all running the `null` baseline. Gate P0 ([test plan §6](docs/plan/test-plan.md)) runs in CI: SITL → replay twice → byte-identical logs. Phase 1 has started: SITL now closes the loop on the `reflex` dynamics model, with a simulated flight controller, IMU and fault models, an oracle gate projector, and a scoreboard (`sim/`, [plan](docs/plan/sitl/README.md)). The first real baseline (B0) comes next.
 
 ## License
 

@@ -1,6 +1,6 @@
 #pragma once
 /// @file codec.hpp
-/// @brief Log payload encoding of the data contracts that cross the log in Phase 0.
+/// @brief Log payload encoding of the data contracts that cross the log.
 ///
 /// Logs are always double precision, whatever scalar type the stack runs in.
 /// Each encode() writes every field explicitly (util/bytes.hpp), so equal
@@ -9,7 +9,9 @@
 
 #include <branes/racing/msg/control.hpp>
 #include <branes/racing/msg/estimate.hpp>
+#include <branes/racing/msg/perception.hpp>
 #include <branes/racing/msg/sensors.hpp>
+#include <branes/racing/msg/truth.hpp>
 #include <branes/racing/util/bytes.hpp>
 
 #include <array>
@@ -218,6 +220,93 @@ inline std::optional<FrameHeader> get_frame_header(ByteReader& r) {
         return std::nullopt;
     }
     return u;
+}
+
+// ── TruthState (sim channel) ────────────────────────────────────────
+
+[[nodiscard]] inline std::vector<std::byte> encode(const TruthState<double>& x) {
+    ByteWriter w;
+    w.i64(x.t.ns);
+    detail::put(w, x.position);
+    detail::put(w, x.velocity);
+    detail::put(w, x.attitude);
+    detail::put(w, x.body_rates);
+    for (const double v : x.rotor_speeds) {
+        w.f64(v);
+    }
+    w.boolean(x.on_ground);
+    return w.take();
+}
+
+[[nodiscard]] inline std::optional<TruthState<double>> decode_truth(std::span<const std::byte> b) {
+    ByteReader r(b);
+    TruthState<double> x{};
+    x.t.ns = r.i64();
+    x.position = detail::get_vec3(r);
+    x.velocity = detail::get_vec3(r);
+    x.attitude = detail::get_quat(r);
+    x.body_rates = detail::get_vec3(r);
+    for (double& v : x.rotor_speeds) {
+        v = r.f64();
+    }
+    x.on_ground = r.boolean();
+    if (!r.done() || !detail::finite(x.position) || !detail::finite(x.velocity) || !detail::finite(x.attitude) ||
+        !detail::finite(x.body_rates) || !detail::finite(x.rotor_speeds) || !valid(x)) {
+        return std::nullopt;
+    }
+    return x;
+}
+
+// ── GateObservations (sim channel) ──────────────────────────────────
+
+/// Encodes the `count` used entries only.
+[[nodiscard]] inline std::vector<std::byte> encode(const GateObservations<double>& g) {
+    ByteWriter w;
+    w.u32(g.count);
+    for (std::uint32_t i = 0; i < g.count && i < kMaxVisibleGates; ++i) {
+        const GateObservation<double>& o = g.gates[i];
+        w.i32(o.gate_id);
+        for (const auto& c : o.corners) {
+            w.f64(c[0]);
+            w.f64(c[1]);
+        }
+        for (const double v : o.covariance) {
+            w.f64(v);
+        }
+        w.f64(o.quality);
+    }
+    return w.take();
+}
+
+[[nodiscard]] inline std::optional<GateObservations<double>> decode_gates(std::span<const std::byte> b) {
+    ByteReader r(b);
+    GateObservations<double> g{};
+    g.count = r.u32();
+    if (g.count > kMaxVisibleGates) {
+        return std::nullopt;
+    }
+    for (std::uint32_t i = 0; i < g.count; ++i) {
+        GateObservation<double>& o = g.gates[i];
+        o.gate_id = r.i32();
+        for (auto& c : o.corners) {
+            c[0] = r.f64();
+            c[1] = r.f64();
+            if (!std::isfinite(c[0]) || !std::isfinite(c[1])) {
+                return std::nullopt;
+            }
+        }
+        for (double& v : o.covariance) {
+            v = r.f64();
+        }
+        o.quality = r.f64();
+        if (!detail::finite(o.covariance) || !std::isfinite(o.quality)) {
+            return std::nullopt;
+        }
+    }
+    if (!r.done() || !valid(g)) {
+        return std::nullopt;
+    }
+    return g;
 }
 
 }  // namespace branes::racing::codec

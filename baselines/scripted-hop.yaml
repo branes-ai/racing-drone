@@ -1,0 +1,15 @@
+# A test fixture, not a racing baseline: the null stack with an open-loop
+# controller that hops the vehicle (sdk/include/branes/racing/slots/scripted.hpp).
+# The SITL determinism gate runs it, so the replay check covers a run in which
+# the dynamics, the simulated FC, and the sensor models all change state.
+name: scripted-hop
+composition:
+  estimator: NullEstimator
+  gate_detector: NullGateDetector
+  planner: NullPlanner
+  controller: ScriptedHopController
+  safety_filter: NullSafetyFilter
+  daa_tracker: NullDaaTracker
+  fc_bridge: NullFcBridge
+parameters:
+  control_rate_hz: 100

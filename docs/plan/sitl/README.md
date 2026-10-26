@@ -13,7 +13,7 @@ This plan replaces Phase 0's `SyntheticSensors` (a vehicle at rest) with closed-
 | Item | What | State |
 |---|---|---|
 | [racing-drone#16](https://github.com/branes-ai/racing-drone/issues/16) | This plan: SITL harness, sensor models, oracle gates, faults, scoreboard | Open |
-| racing-drone PR (to be opened) | The implementation; this document lands with it | — |
+| racing-drone PR (see below) | The implementation; this document lands with it | — |
 | [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | Next: B0 `gt-pid` baseline and gate P1, which consume this harness | Open |
 
 ### What it builds on (merged)
@@ -186,3 +186,16 @@ Every test runs in double. Unit and contract tests cover each invariant above. T
 4. **Truth is logged at 1 kHz**, about 1 cm of gate-crossing resolution at 10 m/s, and about 6 MB per minute.
 5. **Sim channels are logged, not fed to the stack**, in #16. Feeding truth into slots is #17.
 6. **Faults are hooks plus six types.** The scenario suite comes later.
+
+## Implementation notes
+
+Points where the implementation fills in or departs from the plan above, for review.
+
+1. **Header-only camera records.** Camera records carry the frame header with no pixels by default, because the stack has no image consumer before rendering lands (L3). Test-pattern images at RP-1's 820 × 616 and 90 Hz would add about 45 MB per second of log. The scenario key `sim.test_pattern_frames: true` restores them. The oracle projection is on its own channel either way.
+2. **Event-order wording.** The plant reaches t before any event at t is produced. The tick at t therefore drives the plant step from t, and the truth record at t is the state at t.
+3. **A `sim_config` channel (6).** It holds the run's drawn randomization as YAML, at t = 0. The log header is unchanged, and so is the log format version (the new channels need no format change).
+4. **No Universal pin.** racing-drone needs only MTL5, which reflex brings at 5.20.0. Universal joins when a component needs it.
+5. **The HIL harness is unchanged.** `flight_stack --scenario` (HIL) still uses `SyntheticSensors`: in HIL the real FC is in the loop, and its simulated sensors arrive with the HIL rig (Phase 4).
+6. **A determinism fixture.** The `scripted-hop` baseline (`ScriptedHopController`, an open-loop hop) is a test fixture, not a racing baseline. The new gate `gate.sitl.determinism` runs it on `scenarios/scripted-hop.yaml`, with randomization, IMU noise and bias, camera corruption and an IMU bias step. It checks that a rerun and two replays are byte-identical.
+7. **Optional RP-1 IMU values.** The file gets bias and latency values marked as placeholders, like its other sensor values.
+8. **Ground and collisions.** The ground plane is at the start pad's height. The scorer counts a crossing of any gate's plane outside the opening but within 0.5 m of it as a frame hit, and ground contact after takeoff, before the run is complete, as a crash.
