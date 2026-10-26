@@ -117,6 +117,10 @@ public:
         if (!(dt <= 0.01 && dt <= p.motor_time_constant)) {
             return std::string("the physics step must be ≤ 10 ms and ≤ the motor time constant");  // I3
         }
+        if (options.initial_state &&
+            !rx::model::QuadrotorModel<double>(p).quadrotor_state_valid(*options.initial_state)) {
+            return std::string("the initial state is not a valid plant state (see reflex quadrotor_state_violation)");
+        }
         return Simulator(vehicle, course, scenario, p, d, *phys, *imu, *frame, *tick, options);
     }
 

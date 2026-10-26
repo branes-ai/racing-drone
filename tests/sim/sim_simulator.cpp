@@ -135,6 +135,19 @@ TEST_CASE("simulator: create rejects out-of-range faults from a programmatic sce
     CHECK(Simulator::create(sim_fixtures::rp1(), course().map, s, 100.0));
 }
 
+TEST_CASE("simulator: create rejects an invalid initial state", "[sim][simulator]") {
+    SimOptions o;
+    o.initial_state = airborne(2.0, 0.0);
+    CHECK(Simulator::create(sim_fixtures::rp1(), course().map, scenario(1.0), 100.0, o));
+    o.initial_state->position = rx::vec3(10.0, 4.0, -1.0);  // below the ground (the pad at 0.1 m)
+    CHECK_FALSE(Simulator::create(sim_fixtures::rp1(), course().map, scenario(1.0), 100.0, o));
+    o.initial_state = airborne(2.0, 1e6);  // a rotor beyond its maximum speed
+    CHECK_FALSE(Simulator::create(sim_fixtures::rp1(), course().map, scenario(1.0), 100.0, o));
+    o.initial_state = airborne(2.0, 0.0);
+    o.initial_state->attitude = rx::Quat<double>{2.0, 0.0, 0.0, 0.0};  // not unit
+    CHECK_FALSE(Simulator::create(sim_fixtures::rp1(), course().map, scenario(1.0), 100.0, o));
+}
+
 TEST_CASE("simulator: the sim_config record holds the drawn randomization", "[sim][simulator]") {
     auto s = scenario(0.01);
     s.randomization.mass = 0.2;
