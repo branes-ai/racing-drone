@@ -119,7 +119,7 @@ $B/sitl_batch_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --min-su
 $B/flight_stack_b0-gt-pid --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
 ```
 
-In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>` and `score_log` is under `Tools`. Each starts in the source root, and the debugger arguments are filled in from the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)). They differ from the commands above:
+In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>` and `score_log` is under `Tools`. Each starts in the source root with the debugger arguments below filled in. `sitl_<name>` and `sitl_batch_<name>` take the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)); `replay_<name>` reads the log `sitl_<name>` writes; `flight_stack_<name>` and `score_log` use the fixed values shown. They differ from the commands above:
 
 | Target | Debugger arguments |
 |---|---|
