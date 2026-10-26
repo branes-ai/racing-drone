@@ -6,7 +6,7 @@
 #  3. course.yaml and vehicle.yaml are the scenario's files, byte for byte.
 #  4. In every CSV, the first and last rows have as many fields as the header.
 #  5. A second dump is byte-identical to the first.
-#  6. A missing log is an error.
+#  6. A missing log exits with code 1 and an error naming it.
 #
 # Inputs: SITL, DUMP (executables), SOURCE_DIR, WORK_DIR.
 
@@ -86,9 +86,13 @@ foreach(f IN LISTS dumped)
 endforeach()
 
 execute_process(COMMAND ${DUMP} --log ${WORK_DIR}/missing.brlog --out-dir ${WORK_DIR}/c
-    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
-if(rc EQUAL 0)
-    message(FATAL_ERROR "log_dump accepted a missing log")
+    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_VARIABLE missing_err)
+# A crash or failed launch leaves a non-numeric rc: require fail()'s exit code.
+if(NOT "${rc}" STREQUAL "1")
+    message(FATAL_ERROR "log_dump on a missing log: expected exit code 1, got '${rc}'")
+endif()
+if(NOT "${missing_err}" MATCHES "missing\\.brlog")
+    message(FATAL_ERROR "log_dump's error does not name the missing log: ${missing_err}")
 endif()
 
 message(STATUS "log_dump: passed")
