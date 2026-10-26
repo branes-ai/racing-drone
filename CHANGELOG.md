@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/branes-ai/racing-drone/compare/v0.2.0...v0.3.0) (2026-10-26)
+
+
+### Features
+
+* **baselines:** b0 gt-pid baseline and gate p1 ([#20](https://github.com/branes-ai/racing-drone/issues/20)) ([876b9f1](https://github.com/branes-ai/racing-drone/commit/876b9f19deec08fef3c8802a9e7e3603cee6045b))
+
 ## [0.2.0](https://github.com/branes-ai/racing-drone/compare/v0.1.0...v0.2.0) (2026-10-26)
 
 
