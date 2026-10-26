@@ -68,6 +68,15 @@ add_test(NAME gate.b0.determinism
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_b0
         -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
 
+# log_dump writes every record of a B0 log as CSV (apps/log_dump/main.cpp).
+add_test(NAME tools.log_dump
+    COMMAND ${CMAKE_COMMAND}
+        -DSITL=$<TARGET_FILE:sitl_b0-gt-pid>
+        -DDUMP=$<TARGET_FILE:log_dump>
+        -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tools_log_dump
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/log_dump_test.cmake)
+
 # P1 smoke, on every PR (test plan L2 PR tier): 10 nominal seeds, all succeed.
 add_test(NAME gate.p1.smoke
     COMMAND sitl_batch_b0-gt-pid
