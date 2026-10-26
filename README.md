@@ -115,11 +115,12 @@ B=build/gcc-debug/apps
 $B/sitl_b0-gt-pid --scenario scenarios/b0-determinism.yaml --out run.brlog    # simulate, log every input and output
 $B/score_log --log run.brlog --speed-limit 5                                    # score the run: laps, gate errors, failures
 $B/replay_b0-gt-pid --log run.brlog --out replay.brlog --verify                 # reproduce the outputs record for record
+$B/log_dump --log run.brlog --out-dir run                                       # every channel as CSV, for plotting
 $B/sitl_batch_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --min-success 1   # many seeds, as the gates run
 $B/flight_stack_b0-gt-pid --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
 ```
 
-In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>` and `score_log` is under `Tools`. Each starts in the source root with the debugger arguments below filled in. `sitl_<name>` and `sitl_batch_<name>` take the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)); `replay_<name>` reads the log `sitl_<name>` writes; `flight_stack_<name>` and `score_log` use the fixed values shown. They differ from the commands above:
+In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>`, and `score_log` and `log_dump` are under `Tools`. Each starts in the source root with the debugger arguments below filled in. `sitl_<name>` and `sitl_batch_<name>` take the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)); `replay_<name>` reads the log `sitl_<name>` writes; `flight_stack_<name>`, `score_log`, and `log_dump` use the fixed values shown. They differ from the commands above:
 
 | Target | Debugger arguments |
 |---|---|
@@ -128,14 +129,15 @@ In the Visual Studio solution (`msvc` preset), the harnesses are under `Baseline
 | `sitl_batch_<name>` | `--scenario <DEBUG_SCENARIO> --seeds 1 --jobs 1` (one seed on one thread, for stepping) |
 | `flight_stack_<name>` | `--course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10` |
 | `score_log` | `--log <build>/b0-gt-pid.brlog` |
+| `log_dump` | `--log <build>/b0-gt-pid.brlog --out-dir <build>/b0-gt-pid-dump` |
 
-Run `sitl_<name>` first: `replay_<name>` and `score_log` read the log it writes.
+Run `sitl_<name>` first: `replay_<name>`, `score_log`, and `log_dump` read the log it writes.
 
 ## Repository layout
 
 ```text
 racing-drone/
-├── apps/         # harness sources (flight_stack, replay, sitl, sitl_batch, score), built once per baseline
+├── apps/         # harness sources (flight_stack, replay, sitl, sitl_batch) built once per baseline, and the score / log_dump tools
 ├── baselines/    # one YAML per baseline: slot composition + parameters
 ├── cmake/        # deps, warnings, slot registry, baseline target generation
 ├── courses/      # course files (gates, sequence, laps, geofence)
