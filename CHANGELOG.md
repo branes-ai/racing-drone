@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/branes-ai/racing-drone/compare/v0.3.0...v0.4.0) (2026-10-26)
+
+
+### Features
+
+* **tools:** log_dump writes a log's channels as csv ([#23](https://github.com/branes-ai/racing-drone/issues/23)) ([c76d5cc](https://github.com/branes-ai/racing-drone/commit/c76d5ccf85bb68d861632209a8d2f3db6ae02104))
+
+
+### Build System
+
+* **cmake:** visual studio debugger defaults for the harnesses ([#22](https://github.com/branes-ai/racing-drone/issues/22)) ([0059d11](https://github.com/branes-ai/racing-drone/commit/0059d1164496c4bc94639de2a4cae8596e767efe))
+
 ## [0.3.0](https://github.com/branes-ai/racing-drone/compare/v0.2.0...v0.3.0) (2026-10-26)
 
 
