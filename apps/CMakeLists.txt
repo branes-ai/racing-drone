@@ -17,3 +17,13 @@ set_target_properties(score_log PROPERTIES
     FOLDER "Tools"
     VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     VS_DEBUGGER_COMMAND_ARGUMENTS "--log \"${CMAKE_BINARY_DIR}/b0-gt-pid.brlog\"")
+
+# log_dump: a log's channels as CSV, for plotting (any baseline's log).
+add_executable(log_dump ${CMAKE_CURRENT_SOURCE_DIR}/log_dump/main.cpp)
+target_link_libraries(log_dump PRIVATE branes::racing)
+racing_set_warnings(log_dump)
+set_target_properties(log_dump PROPERTIES
+    FOLDER "Tools"
+    VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    VS_DEBUGGER_COMMAND_ARGUMENTS
+        "--log \"${CMAKE_BINARY_DIR}/b0-gt-pid.brlog\" --out-dir \"${CMAKE_BINARY_DIR}/b0-gt-pid-dump\"")
