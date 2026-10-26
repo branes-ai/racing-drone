@@ -183,6 +183,10 @@ enum class FaultType : std::uint8_t {
 
 /// One timed fault (`faults:` entry). Active on [t_s, until_s); until_s
 /// defaults to the end of the run. imu_bias_step acts once, at t_s.
+///
+/// Invariants (fault_event_valid): every field finite;
+/// 0 ≤ t_s < until_s ≤ kMaxDurationS; probability, delay_s, scale ∈ [0, 1];
+/// rotor < 4.
 struct FaultEvent {
     FaultType type{FaultType::link_loss};
     double t_s{0};
@@ -198,6 +202,11 @@ struct FaultEvent {
 };
 
 [[nodiscard]] std::string_view name_of(FaultType t) noexcept;
+
+/// True if `f` satisfies FaultEvent's invariants. The scenario loader enforces
+/// them field by field; a Simulator built from a programmatic scenario checks
+/// them with this.
+[[nodiscard]] bool fault_event_valid(const FaultEvent& f) noexcept;
 
 /// scenarios/<name>.yaml. Course and vehicle paths are relative to the scenario
 /// file's directory.

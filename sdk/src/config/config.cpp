@@ -684,7 +684,9 @@ parse_scenario(std::string_view yaml, std::string_view origin, const std::filesy
                 }
                 e.t_s = get_double(f, p, "t_s");
                 e.until_s = get_double_or(f, p, "until_s", kMaxDurationS);
-                require(e.t_s >= 0 && e.t_s < e.until_s, p, "needs 0 ≤ t_s < until_s");
+                require(e.t_s >= 0 && e.t_s < e.until_s && e.until_s <= kMaxDurationS,
+                        p,
+                        "needs 0 ≤ t_s < until_s ≤ " + std::to_string(kMaxDurationS) + " s");
                 if (e.type == FaultType::imu_bias_step) {
                     e.gyro = f["gyro"] ? get_array<3>(f, p, "gyro") : Vec3<double>{};
                     e.accel = f["accel"] ? get_array<3>(f, p, "accel") : Vec3<double>{};
@@ -773,6 +775,15 @@ std::string emit_scenario(const ScenarioConfig& s) {
     out << YAML::EndSeq;
     out << YAML::EndMap;
     return finish(out);
+}
+
+bool fault_event_valid(const FaultEvent& f) noexcept {
+    const auto finite3 = [](const Vec3<double>& v) {
+        return std::isfinite(v[0]) && std::isfinite(v[1]) && std::isfinite(v[2]);
+    };
+    const auto unit = [](double x) { return x >= 0 && x <= 1; };  // false for NaN
+    return f.t_s >= 0 && f.t_s < f.until_s && f.until_s <= kMaxDurationS && finite3(f.gyro) && finite3(f.accel) &&
+           unit(f.probability) && unit(f.delay_s) && unit(f.scale) && f.rotor < 4;
 }
 
 std::string_view name_of(FaultType t) noexcept {

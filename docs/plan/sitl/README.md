@@ -120,7 +120,7 @@ It replaces `SyntheticSensors` in `sitl_<baseline>`.
 
 **Model:**
 - the plant state and model, `SimFc`, and `ImuModel`;
-- the schedules, in integer nanoseconds: physics and FC at 1 kHz, IMU, camera, tick, and truth at 1 kHz;
+- the schedules, in integer nanoseconds: physics, FC, and truth at `sim.physics_rate_hz` (1 kHz by default); IMU and camera at the vehicle file's rates; ticks at the baseline's `control_rate_hz`;
 - the fault schedule;
 - the pending command.
 
@@ -147,7 +147,7 @@ It replaces `SyntheticSensors` in `sitl_<baseline>`.
 - `imu_bias_step`;
 - `camera_corrupt` (probability; sets `header.corrupted`);
 - `camera_blackout` [t₀, t₁];
-- `command_delay_s`;
+- `command_delay` (`delay_s`);
 - `link_loss` [t₀, t₁] (commands dropped);
 - `motor_scale` (rotor i delivers a fraction of its commanded thrust).
 

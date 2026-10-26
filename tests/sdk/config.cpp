@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <string>
 
 using namespace branes::racing;
@@ -245,6 +246,7 @@ TEST_CASE("scenario: sim, randomization, and fault errors name the key", "[confi
     CHECK(key("randomization: {start_xy_m: -1}\n") == "randomization.start_xy_m");
     CHECK(key("faults: [{type: gremlin, t_s: 0}]\n") == "faults[0].type");
     CHECK(key("faults: [{type: link_loss, t_s: 2, until_s: 1}]\n") == "faults[0]");
+    CHECK(key("faults: [{type: link_loss, t_s: 0, until_s: 1e30}]\n") == "faults[0]");
     CHECK(key("faults: [{type: motor_scale, t_s: 0, rotor: 4, scale: 0.5}]\n") == "faults[0].rotor");
     CHECK(key("faults: [{type: motor_scale, t_s: 0, rotor: 1, scale: 1.5}]\n") == "faults[0].scale");
     CHECK(key("faults: [{type: camera_corrupt, t_s: 0, probability: 2}]\n") == "faults[0].probability");
@@ -252,4 +254,23 @@ TEST_CASE("scenario: sim, randomization, and fault errors name the key", "[confi
     CHECK(key("faults: [{type: link_loss, t_s: 0, probability: 1}]\n") == "faults[0].probability");
     CHECK(key("sim: {physics_rate_hz: 2000, test_pattern_frames: true}\nfaults: [{type: link_loss, t_s: 1}]\n") ==
           "(parsed)");
+}
+
+TEST_CASE("fault_event_valid checks every invariant", "[config]") {
+    FaultEvent f;
+    CHECK(fault_event_valid(f));  // the defaults: link_loss over the whole run
+    const auto bad = [](auto&& edit) {
+        FaultEvent e;
+        edit(e);
+        return !fault_event_valid(e);
+    };
+    CHECK(bad([](FaultEvent& e) { e.t_s = -1; }));
+    CHECK(bad([](FaultEvent& e) { e.until_s = 0; }));
+    CHECK(bad([](FaultEvent& e) { e.until_s = 1e30; }));
+    CHECK(bad([](FaultEvent& e) { e.t_s = std::numeric_limits<double>::quiet_NaN(); }));
+    CHECK(bad([](FaultEvent& e) { e.probability = 1.5; }));
+    CHECK(bad([](FaultEvent& e) { e.delay_s = std::numeric_limits<double>::quiet_NaN(); }));
+    CHECK(bad([](FaultEvent& e) { e.scale = -0.1; }));
+    CHECK(bad([](FaultEvent& e) { e.rotor = 4; }));
+    CHECK(bad([](FaultEvent& e) { e.gyro[1] = std::numeric_limits<double>::infinity(); }));
 }

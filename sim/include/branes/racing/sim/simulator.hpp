@@ -98,6 +98,11 @@ public:
         if (!(scenario.duration_s > 0 && scenario.duration_s <= kMaxDurationS)) {
             return std::string("duration must be in (0, " + std::to_string(kMaxDurationS) + "] s");
         }
+        for (std::size_t i = 0; i < scenario.faults.size(); ++i) {
+            if (!config::fault_event_valid(scenario.faults[i])) {
+                return std::string("fault " + std::to_string(i) + " is out of range (see config::FaultEvent)");
+            }
+        }
         auto base = reflex_params_from(vehicle, course.start.position[2]);
         if (!base) {
             return base.error();

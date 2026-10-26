@@ -15,6 +15,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <cmath>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -118,6 +119,20 @@ TEST_CASE("simulator: the same seed gives the same events; another seed changes 
     }
     CHECK(imu_differs);
     CHECK(c.draws().mass_scale != a.draws().mass_scale);
+}
+
+TEST_CASE("simulator: create rejects out-of-range faults from a programmatic scenario", "[sim][simulator]") {
+    auto s = scenario(1.0);
+    config::FaultEvent f;
+    f.type = config::FaultType::motor_scale;
+    f.rotor = 7;  // only rotors 0-3 exist
+    s.faults.push_back(f);
+    CHECK_FALSE(Simulator::create(sim_fixtures::rp1(), course().map, s, 100.0));
+    s.faults[0].rotor = 1;
+    s.faults[0].scale = std::numeric_limits<double>::quiet_NaN();
+    CHECK_FALSE(Simulator::create(sim_fixtures::rp1(), course().map, s, 100.0));
+    s.faults[0].scale = 0.5;
+    CHECK(Simulator::create(sim_fixtures::rp1(), course().map, s, 100.0));
 }
 
 TEST_CASE("simulator: the sim_config record holds the drawn randomization", "[sim][simulator]") {

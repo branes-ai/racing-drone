@@ -15,6 +15,7 @@
 #include <branes/racing/sim/score.hpp>
 
 #include <cstdio>
+#include <optional>
 #include <string>
 
 namespace racing = branes::racing;
@@ -50,6 +51,7 @@ int main(int argc, char** argv) {
     }
     racing::sim::Scorer scorer(course->map);
     std::uint64_t truths = 0;
+    std::optional<racing::Timestamp> last_truth;
     for (;;) {
         auto rec = reader->next();
         if (!rec) {
@@ -64,6 +66,13 @@ int main(int argc, char** argv) {
             if (!x) {
                 return fail("undecodable truth record at t=" + std::to_string(r.t.ns));
             }
+            // The log is untrusted input: check the scorer's I1 precondition
+            // here and report it, as Runner does for ticks.
+            if (last_truth && x->t < *last_truth) {
+                return fail("truth record at t=" + std::to_string(x->t.ns) +
+                            " is earlier than the previous one (t=" + std::to_string(last_truth->ns) + ")");
+            }
+            last_truth = x->t;
             scorer.on_truth(*x);
             ++truths;
         } else if (r.channel == racing::log::Channel::state) {
