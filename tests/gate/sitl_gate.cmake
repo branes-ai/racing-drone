@@ -6,7 +6,8 @@
 #     each other and to the SITL log.
 #  3. score_log reads the log.
 #
-# Inputs: SITL, REPLAY, SCORE (executables), SOURCE_DIR, WORK_DIR.
+# Inputs: SITL, REPLAY, SCORE (executables), SOURCE_DIR, WORK_DIR, and
+# optionally SCENARIO (default: scenarios/scripted-hop.yaml).
 
 file(REMOVE_RECURSE ${WORK_DIR})
 file(MAKE_DIRECTORY ${WORK_DIR})
@@ -26,7 +27,9 @@ function(same a b what)
     endif()
 endfunction()
 
-set(SCENARIO ${SOURCE_DIR}/scenarios/scripted-hop.yaml)
+if(NOT DEFINED SCENARIO)
+    set(SCENARIO ${SOURCE_DIR}/scenarios/scripted-hop.yaml)
+endif()
 run(${SITL} --scenario ${SCENARIO} --out ${WORK_DIR}/sitl1.brlog)
 run(${SITL} --scenario ${SCENARIO} --out ${WORK_DIR}/sitl2.brlog)
 same(${WORK_DIR}/sitl1.brlog ${WORK_DIR}/sitl2.brlog "a rerun from the same seed is not identical")

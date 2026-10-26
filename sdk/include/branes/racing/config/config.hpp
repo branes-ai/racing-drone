@@ -212,7 +212,7 @@ struct FaultEvent {
 /// file's directory.
 ///
 /// Invariants: the course and vehicle files exist; duration_s > 0; seed is given;
-/// sim rates and limits are in range; randomization fractions ∈ [0, 1); every
+/// speed_limit_m_s, if given, > 0; sim rates and limits are in range; randomization fractions ∈ [0, 1); every
 /// fault has 0 ≤ t_s < until_s and its own fields in range.
 struct ScenarioConfig {
     std::string name;
@@ -222,9 +222,10 @@ struct ScenarioConfig {
     std::filesystem::path vehicle_path;  ///< resolved
     double duration_s{0};
     std::uint64_t seed{0};
-    SimParams sim;                   ///< optional `sim:` block
-    Randomization randomization;     ///< optional `randomization:` block
-    std::vector<FaultEvent> faults;  ///< optional `faults:` list, in file order
+    std::optional<double> speed_limit_m_s;  ///< optional: the scoreboard fails a run that exceeds it [m/s]
+    SimParams sim;                          ///< optional `sim:` block
+    Randomization randomization;            ///< optional `randomization:` block
+    std::vector<FaultEvent> faults;         ///< optional `faults:` list, in file order
 
     friend bool operator==(const ScenarioConfig&, const ScenarioConfig&) = default;
 };

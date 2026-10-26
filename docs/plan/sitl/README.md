@@ -1,6 +1,6 @@
 # SITL harness on the reflex dynamics
 
-**Status:** Approved 2026-10-26, in implementation
+**Status:** Approved 2026-10-26, implemented ([racing-drone#18](https://github.com/branes-ai/racing-drone/pull/18))
 **Issue:** [racing-drone#16](https://github.com/branes-ai/racing-drone/issues/16), part of the Phase 1 epic [racing-drone#8](https://github.com/branes-ai/racing-drone/issues/8)
 **Related:** [implementation plan](../implementation-plan.md) Phase 1, [test plan](../test-plan.md) §2–§6, [architecture](../../arch/framework-architecture.md), [ADR 0001](../../adr/0001-baseline-composition-framework.md)
 
@@ -12,9 +12,9 @@ This plan replaces Phase 0's `SyntheticSensors` (a vehicle at rest) with closed-
 
 | Item | What | State |
 |---|---|---|
-| [racing-drone#16](https://github.com/branes-ai/racing-drone/issues/16) | This plan: SITL harness, sensor models, oracle gates, faults, scoreboard | Open |
-| [racing-drone#18](https://github.com/branes-ai/racing-drone/pull/18) | The implementation; this document lands with it | Open |
-| [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | Next: B0 `gt-pid` baseline and gate P1, which consume this harness | Open |
+| [racing-drone#16](https://github.com/branes-ai/racing-drone/issues/16) | This plan: SITL harness, sensor models, oracle gates, faults, scoreboard | Closed |
+| [racing-drone#18](https://github.com/branes-ai/racing-drone/pull/18) | The implementation; this document landed with it | Merged |
+| [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | Next: B0 `gt-pid` baseline and gate P1, which consume this harness ([B0 plan](../b0/README.md)) | Open |
 
 ### What it builds on (merged)
 

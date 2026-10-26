@@ -4,8 +4,13 @@
 ///
 /// The harnesses (SITL, replay, flight) feed the stack the same three events —
 /// an IMU sample, a camera frame, a control tick — so a log of the events
-/// replays to the same outputs (SYS-08, SW-03). The stack itself reads no
-/// clock and draws no random numbers: time arrives with the events.
+/// replays to the same outputs (SYS-08, SW-03). SITL and its replays add a
+/// fourth, the true state (on_truth), which only TruthConsumer slots read. The
+/// stack itself reads no clock and draws no random numbers: time arrives with
+/// the events.
+///
+/// create() builds each slot from a SlotContext (slots/context.hpp) where the
+/// slot supports it; the constructor takes the slots ready-made.
 ///
 /// Model
 /// -----
@@ -23,10 +28,14 @@
 /// tracker an empty set until the DroneNet detector lands (Phase 6).
 
 #include <branes/racing/msg/course.hpp>
+#include <branes/racing/msg/truth.hpp>
+#include <branes/racing/result.hpp>
+#include <branes/racing/slots/context.hpp>
 #include <branes/racing/slots/slots.hpp>
 
 #include <cassert>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace branes::racing {
@@ -60,6 +69,50 @@ public:
           safe_(std::move(safe)), daa_(std::move(daa)), fc_(std::move(fc)) {
         assert(valid(map_));  // Pre / I1
         assert(check_invariant());
+    }
+
+    /// Build every slot from `ctx` (make_slot: from_context where the slot has
+    /// it, else default), in slot order; the first failure is returned.
+    /// Pre: valid(map). Post: I1, I2 (no tick yet).
+    [[nodiscard]] static result<Stack, std::string> create(const CourseMap<T>& map, const SlotContext& ctx) {
+        auto est = make_slot<Est>(ctx);
+        auto det = make_slot<Det>(ctx);
+        auto plan = make_slot<Plan>(ctx);
+        auto ctl = make_slot<Ctl>(ctx);
+        auto safe = make_slot<Safe>(ctx);
+        auto daa = make_slot<Daa>(ctx);
+        auto fc = make_slot<Fc>(ctx);
+        for (const std::string* e : {error_of(est),
+                                     error_of(det),
+                                     error_of(plan),
+                                     error_of(ctl),
+                                     error_of(safe),
+                                     error_of(daa),
+                                     error_of(fc)}) {
+            if (e != nullptr) {
+                return *e;
+            }
+        }
+        return Stack(map,
+                     std::move(est).value(),
+                     std::move(det).value(),
+                     std::move(plan).value(),
+                     std::move(ctl).value(),
+                     std::move(safe).value(),
+                     std::move(daa).value(),
+                     std::move(fc).value());
+    }
+
+    /// Hand the true state to every TruthConsumer slot (SITL only). Pre: valid(x).
+    void on_truth(const TruthState<T>& x) {
+        assert(valid(x));  // Pre
+        give_truth(est_, x);
+        give_truth(det_, x);
+        give_truth(plan_, x);
+        give_truth(ctl_, x);
+        give_truth(safe_, x);
+        give_truth(daa_, x);
+        give_truth(fc_, x);
     }
 
     /// Feed one IMU sample to the estimator. Pre: valid(s).
@@ -97,8 +150,32 @@ public:
     [[nodiscard]] Fc& fc_bridge() noexcept {
         return fc_;
     }
+    [[nodiscard]] const Est& estimator() const noexcept {
+        return est_;
+    }
+    [[nodiscard]] const Plan& planner() const noexcept {
+        return plan_;
+    }
+    [[nodiscard]] const Ctl& controller() const noexcept {
+        return ctl_;
+    }
 
 private:
+    template <class S>
+    [[nodiscard]] static const std::string* error_of(const result<S, std::string>& r) noexcept {
+        return r ? nullptr : &r.error();
+    }
+
+    template <class S>
+    static void give_truth(S& slot, const TruthState<T>& x) {
+        if constexpr (TruthConsumer<S, T>) {
+            slot.process_truth(x);
+        } else {
+            (void)slot;
+            (void)x;
+        }
+    }
+
     [[nodiscard]] bool check_invariant() const noexcept {
         return valid(map_);  // I1 (I2 is checked at the tick entry)
     }

@@ -97,12 +97,17 @@ int main(int argc, char** argv) {
         return fail(vehicle.error().to_string());
     }
 
+    auto built = racing::harness::make_stack<racing::baseline::Composition<double>>(course->map, *vehicle, *baseline);
+    if (!built) {
+        return fail(built.error());
+    }
+    auto& stack = *built;
+
     auto writer = racing::log::LogWriter::open(*out_path, header);
     if (!writer) {
         return fail(writer.error().path + ": " + writer.error().message);
     }
 
-    racing::baseline::Composition<double> stack(course->map);
     racing::harness::Runner runner(stack);
     std::vector<racing::log::LogRecord> recorded;
     std::vector<racing::log::LogRecord> produced;

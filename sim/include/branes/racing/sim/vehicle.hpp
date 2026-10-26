@@ -2,9 +2,8 @@
 /// @file vehicle.hpp
 /// @brief The reflex plant parameters for a vehicle file, and the per-run randomization.
 ///
-/// reflex_params_from() maps a VehicleConfig onto reflex's QuadrotorParams.
-/// The vehicle file has no battery model yet, so the reflex defaults (a large
-/// battery, no sag) stay. The ground is a plane at the start pad's height, so
+/// reflex_params_from() maps a VehicleConfig onto reflex's QuadrotorParams
+/// (glue/reflex_params.hpp). The ground is a plane at the start pad's height, so
 /// a vehicle starts at rest on the pad.
 ///
 /// randomize() applies a scenario's `randomization:` block: each parameter p
@@ -13,6 +12,7 @@
 /// returned so the harness can log them.
 
 #include <branes/racing/config/config.hpp>
+#include <branes/racing/glue/reflex_params.hpp>
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/result.hpp>
 #include <branes/racing/util/splitmix64.hpp>
@@ -27,28 +27,11 @@ namespace rx = branes::reflex;
 
 using PlantParams = rx::model::QuadrotorParams<double>;
 
-/// reflex QuadrotorParams for `v`, with the ground at `ground_z` [m].
-/// Fails unless the result passes reflex's quadrotor_params_valid.
+/// reflex QuadrotorParams for `v`, with the ground at `ground_z` [m]
+/// (the mapping is shared with the controllers, glue/reflex_params.hpp).
 [[nodiscard]] inline result<PlantParams, std::string> reflex_params_from(const config::VehicleConfig& v,
                                                                          double ground_z) {
-    if (v.rotor_count != rx::model::kRotors) {
-        return std::string("the reflex model simulates quadrotors only (rotor_count 4)");
-    }
-    PlantParams p;
-    p.mass = v.mass;
-    p.inertia = {v.inertia[0], v.inertia[1], v.inertia[2]};
-    p.arm_length = v.arm_length;
-    p.thrust_coefficient = v.rotor.thrust_coefficient;
-    p.torque_coefficient = v.rotor.torque_coefficient;
-    p.max_thrust = v.rotor.max_thrust;
-    p.motor_time_constant = v.rotor.time_constant;
-    p.drag_linear = {v.drag.linear[0], v.drag.linear[1], v.drag.linear[2]};
-    p.drag_quadratic = {v.drag.quadratic[0], v.drag.quadratic[1], v.drag.quadratic[2]};
-    p.ground_z = ground_z;
-    if (!rx::model::quadrotor_params_valid(p)) {
-        return std::string("vehicle '" + v.name + "' does not give valid reflex model parameters");
-    }
-    return p;
+    return glue::reflex_params_from<double>(v, ground_z);
 }
 
 /// The values one run drew from its scenario's randomization block.

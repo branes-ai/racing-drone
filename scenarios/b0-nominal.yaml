@@ -1,0 +1,17 @@
+# Gate P1 (docs/plan/b0/, test plan §6): baseline B0 on the a2rl-2025 course,
+# nominal group. Each run of the gate uses seed + i, i = 0 … N−1. The
+# randomization half-widths are this plan's nominal group (the test plan does
+# not quantify it); "stress" doubles each.
+name: b0-nominal
+course: ../courses/a2rl-2025.yaml
+vehicle: ../vehicles/rp1.yaml
+duration_s: 120
+seed: 1700
+speed_limit_m_s: 5.0
+randomization:
+  mass: 0.05
+  inertia: 0.1
+  drag: 0.1
+  motor_time_constant: 0.1
+  start_xy_m: 0.2
+  start_yaw_rad: 0.05

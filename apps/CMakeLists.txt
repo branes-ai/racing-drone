@@ -6,6 +6,7 @@
 
 racing_add_baseline(null)
 racing_add_baseline(scripted-hop)
+racing_add_baseline(b0-gt-pid)
 
 # score_log: the scoreboard for any baseline's SITL log (sim/score.hpp).
 add_executable(score_log ${CMAKE_CURRENT_SOURCE_DIR}/score/main.cpp)

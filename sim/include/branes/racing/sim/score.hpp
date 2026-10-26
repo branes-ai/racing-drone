@@ -14,6 +14,9 @@
 ///    contact after the vehicle has left the pad, before the run is complete,
 ///    is a crash.
 ///  - **Geofence.** Any truth position outside the course geofence.
+///  - **Speed.** max_speed is the largest true speed from takeoff until the
+///    run is complete. With a speed limit (the scenario's speed_limit_m_s),
+///    exceeding it fails the run.
 ///  - **Laps.** A lap is the course sequence passed in order. Lap 1 is timed
 ///    from takeoff (the first truth sample off the ground); each later lap
 ///    from the end of the one before.
@@ -21,11 +24,13 @@
 ///    the gate center, and the latest logged estimate's (t_valid ≤ crossing
 ///    time) distance from it.
 ///
-/// success = every lap complete, no collision, no geofence breach.
+/// success = every lap complete, no collision, no geofence breach, and no
+/// speed above the limit.
 ///
 /// Model
 /// -----
 ///   map_      : CourseMap [owned, immutable]
+///   limit_    : optional speed limit [m/s] [immutable]
 ///   prev_     : last truth sample
 ///   est_      : latest state estimate
 ///   next_     : index into the sequence of the next expected gate; lap_ the lap
@@ -72,14 +77,18 @@ struct Score {
     std::vector<GatePassage> passages;
     bool collision{false};
     bool geofence_breach{false};
+    double max_speed_m_s{0};  ///< from takeoff to completion
+    bool speed_limit_exceeded{false};
     std::string failure;  ///< the first failure, if any
 };
 
 class Scorer {
 public:
-    /// Pre: valid(map).
-    explicit Scorer(const CourseMap<double>& map) : map_(map) {
-        assert(valid(map_));  // Pre
+    /// Pre: valid(map); speed_limit, if given, > 0.
+    explicit Scorer(const CourseMap<double>& map, std::optional<double> speed_limit = std::nullopt)
+        : map_(map), limit_(speed_limit) {
+        assert(valid(map_));             // Pre
+        assert(!limit_ || *limit_ > 0);  // Pre
     }
 
     void on_estimate(const StateEstimate<double>& x) {
@@ -97,6 +106,16 @@ public:
             lap_start_ = x.t;
             start_ = x.t;
         }
+        if (took_off_ && !complete()) {
+            const double v = std::sqrt(x.velocity[0] * x.velocity[0] + x.velocity[1] * x.velocity[1] +
+                                       x.velocity[2] * x.velocity[2]);
+            if (v > score_.max_speed_m_s) {
+                score_.max_speed_m_s = v;
+            }
+            if (limit_ && v > *limit_) {
+                fail_once(score_.speed_limit_exceeded, "speed limit exceeded at t=" + seconds(x.t));
+            }
+        }
         if (took_off_ && x.on_ground && !complete()) {
             fail_once(score_.collision, "ground contact at t=" + seconds(x.t));
         }
@@ -110,9 +129,14 @@ public:
         return lap_ == map_.laps;  // I3
     }
 
+    /// True once the run has failed (collision, geofence, speed); it cannot recover.
+    [[nodiscard]] bool failed() const noexcept {
+        return !score_.failure.empty();
+    }
+
     [[nodiscard]] Score score() const {
         Score s = score_;
-        s.success = complete() && !s.collision && !s.geofence_breach;
+        s.success = complete() && !s.collision && !s.geofence_breach && !s.speed_limit_exceeded;
         if (!complete() && s.failure.empty()) {
             s.failure = "incomplete: " + std::to_string(s.gates_passed) + " gates passed";
         }
@@ -198,6 +222,7 @@ private:
     }
 
     CourseMap<double> map_;
+    std::optional<double> limit_;
     std::optional<TruthState<double>> prev_;
     std::optional<StateEstimate<double>> est_;
     std::uint32_t next_{0};
@@ -236,6 +261,10 @@ private:
     out += s.collision ? "true" : "false";
     out += ",\"geofence_breach\":";
     out += s.geofence_breach ? "true" : "false";
+    std::snprintf(buf, sizeof buf, ",\"max_speed_m_s\":%.6f", s.max_speed_m_s);
+    out += buf;
+    out += ",\"speed_limit_exceeded\":";
+    out += s.speed_limit_exceeded ? "true" : "false";
     out += ",\"failure\":\"";
     for (const char c : s.failure) {
         if (c == '"' || c == '\\') {

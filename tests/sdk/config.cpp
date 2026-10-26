@@ -256,6 +256,26 @@ TEST_CASE("scenario: sim, randomization, and fault errors name the key", "[confi
           "(parsed)");
 }
 
+TEST_CASE("scenario: the optional speed limit parses, round-trips, and must be positive", "[config]") {
+    const auto s = load_scenario(src / "scenarios/b0-nominal.yaml");
+    REQUIRE(s);
+    REQUIRE(s->speed_limit_m_s);
+    CHECK(*s->speed_limit_m_s == 5.0);
+    const auto back = parse_scenario(emit_scenario(*s), "emitted", src / "scenarios");
+    REQUIRE(back);
+    CHECK(*back == *s);
+    const auto none = load_scenario(src / "scenarios/scripted-hop.yaml");
+    REQUIRE(none);
+    CHECK_FALSE(none->speed_limit_m_s);
+    const std::string head =
+        "name: t\ncourse: ../courses/a2rl-2025.yaml\nvehicle: ../vehicles/rp1.yaml\nduration_s: 1\nseed: 1\n";
+    for (const char* bad : {"speed_limit_m_s: 0\n", "speed_limit_m_s: -1\n", "speed_limit_m_s: fast\n"}) {
+        const auto r = parse_scenario(head + bad, "case", src / "scenarios");
+        REQUIRE_FALSE(r);
+        CHECK(r.error().key == "speed_limit_m_s");
+    }
+}
+
 TEST_CASE("fault_event_valid checks every invariant", "[config]") {
     FaultEvent f;
     CHECK(fault_event_valid(f));  // the defaults: link_loss over the whole run

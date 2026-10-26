@@ -54,3 +54,32 @@ add_test(NAME gate.sitl.determinism
         -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_sitl
         -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
+
+# ── Baseline B0 and phase gate P1 (docs/plan/b0/) ──────────────────────────
+# B0 is the first stateful stack: one short run must rerun and replay
+# byte-identically, like the scripted-hop fixture.
+add_test(NAME gate.b0.determinism
+    COMMAND ${CMAKE_COMMAND}
+        -DSITL=$<TARGET_FILE:sitl_b0-gt-pid>
+        -DREPLAY=$<TARGET_FILE:replay_b0-gt-pid>
+        -DSCORE=$<TARGET_FILE:score_log>
+        -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DSCENARIO=${PROJECT_SOURCE_DIR}/scenarios/b0-determinism.yaml
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_b0
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
+
+# P1 smoke, on every PR (test plan L2 PR tier): 10 nominal seeds, all succeed.
+add_test(NAME gate.p1.smoke
+    COMMAND sitl_batch_b0-gt-pid
+        --scenario ${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml --seeds 10 --min-success 1)
+set_tests_properties(gate.p1.smoke PROPERTIES LABELS "gate")
+
+# P1 in full (test plan §6): 500 nominal seeds, >= 99 % succeed. Nightly only
+# (.github/workflows/nightly.yml configures with RACING_NIGHTLY_TESTS=ON).
+option(RACING_NIGHTLY_TESTS "Register the nightly gate tests (gate.p1.full)" OFF)
+if(RACING_NIGHTLY_TESTS)
+    add_test(NAME gate.p1.full
+        COMMAND sitl_batch_b0-gt-pid
+            --scenario ${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml --seeds 500 --min-success 0.99)
+    set_tests_properties(gate.p1.full PROPERTIES LABELS "gate;nightly" TIMEOUT 3600)
+endif()

@@ -96,7 +96,11 @@ int main(int argc, char** argv) {
         return fail("--cycles too large for the control rate (tick time would overflow)");
     }
 
-    racing::baseline::Composition<double> stack(course->map);
+    auto built = racing::harness::make_stack<racing::baseline::Composition<double>>(course->map, *vehicle, *baseline);
+    if (!built) {
+        return fail(built.error());
+    }
+    auto& stack = *built;
     for (long long i = 0; i < cycles; ++i) {
         (void)stack.on_tick(racing::Timestamp{i * *period});
     }

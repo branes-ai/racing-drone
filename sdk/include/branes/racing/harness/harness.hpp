@@ -5,6 +5,7 @@
 ///  - Args: `--key value` / `--flag` command-line parsing.
 ///  - check_baseline(): the startup check of ADR 0001 — the baseline file
 ///    matches the name and composition hash compiled into the binary.
+///  - make_stack(): a baseline's Stack, its slots built from the configs.
 ///  - Runner: feeds log records to a Stack and encodes its outputs. SITL and
 ///    replay both go through it, so a replay of a SITL log reproduces the
 ///    SITL outputs record for record.
@@ -131,6 +132,16 @@ struct FileContent {
     return FileContent{std::move(text), std::move(hash)};
 }
 
+// ── stack construction ──────────────────────────────────────────────
+
+/// Stack::create() for a harness: the course, vehicle, and baseline files
+/// make the slot context. Pre: valid(map).
+template <class StackT>
+[[nodiscard]] result<StackT, std::string>
+make_stack(const CourseMap<double>& map, const config::VehicleConfig& vehicle, const config::BaselineConfig& baseline) {
+    return StackT::create(map, SlotContext{vehicle, baseline, map});
+}
+
 // ── runner ──────────────────────────────────────────────────────────
 
 /// One record the stack produced.
@@ -184,10 +195,19 @@ public:
             out.push_back(Output{log::Channel::command, rec.t, codec::encode(y.command)});
             break;
         }
-        case log::Channel::truth:
+        case log::Channel::truth: {
+            // SITL only: the stack hands it to TruthConsumer slots (B0's
+            // ground-truth estimator), so a replay reproduces their outputs.
+            const auto x = codec::decode_truth(rec.payload);
+            if (!x || !valid(*x)) {
+                return std::string("undecodable truth record at t=" + std::to_string(rec.t.ns));
+            }
+            stack_.on_truth(*x);
+            break;
+        }
         case log::Channel::oracle_gates:
         case log::Channel::sim_config:
-            break;  // sim channels: recorded, not consumed by the stack (yet)
+            break;  // sim channels: recorded, not consumed by the stack
         default:
             return std::string("not an input channel");
         }

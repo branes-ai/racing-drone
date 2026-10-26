@@ -1,0 +1,19 @@
+# SITL determinism gate for baseline B0 (docs/plan/b0/): the first stateful
+# stack, through takeoff and the first gates, with the nominal randomization,
+# IMU noise, and a camera-corruption fault, so every random stream is in use.
+# Short, so the four logs the gate compares stay small.
+name: b0-determinism
+course: ../courses/a2rl-2025.yaml
+vehicle: ../vehicles/rp1.yaml
+duration_s: 8
+seed: 1700
+speed_limit_m_s: 5.0
+randomization:
+  mass: 0.05
+  inertia: 0.1
+  drag: 0.1
+  motor_time_constant: 0.1
+  start_xy_m: 0.2
+  start_yaw_rad: 0.05
+faults:
+  - {type: camera_corrupt, t_s: 0.0, probability: 0.25}
