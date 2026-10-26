@@ -1,15 +1,19 @@
 # apps/ — the harness executables, generated per baseline (cmake/baselines.cmake).
 #
-# Each baseline in baselines/ yields flight_stack_<name>, replay_<name>, and
-# sitl_<name>, built from the sources in apps/<harness>/ against that
-# baseline's generated composition header.
+# Each baseline in baselines/ yields flight_stack_<name>, replay_<name>,
+# sitl_<name>, and sitl_batch_<name>, built from the sources in apps/<harness>/
+# against that baseline's generated composition header. DEBUG_SCENARIO is the
+# scenario the Visual Studio debugger runs by default.
 
-racing_add_baseline(null)
-racing_add_baseline(scripted-hop)
-racing_add_baseline(b0-gt-pid)
+racing_add_baseline(null DEBUG_SCENARIO scenarios/null-smoke.yaml)
+racing_add_baseline(scripted-hop DEBUG_SCENARIO scenarios/scripted-hop.yaml)
+racing_add_baseline(b0-gt-pid DEBUG_SCENARIO scenarios/b0-determinism.yaml)
 
 # score_log: the scoreboard for any baseline's SITL log (sim/score.hpp).
 add_executable(score_log ${CMAKE_CURRENT_SOURCE_DIR}/score/main.cpp)
 target_link_libraries(score_log PRIVATE branes::racing branes::racing_sim)
 racing_set_warnings(score_log)
-set_target_properties(score_log PROPERTIES FOLDER "Tools")
+set_target_properties(score_log PROPERTIES
+    FOLDER "Tools"
+    VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    VS_DEBUGGER_COMMAND_ARGUMENTS "--log \"${CMAKE_BINARY_DIR}/b0-gt-pid.brlog\"")
