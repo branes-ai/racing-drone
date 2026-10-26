@@ -1,0 +1,24 @@
+# Baseline B0 `gt-pid` (docs/plan/b0/): perfect state, a waypoint path through
+# the gate centers, and the reflex position/attitude cascade. SITL only: the
+# estimator reads the simulated truth (SYS-02). It answers "can the stack fly
+# the course at all?" and bounds the later baselines from above. Gate P1:
+# two laps of a2rl-2025 at <= 5 m/s in >= 99 % of 500 nominal seeds.
+name: b0-gt-pid
+composition:
+  estimator: GroundTruthEstimator
+  gate_detector: NullGateDetector
+  planner: WaypointPlanner
+  controller: CascadedPid
+  safety_filter: NullSafetyFilter
+  daa_tracker: NullDaaTracker
+  fc_bridge: NullFcBridge
+parameters:
+  control_rate_hz: 250     # position and attitude loops; SimFc runs the rate loop at 1 kHz
+  cruise_speed_m_s: 4.0    # WaypointPlanner
+  corner_speed_m_s: 2.5
+  lookahead_m: 0.3
+  switch_radius_m: 1.0
+  gate_approach_m: 2.0
+  corner_radius_m: 1.5
+  corner_angle_deg: 60
+  max_speed_m_s: 4.5       # CascadedPid: velocity-setpoint cap, under the 5 m/s gate limit

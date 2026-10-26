@@ -36,3 +36,12 @@ racing_register_impl(NullFcBridge     SLOT fc_bridge     HEADER ${_null} TYPE br
 # Test fixtures: open-loop components for the SITL gates (not racing components).
 racing_register_impl(ScriptedHopController SLOT controller HEADER branes/racing/slots/scripted.hpp
                      TYPE branes::racing::ScriptedHopController)
+
+# Baseline B0 (docs/plan/b0/): the SITL ground-truth estimator, the waypoint
+# planner, and the reflex cascade adapter (baselines/glue/).
+racing_register_impl(GroundTruthEstimator SLOT estimator HEADER branes/racing/slots/ground_truth.hpp
+                     TYPE branes::racing::GroundTruthEstimator)
+racing_register_impl(WaypointPlanner SLOT planner HEADER branes/racing/slots/waypoint.hpp
+                     TYPE branes::racing::WaypointPlanner)
+racing_register_impl(CascadedPid SLOT controller HEADER branes/racing/glue/cascaded_pid.hpp
+                     TYPE branes::racing::glue::CascadedPid)

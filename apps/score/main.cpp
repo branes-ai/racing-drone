@@ -1,11 +1,12 @@
 // score_log: score a SITL log against its course (test plan §3).
 //
-//   score_log --log <run.brlog>
+//   score_log --log <run.brlog> [--speed-limit <m/s>]
 //
 // Reads the course from the log header, the true state from the `truth`
 // channel, and the stack's estimates from the `state` channel, and prints one
 // JSON line: success, laps, lap times, gate errors (true and estimated),
-// collision, geofence breach, and the first failure. Any baseline's log scores
+// collision, geofence breach, max speed, and the first failure. With
+// --speed-limit (the scenario's speed_limit_m_s), a faster run fails. Any baseline's log scores
 // the same way, so the scoreboard compares like with like.
 
 #include <branes/racing/config/config.hpp>
@@ -14,6 +15,8 @@
 #include <branes/racing/msg/codec.hpp>
 #include <branes/racing/sim/score.hpp>
 
+#include <charconv>
+#include <cmath>
 #include <cstdio>
 #include <optional>
 #include <string>
@@ -34,12 +37,21 @@ int main(int argc, char** argv) {
     if (!args) {
         return fail(args.error());
     }
-    if (auto bad = args->only({"log"})) {
+    if (auto bad = args->only({"log", "speed-limit"})) {
         return fail(*bad);
     }
     const auto in_path = args->value("log");
     if (!in_path) {
-        return fail("usage: --log <run.brlog>");
+        return fail("usage: --log <run.brlog> [--speed-limit <m/s>]");
+    }
+    std::optional<double> speed_limit;
+    if (const auto l = args->value("speed-limit")) {
+        double v = 0;
+        const auto [end, ec] = std::from_chars(l->data(), l->data() + l->size(), v);
+        if (ec != std::errc{} || end != l->data() + l->size() || !std::isfinite(v) || !(v > 0)) {
+            return fail("--speed-limit must be a positive number");
+        }
+        speed_limit = v;
     }
     auto reader = racing::log::LogReader::open(*in_path);
     if (!reader) {
@@ -49,7 +61,7 @@ int main(int argc, char** argv) {
     if (!course) {
         return fail(course.error().to_string());
     }
-    racing::sim::Scorer scorer(course->map);
+    racing::sim::Scorer scorer(course->map, speed_limit);
     std::uint64_t truths = 0;
     std::optional<racing::Timestamp> last_truth;
     for (;;) {

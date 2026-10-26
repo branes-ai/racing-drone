@@ -80,6 +80,12 @@ int main(int argc, char** argv) {
         return fail(sim.error());
     }
 
+    auto built = racing::harness::make_stack<racing::baseline::Composition<double>>(course->map, *vehicle, *baseline);
+    if (!built) {
+        return fail(built.error());
+    }
+    auto& stack = *built;
+
     racing::log::LogHeader header;
     header.baseline_name = std::string(racing::baseline::name);
     header.composition_hash = std::string(racing::baseline::composition_hash);
@@ -93,7 +99,6 @@ int main(int argc, char** argv) {
         return fail(writer.error().path + ": " + writer.error().message);
     }
 
-    racing::baseline::Composition<double> stack(course->map);
     racing::harness::Runner runner(stack);
     std::uint64_t ticks = 0;
     while (auto ev = sim->next()) {
