@@ -50,9 +50,13 @@ endif()
 # The SITL plant and the simulated flight controller (sim/). Pinned to a commit
 # on reflex main; bumps go via dedicated PRs. Its tests and benches are off
 # because it is not the top-level project. It brings MTL5 5.20.0 with it.
+# SYSTEM, like yaml-cpp: reflex is built warning-clean under its own flags, but
+# racing-drone's names can collide with its locals (MSVC C4459 sees a test's
+# `using namespace branes::racing` make racing's `ok` hide reflex locals).
 FetchContent_Declare(
     reflex
     GIT_REPOSITORY https://github.com/branes-ai/reflex.git
     GIT_TAG        33ad1bbea37cfe05f22286c2525d7a751da2b482  # main after reflex#33
+    SYSTEM
 )
 FetchContent_MakeAvailable(reflex)
