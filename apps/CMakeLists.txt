@@ -5,3 +5,10 @@
 # baseline's generated composition header.
 
 racing_add_baseline(null)
+racing_add_baseline(scripted-hop)
+
+# score_log: the scoreboard for any baseline's SITL log (sim/score.hpp).
+add_executable(score_log ${CMAKE_CURRENT_SOURCE_DIR}/score/main.cpp)
+target_link_libraries(score_log PRIVATE branes::racing branes::racing_sim)
+racing_set_warnings(score_log)
+set_target_properties(score_log PROPERTIES FOLDER "Tools")

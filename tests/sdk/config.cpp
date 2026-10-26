@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <string>
 
 using namespace branes::racing;
@@ -182,4 +183,94 @@ TEST_CASE("baseline: name rule, missing slot, unknown slot", "[config]") {
           "composition.fc_bridge");
     CHECK(parse_baseline("name: x\n" + slots + "  pilot_arbiter: A\n", "case").error().key ==
           "composition.pilot_arbiter");
+}
+
+TEST_CASE("vehicle: optional IMU fields default to 0 and are range-checked", "[config]") {
+    const auto v = parse_vehicle(rp1_text(), "rp1");
+    REQUIRE(v);
+    CHECK(v->imu.latency_s == 0.001);
+    CHECK(v->imu.initial_gyro_bias_sigma == 5.0e-3);
+    // Without the optional keys the vehicle still loads, with zeros.
+    std::string bare = rp1_text();
+    for (const std::string key : {"  gyro_bias_random_walk:",
+                                  "  accel_bias_random_walk:",
+                                  "  initial_gyro_bias_sigma:",
+                                  "  initial_accel_bias_sigma:",
+                                  "  latency_s:"}) {
+        const auto at = bare.find(key);
+        REQUIRE(at != std::string::npos);
+        bare.erase(at, bare.find('\n', at) - at + 1);
+    }
+    const auto b = parse_vehicle(bare, "bare");
+    REQUIRE(b);
+    CHECK(b->imu.latency_s == 0);
+    CHECK(b->imu.gyro_bias_random_walk == 0);
+    CHECK(parse_vehicle(replace(rp1_text(), "latency_s: 0.001", "latency_s: 0.2"), "case").error().key ==
+          "imu.latency_s");
+    CHECK(parse_vehicle(replace(rp1_text(), "initial_gyro_bias_sigma: 5.0e-3", "initial_gyro_bias_sigma: -1"), "case")
+              .error()
+              .key == "imu.initial_gyro_bias_sigma");
+}
+
+TEST_CASE("scenario: sim, randomization, and faults parse and round-trip", "[config]") {
+    const auto s = load_scenario(src / "scenarios/scripted-hop.yaml");
+    REQUIRE(s);
+    CHECK(s->randomization.mass == 0.05);
+    CHECK(s->randomization.start_yaw_rad == 0.1);
+    REQUIRE(s->faults.size() == 2);
+    CHECK(s->faults[0].type == FaultType::camera_corrupt);
+    CHECK(s->faults[0].probability == 0.25);
+    CHECK(s->faults[0].until_s == kMaxDurationS);
+    CHECK(s->faults[1].type == FaultType::imu_bias_step);
+    CHECK(s->faults[1].accel[2] == 0.1);
+    CHECK(s->sim == SimParams{});  // no sim block: the defaults
+    const auto back = parse_scenario(emit_scenario(*s), "emitted", src / "scenarios");
+    REQUIRE(back);
+    REQUIRE(*back == *s);
+}
+
+TEST_CASE("scenario: sim, randomization, and fault errors name the key", "[config]") {
+    const auto base = src / "scenarios";
+    const std::string head =
+        "name: t\ncourse: ../courses/a2rl-2025.yaml\nvehicle: ../vehicles/rp1.yaml\nduration_s: 1\nseed: 1\n";
+    const auto key = [&](const std::string& tail) {
+        const auto r = parse_scenario(head + tail, "case", base);
+        return r ? std::string("(parsed)") : r.error().key;
+    };
+    CHECK(key("sim: {physics_rate_hz: 50}\n") == "sim.physics_rate_hz");
+    CHECK(key("sim: {command_timeout_s: 0}\n") == "sim.command_timeout_s");
+    CHECK(key("sim: {fc_gyro_lowpass_hz: 600}\n") == "sim.fc_gyro_lowpass_hz");
+    CHECK(key("sim: {test_pattern_frames: maybe}\n") == "sim.test_pattern_frames");
+    CHECK(key("sim: {bogus: 1}\n") == "sim.bogus");
+    CHECK(key("randomization: {mass: 1.0}\n") == "randomization.mass");
+    CHECK(key("randomization: {start_xy_m: -1}\n") == "randomization.start_xy_m");
+    CHECK(key("faults: [{type: gremlin, t_s: 0}]\n") == "faults[0].type");
+    CHECK(key("faults: [{type: link_loss, t_s: 2, until_s: 1}]\n") == "faults[0]");
+    CHECK(key("faults: [{type: link_loss, t_s: 0, until_s: 1e30}]\n") == "faults[0]");
+    CHECK(key("faults: [{type: motor_scale, t_s: 0, rotor: 4, scale: 0.5}]\n") == "faults[0].rotor");
+    CHECK(key("faults: [{type: motor_scale, t_s: 0, rotor: 1, scale: 1.5}]\n") == "faults[0].scale");
+    CHECK(key("faults: [{type: camera_corrupt, t_s: 0, probability: 2}]\n") == "faults[0].probability");
+    CHECK(key("faults: [{type: command_delay, t_s: 0, delay_s: 3}]\n") == "faults[0].delay_s");
+    CHECK(key("faults: [{type: link_loss, t_s: 0, probability: 1}]\n") == "faults[0].probability");
+    CHECK(key("sim: {physics_rate_hz: 2000, test_pattern_frames: true}\nfaults: [{type: link_loss, t_s: 1}]\n") ==
+          "(parsed)");
+}
+
+TEST_CASE("fault_event_valid checks every invariant", "[config]") {
+    FaultEvent f;
+    CHECK(fault_event_valid(f));  // the defaults: link_loss over the whole run
+    const auto bad = [](auto&& edit) {
+        FaultEvent e;
+        edit(e);
+        return !fault_event_valid(e);
+    };
+    CHECK(bad([](FaultEvent& e) { e.t_s = -1; }));
+    CHECK(bad([](FaultEvent& e) { e.until_s = 0; }));
+    CHECK(bad([](FaultEvent& e) { e.until_s = 1e30; }));
+    CHECK(bad([](FaultEvent& e) { e.t_s = std::numeric_limits<double>::quiet_NaN(); }));
+    CHECK(bad([](FaultEvent& e) { e.probability = 1.5; }));
+    CHECK(bad([](FaultEvent& e) { e.delay_s = std::numeric_limits<double>::quiet_NaN(); }));
+    CHECK(bad([](FaultEvent& e) { e.scale = -0.1; }));
+    CHECK(bad([](FaultEvent& e) { e.rotor = 4; }));
+    CHECK(bad([](FaultEvent& e) { e.gyro[1] = std::numeric_limits<double>::infinity(); }));
 }

@@ -34,11 +34,16 @@ namespace branes::racing::log {
 inline constexpr std::uint32_t kLogVersion = 1;
 
 /// Record channels. Inputs (< 16) are what the harness feeds the stack;
-/// outputs (≥ 16) are what the stack produced.
+/// outputs (≥ 16) are what the stack produced. Sim channels (4–6) are inputs
+/// the SITL harness records for scoring and for SITL-only slots; the stack
+/// does not consume them yet, and replay copies them through.
 enum class Channel : std::uint16_t {
     imu = 1,
     camera = 2,
     tick = 3,
+    truth = 4,         ///< TruthState (SITL)
+    oracle_gates = 5,  ///< GateObservations projected from the truth (SITL)
+    sim_config = 6,    ///< the run's drawn randomization, as YAML text (SITL)
     state = 16,
     command = 17,
 };
@@ -47,8 +52,13 @@ enum class Channel : std::uint16_t {
     return static_cast<std::uint16_t>(c) >= 16;
 }
 
+[[nodiscard]] constexpr bool is_sim(Channel c) noexcept {
+    const auto v = static_cast<std::uint16_t>(c);
+    return v >= 4 && v <= 6;
+}
+
 [[nodiscard]] constexpr bool is_known(std::uint16_t c) noexcept {
-    return c == 1 || c == 2 || c == 3 || c == 16 || c == 17;
+    return (c >= 1 && c <= 6) || c == 16 || c == 17;
 }
 
 /// Run provenance (ADR 0001): what produced the log, and from which inputs.

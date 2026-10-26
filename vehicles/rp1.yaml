@@ -25,6 +25,11 @@ imu:
   accel_range_m_s2: 156.9                # ±16 g — saturates in flight (EST-07)
   gyro_noise_density: 1.7e-4             # placeholder
   accel_noise_density: 2.0e-3            # placeholder
+  gyro_bias_random_walk: 1.0e-5         # placeholder [rad/s²/√Hz]
+  accel_bias_random_walk: 1.0e-4        # placeholder [m/s³/√Hz]
+  initial_gyro_bias_sigma: 5.0e-3       # placeholder: turn-on bias, 1σ per axis [rad/s]
+  initial_accel_bias_sigma: 5.0e-2      # placeholder: turn-on bias, 1σ per axis [m/s²]
+  latency_s: 0.001                      # placeholder: FC sample → companion delivery
 camera:
   model: equidistant                     # 155° × 115° field of view: fisheye
   width: 820

@@ -3,14 +3,17 @@
 //   sitl_<baseline> --scenario <scenario.yaml> --out <run.brlog>
 //
 // The scenario names the course and vehicle (ADR 0001); --course and --vehicle
-// are rejected, so there is one source of truth. Phase 0 simulates a vehicle at
-// rest (harness::SyntheticSensors); the reflex dynamics model replaces it in
-// Phase 1. The log holds every input event and every output, so
-// replay_<baseline> can reproduce the run.
+// are rejected, so there is one source of truth. The vehicle flies on the
+// reflex dynamics model (sim::Simulator, docs/plan/sitl/): each tick's command
+// goes to the simulated flight controller, which drives the plant. The log
+// holds every input event, the sim channels (truth, oracle gates, the drawn
+// randomization), and every output, so replay_<baseline> can reproduce the run.
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/log/log.hpp>
+#include <branes/racing/msg/codec.hpp>
+#include <branes/racing/sim/simulator.hpp>
 
 #include "racing_baseline.hpp"
 
@@ -72,10 +75,9 @@ int main(int argc, char** argv) {
     }
 
     // Validate everything before LogWriter::open truncates --out.
-    auto sensors =
-        racing::harness::SyntheticSensors::create(*vehicle, scenario->duration_s, scenario->seed, control_hz);
-    if (!sensors) {
-        return fail(sensors.error());
+    auto sim = racing::sim::Simulator::create(*vehicle, course->map, *scenario, control_hz);
+    if (!sim) {
+        return fail(sim.error());
     }
 
     racing::log::LogHeader header;
@@ -94,7 +96,7 @@ int main(int argc, char** argv) {
     racing::baseline::Composition<double> stack(course->map);
     racing::harness::Runner runner(stack);
     std::uint64_t ticks = 0;
-    while (auto ev = sensors->next()) {
+    while (auto ev = sim->next()) {
         writer->write(ev->channel, ev->t, ev->payload);
         auto outputs = runner.feed(racing::log::LogRecord{ev->channel, ev->t, std::move(ev->payload)});
         if (!outputs) {
@@ -102,6 +104,15 @@ int main(int argc, char** argv) {
         }
         for (const auto& o : *outputs) {
             writer->write(o.channel, o.t, o.payload);
+            if (o.channel == racing::log::Channel::command) {
+                // The command the stack sent, back to the simulated FC.
+                // decode(encode(u)) == u: the codec writes every double exactly.
+                const auto u = racing::codec::decode_command(o.payload);
+                if (!u) {
+                    return fail("the stack produced a command that does not decode");
+                }
+                sim->command(*u);
+            }
         }
         if (ev->channel == racing::log::Channel::tick) {
             ++ticks;

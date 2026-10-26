@@ -98,4 +98,6 @@ function(racing_add_baseline name)
         racing_set_warnings(${target})
         set_target_properties(${target} PROPERTIES FOLDER "Baselines/${name}")
     endforeach()
+    # SITL closes the loop on the reflex dynamics (sim/).
+    target_link_libraries(sitl_${name} PRIVATE branes::racing_sim)
 endfunction()

@@ -138,7 +138,9 @@ concept FcBridge = requires(B b, const ThrustRates<T>& u, Timestamp now) {
 | `Controller` | `CascadedPid`, `Mpcc`, `TrackingNmpc`, `LearnedPolicy` | reflex (+ synapse for the policy) |
 | `SafetyFilter` | `PassThrough`, `CbfFilter` | reflex |
 | `DaaTracker` | `None`, `OracleIntruders` (SITL), `ImmTracker` | racing-drone, cortex |
-| `FcBridge` | `SimFc` (SITL), `BetaflightBridge` (interim), `ReflexFcBridge` | racing-drone, reflex |
+| `FcBridge` | `BetaflightBridge` (interim), `ReflexFcBridge` | racing-drone, reflex |
+
+In SITL the baseline's `FcBridge` stays unchanged (SYS-07). The SITL harness takes each tick's command and hands it to `sim::SimFc`, the simulated flight controller on the far side of the link, which runs the reflex rate loop and mixer on the plant ([SITL plan](../plan/sitl/README.md)). `SimFc` is therefore part of the simulator, not a slot implementation.
 
 A **learned controller** is a `Controller`, so it receives the same state and reference and is scored the same way. MonoRace's motor-level policy bypasses the FC rate loop. It is supported as a `Controller` with a `motor_commands` output variant that the FC accepts only in a configured mode.
 

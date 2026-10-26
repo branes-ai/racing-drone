@@ -35,6 +35,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/warnings.cmake)
 # The framework library: data contracts, slots, config loaders, log, harnesses.
 add_subdirectory(sdk)
 
+# The SITL harness library: reflex dynamics, sensor models, oracle gates,
+# faults, and the scoreboard (docs/plan/sitl/).
+add_subdirectory(sim)
+
 # Baselines: one set of harness executables per baselines/<name>.yaml
 # (docs/adr/0001-baseline-composition-framework.md).
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/slot_registry.cmake)

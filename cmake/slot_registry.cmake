@@ -32,3 +32,7 @@ racing_register_impl(NullController   SLOT controller    HEADER ${_null} TYPE br
 racing_register_impl(NullSafetyFilter SLOT safety_filter HEADER ${_null} TYPE branes::racing::NullSafetyFilter)
 racing_register_impl(NullDaaTracker   SLOT daa_tracker   HEADER ${_null} TYPE branes::racing::NullDaaTracker)
 racing_register_impl(NullFcBridge     SLOT fc_bridge     HEADER ${_null} TYPE branes::racing::NullFcBridge)
+
+# Test fixtures: open-loop components for the SITL gates (not racing components).
+racing_register_impl(ScriptedHopController SLOT controller HEADER branes/racing/slots/scripted.hpp
+                     TYPE branes::racing::ScriptedHopController)
