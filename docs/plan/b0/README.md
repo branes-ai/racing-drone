@@ -13,7 +13,7 @@ B0 is the first baseline that flies the course. It answers "can the stack fly th
 | Item | What | State |
 |---|---|---|
 | [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | This plan: B0 `gt-pid` baseline and gate P1 | Open |
-| PR (this document lands with it) | The implementation | Open |
+| [racing-drone#20](https://github.com/branes-ai/racing-drone/pull/20) | The implementation; this document lands with it | Open |
 
 ### What it builds on (merged)
 
