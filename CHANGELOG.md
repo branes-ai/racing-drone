@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/branes-ai/racing-drone/compare/v0.1.0...v0.2.0) (2026-10-26)
+
+
+### Features
+
+* **sim:** closed-loop sitl on the reflex dynamics ([#18](https://github.com/branes-ai/racing-drone/issues/18)) ([eeb38e9](https://github.com/branes-ai/racing-drone/commit/eeb38e985a4e10526b7fc7c24ba3224b853a39b1))
+
 ## 0.1.0 (2026-10-25)
 
 
