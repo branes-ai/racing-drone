@@ -158,16 +158,16 @@ private:
     }
 
     [[nodiscard]] bool check_invariant() const noexcept {
-        bool ok = true;
+        bool good = true;
         for (std::size_t i = 0; i < 3; ++i) {
-            ok = ok && std::isfinite(b_g_[i]) && std::isfinite(b_a_[i]);  // I1
+            good = good && std::isfinite(b_g_[i]) && std::isfinite(b_a_[i]);  // I1
         }
         for (std::size_t k = 1; k < size_; ++k) {
             const auto& a = pending_[(head_ + k - 1) % pending_.size()].first;
             const auto& b = pending_[(head_ + k) % pending_.size()].first;
-            ok = ok && !(b < a);  // I2
+            good = good && !(b < a);  // I2
         }
-        return ok;
+        return good;
     }
 
     config::ImuParams p_;

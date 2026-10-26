@@ -149,12 +149,12 @@ private:
     }
 
     [[nodiscard]] bool check_invariant() const noexcept {
-        bool ok = timeout_ns_ > 0 && dt_ > 0 && omega_max_ > 0;  // I1
-        ok = ok && (!cmd_ || valid(*cmd_));                      // I2
+        bool good = timeout_ns_ > 0 && dt_ > 0 && omega_max_ > 0;  // I1
+        good = good && (!cmd_ || valid(*cmd_));                    // I2
         for (const double w : out_.speeds) {
-            ok = ok && w >= 0 && w <= omega_max_;  // I3
+            good = good && w >= 0 && w <= omega_max_;  // I3
         }
-        return ok;
+        return good;
     }
 
     rx::control::RateController<double> rate_;
