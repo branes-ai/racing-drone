@@ -5,9 +5,11 @@
 # release-please changelog records dependency churn separately from feature work.
 #
 # The platform repos (cortex, reflex, synapse) and the Stillwater math
-# libraries (MTL5, Universal) join here in Phase 1, when racing-drone first
-# consumes one of their components (docs/plan/implementation-plan.md). Their
-# MTL5 / Universal pins must be aligned before that.
+# libraries (MTL5, Universal) join here as racing-drone first consumes one of
+# their components (docs/plan/implementation-plan.md). reflex joined first, for
+# the SITL harness (docs/plan/sitl/). The three repos pin the same MTL5
+# (5.20.0) and Universal (5.11.0), and each defines MTL5::mtl5 only if no one
+# has yet, so whichever is fetched first provides it for all.
 
 include(FetchContent)
 
@@ -43,3 +45,18 @@ if(RACING_BUILD_TESTS AND BUILD_TESTING)
     FetchContent_MakeAvailable(Catch2)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 endif()
+
+# ── branes-ai/reflex — dynamics model, rate loop, mixer, filters (MIT) ──
+# The SITL plant and the simulated flight controller (sim/). Pinned to a commit
+# on reflex main; bumps go via dedicated PRs. Its tests and benches are off
+# because it is not the top-level project. It brings MTL5 5.20.0 with it.
+# SYSTEM, like yaml-cpp: reflex is built warning-clean under its own flags, but
+# racing-drone's names can collide with its locals (MSVC C4459 sees a test's
+# `using namespace branes::racing` make racing's `ok` hide reflex locals).
+FetchContent_Declare(
+    reflex
+    GIT_REPOSITORY https://github.com/branes-ai/reflex.git
+    GIT_TAG        33ad1bbea37cfe05f22286c2525d7a751da2b482  # main after reflex#33
+    SYSTEM
+)
+FetchContent_MakeAvailable(reflex)
