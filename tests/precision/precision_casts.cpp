@@ -184,15 +184,22 @@ TEMPLATE_LIST_TEST_CASE("cast: double to T rounds to nearest", "[precision][cast
         const double r = double(t);
         const auto [below, above] = neighbors(t);
         INFO("v = " << v << ", T(v) = " << r << ", neighbors " << below << ", " << above);
-        const bool zero_excluded = is_posit<T> && v != 0;
-        if (!(zero_excluded && below == 0)) {
-            CHECK(std::fabs(v - r) <= std::fabs(v - below));
-        }
-        if (!(zero_excluded && above == 0)) {
-            CHECK(std::fabs(v - r) <= std::fabs(v - above));
-        }
-        if (zero_excluded) {
-            CHECK(r != 0);  // posits: a nonzero value stays nonzero
+        // No neighbor is closer. Zero is no candidate for a nonzero value in a
+        // posit; chosen at compile time (MSVC C4127 rejects a constant `if`).
+        const auto no_closer = [&](double neighbor) {
+            if constexpr (is_posit<T>) {
+                if (v != 0 && neighbor == 0) {
+                    return true;
+                }
+            }
+            return std::fabs(v - r) <= std::fabs(v - neighbor);
+        };
+        CHECK(no_closer(below));
+        CHECK(no_closer(above));
+        if constexpr (is_posit<T>) {
+            if (v != 0) {
+                CHECK(r != 0);  // posits: a nonzero value stays nonzero
+            }
         }
     }
     CHECK(double(T(0.0)) == 0.0);
