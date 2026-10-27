@@ -6,9 +6,9 @@
 
 ## 1. The question
 
-Most sensor measurements carry 3–4 significant digits, about 1 part in 1,000 to 10,000. Actuators resolve no better: DShot's throttle is an 11-bit value, about 2,000 steps. If the inputs and outputs of estimation and control carry only three or four digits, why compute in `double`, with its 16? Why not a 16-bit format such as bfloat16 or binary16?
+Most sensor measurements carry 3–4 significant digits, about 1 part in 1,000 to 10,000. Actuators resolve no better: DShot's throttle is an 11-bit value, about 2,000 steps. If the inputs and outputs of estimation and control carry only three or four digits, do we need to compute in `double` precision with 53 fraction bits? Are there opportunities to improve performance and/or energy efficiency by using mixed precision?
 
-The short answer: the precision a computation needs isn't set by the precision of its data. Four mechanisms set it, and for most of a flight stack they rule out 16-bit formats before data precision even matters. They don't rule out 32-bit formats, and they don't apply equally to every component. That unevenness is the case for choosing the arithmetic **per component**, and for building on libraries that make that choice cheap to study.
+The short answer: a computation's required precision isn't set by its data precision. For most of the flight stack, the computational precision requirements rule out existing 16-bit formats like fp16 and bf16, which are now readily available in many GPUs and NPUs. Furthermore, these requirements don't apply equally to every component. That unevenness is the case for choosing the arithmetic **per component**, and for building on libraries that make that choice cheap to study.
 
 Statements that are our own judgment, not a derivation or a cited fact, are marked *(assessment)*.
 
@@ -20,36 +20,36 @@ A rough budget for the digits a computation needs:
 
 ### 2.1 Representation: the format must hold the data
 
-A format with fewer significand digits than the measurement throws information away at the first conversion.
+A format with fewer significand digits than the measurement throws away information on the first conversion.
 
 - bfloat16 has an 8-bit significand: 1 part in 256, or 2.4 digits. That is **below** the 3–4 digits the question assumes.
 - binary16 has 11 bits: 1 part in 2,048, or 3.3 digits. That is at the low end of the range.
-- MEMS IMUs typically digitize to 16 bits *(assessment)*. Even the DShot output needs the full width of binary16.
+- MEMS IMUs typically digitize to 16 bits *(assessment)*. Even the DShot output needs the full 16-bit width.
 
 ### 2.2 Accumulation: small increments into large totals
 
-Most of a control stack integrates: positions from velocities, integrators from errors, attitudes from rates, progress along a path. When an increment `d` is added to a total `x`, round-to-nearest returns `x` unchanged if `|d| < ½ ulp(x)`. The increment is lost, and so is everything it carries. What matters is the ratio of the increment to the total, not the precision of the measurement.
+Most of a control stack's transformations are integration operators: positions from velocities, integrators from errors, attitudes from rates, progress along a path. When an increment `d` is added to a total `x`, round-to-nearest returns `x` unchanged if `|d| < ½ ulp(x)`. The increment is lost, and so is the information it carried. What matters is the ratio of the increment to the total, not the measurement precision.
 
-Examples at this stack's magnitudes. The physics step is 1 kHz and the control step 250 Hz (`ScenarioConfig::physics_rate_hz`, `baselines/b0-gt-pid.yaml`). The A2RL course spans x ∈ [0, 76] m (`courses/a2rl-2025.yaml`). ULPs are from Table 2.
+Examples at this stack's magnitudes. The physics step is 1 kHz and the control step is 250 Hz (`ScenarioConfig::physics_rate_hz`, `baselines/b0-gt-pid.yaml`). The A2RL course spans x ∈ [0, 76] m (`courses/a2rl-2025.yaml`). ULPs are from Table 2.
 
 - **Position at 4 m/s, integrated at 1 kHz,** grows by 4 mm per step.
-  - In bfloat16 at B0's start position (x ≈ 3.2 m, y ≈ 4.0 m), the ULP is 15.6–31.3 mm. The step is under half an ULP, so the integrated position doesn't move.
-  - In binary16 beyond 32 m, the ULP is 31.3 mm, and the same thing happens.
+  - In bfloat16 at B0's start position (x ≈ 3.2 m, y ≈ 4.0 m), the ULP is 15.6–31.3 mm. The integration step is less than half an ULP, so the integrated position stalls.
+  - In binary16 beyond 32 m, the ULP is 31.3 mm, and the same accumulation stall occurs.
 - **Position at a 250 Hz control step** grows by 16 mm at the 4 m/s cruise and 10 mm at the 2.5 m/s corner speed.
   - In binary16 between 32 and 64 m, ½ ULP is 15.6 mm.
-  - At corner speed the 10 mm step is lost entirely.
-  - At cruise the 16 mm step rounds **up** to a full 31.3 mm ULP, so the integrated speed is 1.95× the true one.
+  - At corner speed, the 10 mm step is lost entirely.
+  - At cruise speed, the 16 mm step rounds **up** to a full 31.3 mm ULP, so the integrated speed is 1.95× the true one.
   - Both errors come from rounding alone.
-- **A controller integrator** with a 1 cm error, k_i = 1 and dt = 4 ms gains 4e-5 per tick *(illustrative values)*. Near 0.5 the ULP is 4.9e-4 in binary16, 1.2e-4 in `posit<16,1>`, and 3.9e-3 in bfloat16. The increments vanish in all three, the integrator stops integrating, and the steady-state error it exists to remove comes back. reflex's cascade gives each velocity loop an integral bound of g/2 for a 33 % hover-thrust error (`cascade.hpp`), so the integral term is large precisely when it matters.
+- **A controller integrator** with a 1 cm error, k_i = 1 and dt = 4 ms gains 4e-5 per tick *(illustrative values)*. Near 0.5 the ULP is 4.9e-4 in binary16, 1.2e-4 in `posit<16,1>`, and 3.9e-3 in bfloat16. The increments vanish in all three; the integrator stops integrating, and the steady-state error it exists to remove comes back. reflex's cascade gives each velocity loop an integral bound of g/2 for a 33 % hover-thrust error (`cascade.hpp`), so the integral term is large precisely when it matters.
 
-Rounding errors that aren't lost compound instead. Re-normalizing a quaternion every step with relative error ε random-walks the attitude by about √N·ε. For binary16 (ε ≈ 1e-3) that is about 0.3 rad after 100,000 steps, under two minutes at 1 kHz.
+Rounding errors that aren't lost compound instead. Re-normalizing a quaternion every step with relative error ε random-walks the attitude by about √N·ε. For binary16 (ε ≈ 1e-3), that is about 0.3 rad after 100,000 steps, or 0.3 rad error in under two minutes of flight (100k samples at 1 kHz = 100 s).
 
 ### 2.3 Conditioning: steps that magnify rounding error
 
-An operation with condition number κ can magnify relative input error by κ, so it costs about log₁₀κ digits. The worst place in this stack will be the estimator's covariance, once B1 replaces ground truth with an EKF ([ADR 0004](../adr/0004-gate-relative-hybrid-estimation.md)):
+An operation with condition number κ can magnify relative input error by κ, costing about log₁₀κ digits. The worst place in this stack will be the estimator's covariance, once B1 replaces ground truth with an EKF ([ADR 0004](../adr/0004-gate-relative-hybrid-estimation.md)):
 - Its diagonal spans eight orders of magnitude or more. Position variance is around 1e-2 m², and gyro-bias variance around 1e-10 (rad/s)² *(typical values, assessment)*.
 - The update `P = (I − KH)P` subtracts nearly equal quantities.
-- Even in `double`, practical filters use the Joseph form or square-root forms to keep `P` symmetric positive definite.
+- Even in `double`, practical filters use the Joseph form or square-root forms to keep `P` symmetric positive definite (SPD).
 - Single-precision filters exist and fly: PX4's EKF2 is written in single precision *(assessment)*. They survive only because they were formulated carefully, and that care is part of the precision budget.
 
 Geometry solvers in the gate detector (multi-gate PnP) and the QP or NLP solvers of an MPC planner ([ADR 0002](../adr/0002-companion-mpc-fc-rate-loop.md), [ADR 0003](../adr/0003-mpc-primary-learned-policy-slot.md)) have the same character.
@@ -61,13 +61,13 @@ Precision and range are separate failures:
   - The bias variances above fall below the smallest positive subnormal, 6.0e-8, and underflow to zero. The filter becomes certain of its biases and stops learning them.
   - RP-1's thrust coefficient, k_f = 8.9e-7 N/(rad/s)², is below the smallest normal. It survives only as a subnormal with about 4 significant bits (8.9e-7 / 2⁻²⁴ ≈ 15).
     - The value is the current placeholder in `vehicles/rp1.yaml`, chosen for about 12 N at 3,665 rad/s, not a measured one.
-    - The conclusion doesn't hinge on it. In SI units, a rotor this size has k_f = T/ω² of order 1e-6 to 1e-7, because thrusts of newtons come from speeds of thousands of rad/s *(assessment)*. That is well below binary16's normal range.
-  - reflex's parameter validation (`quadrotor_params_valid`, invariant I1) rejects subnormal parameters, because their reciprocals overflow. So RP-1 can't be configured in binary16, and reflex's `tests/sdk/quadrotor_model.cpp` checks exactly that.
+    - The conclusion doesn't hinge on it. In SI units, a rotor this size has k_f = T/ω² on the order of 1e-6 to 1e-7, because thrusts in newtons come from speeds of thousands of rad/s *(assessment)*. That is well below binary16's normal range.
+  - reflex's parameter validation (`quadrotor_params_valid`, invariant I1) rejects subnormal parameters because their reciprocals overflow. So RP-1 can't be configured in binary16, and reflex's `tests/sdk/quadrotor_model.cpp` checks exactly that.
   - The battery capacity, 1e5 J, overflows.
 - **bfloat16 fails on precision.** It has binary32's range but only an 8-bit significand.
 - **Posits trade one for the other.** They taper: more fraction bits near 1 and fewer at the extremes. The trade suits values that cluster near 1, and penalizes large course-frame coordinates (Table 2).
 
-Time is the one quantity this repo has already taken out of the scalar type. `Timestamp` is int64 nanoseconds. As binary16 seconds, t = 120 s has an ULP of 62.5 ms, so a 4 ms tick couldn't be represented. As binary32 seconds, t = 3,600 s has an ULP of 0.24 ms.
+Time is the only quantity this repo fixes. `Timestamp` is int64 nanoseconds. As binary16 seconds, t = 120 s has an ULP of 62.5 ms, so a 4 ms tick couldn't be represented. As binary32 seconds, t = 3,600 s has an ULP of 0.24 ms.
 
 ## 3. The formats
 
@@ -76,10 +76,15 @@ Time is the one quantity this repo has already taken out of the scalar type. `Ti
 | Format | Bits | Significand | ε (relative step at 1) | Smallest normal | Largest |
 |---|---|---|---|---|---|
 | binary64 (`double`) | 64 | 53 | 2.2e-16 | 2.2e-308 | 1.8e308 |
+| binary48 (`cfloat<48,8>`) | 48 | 40 | tbd | tbd | tbd |
+| binary40 (`cfloat<40,8>`) | 40 | 32 | tbd | tbd | tbd |
 | binary32 (`float`, `cfloat<32,8>`) | 32 | 24 | 1.2e-7 | 1.2e-38 | 3.4e38 |
+| binary24 (`cfloat<24,8>`) | 24 | 26 | tbd | tbd | tbd |
 | bfloat16 (`cfloat<16,8>`) | 16 | 8 | 7.8e-3 | 1.2e-38 | 3.4e38 |
 | binary16 (`cfloat<16,5>`) | 16 | 11 | 9.8e-4 | 6.1e-5 | 65,504 |
+| `posit<48,2>` | 48 | up to 44 | tbd near 1 | minpos tbd | maxpos tbd |
 | `posit<32,2>` | 32 | up to 28 | 7.5e-9 near 1 | minpos 7.5e-37 | maxpos 1.3e36 |
+| `posit<24,2>` | 24 | up to 20 | tbd near 1 | minpos tbd | maxpos tbd |
 | `posit<16,1>` | 16 | up to 13 | 2.4e-4 near 1 | minpos 3.7e-9 | maxpos 2.7e8 |
 
 **Table 2.** ULP at the stack's magnitudes, derived from the format definitions. For posits, the fraction-bit count is in parentheses.
@@ -112,7 +117,7 @@ For scale: a gate's inner opening is 1.5 m, a half-width of 0.75 m.
 
 Two conclusions follow:
 1. **No single format is right for the whole stack.** The floor ranges from int8 in the network to binary64 in the reference. A uniform `T` either wastes energy and bandwidth where the numerics are easy, or fails where they are hard.
-2. **The hard spots are few and identifiable:** accumulators, ill-conditioned updates, and wide-range quantities. The hypothesis behind per-component precision is that keeping exactly those in 32 bits lets most of the arithmetic go lower.
+2. **The hard spots are few and identifiable:** accumulators, ill-conditioned updates, and wide-range quantities. The hypothesis behind per-component precision is that keeping only those in 32 bits lets most of the arithmetic run at lower precision.
 
 ## 5. Hypotheses
 
@@ -124,28 +129,28 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
 - **H2: bfloat16 fails on precision.** The stack constructs, but fails P1 by tracking error.
   - *Basis:* position ULPs of 0.25–0.5 m on most of the course, against a 0.75 m gate half-width. Integrators stall below ½ ULP (1.95e-3 at 0.5).
 - **H3: binary16 fails on range, before flight.** `reflex_params_from<binary16>` rejects RP-1, so the stack doesn't construct.
-  - *Basis:* k_f = 8.9e-7 (the placeholder in `vehicles/rp1.yaml`) is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters, the check reflex already makes for its model.
-  - *What would refute it:* the stack constructing, which would mean k_f never reaches the T path.
+  - *Basis:* k_f = 8.9e-7 (the placeholder in `vehicles/rp1.yaml`) is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters; the check reflex already makes for its model.
+  - *What would refute it:* the stack construction, which would mean k_f never reaches the T path.
 - **H4: `posit<16,1>` fails, and the failure grows with distance from the origin.**
   - *Basis:* 12 fraction bits near 1 is better than binary16's 10. But at 64 m it has 9 bits, an ULP of 0.125 m, and its integrator ULP at 0.5 is 1.2e-4.
-  - *Prediction:* it constructs (its range covers k_f), then fails P1. Gate errors are worse on the course's far end (x > 32 m) than near the start.
+  - *Prediction:* it constructs (its range covers k_f), then fails P1. Gate errors are worse at the far end of the course (x > 32 m) than near the start.
 - **H5: mixed precision recovers 16 bits.** The configuration:
   - **binary32:** the accumulators (controller integrators, course-frame positions) and the vehicle parameters and constants (k_f among them);
   - **bfloat16:** all other arithmetic, the stateless products and the gain multiplications.
 
   Prediction: this B0 passes P1.
-  - *Basis:* §2–§4. The failures predicted in H2–H4 all come from accumulation and range, not from the stateless arithmetic.
+  - *Basis:* §2–§4. The failures predicted in H2–H4 come from accumulation and range, not stateless arithmetic.
   - bfloat16 is the 16-bit format here because its range covers every intermediate value. A binary16 variant would also need every small constant kept in 32 bits (H3).
   - Testing it needs precision chosen within and across slots, which is the follow-up to #30 (§6).
 
-The hypotheses can fail in informative ways. If H1 fails, the stack has a conditioning or accumulation problem we haven't identified, and it would hurt float32 flight hardware too. If H2–H4 *pass*, the mechanisms in §2 matter less in closed loop than this analysis predicts, because feedback corrects the error. That is worth knowing on its own.
+The hypotheses can fail in informative ways. If H1 fails, the stack has an unidentified conditioning or accumulation problem, and it would hurt float32 flight hardware too. If H2–H4 *pass*, the mechanisms in §2 matter less in closed loop than this analysis predicts, because feedback corrects the error. That is worth knowing on its own.
 
 ## 6. Why articulate precision per component
 
 Precision is a cost, not only a correctness question *(assessment)*:
 - A multiplier's area and energy grow roughly with the square of its significand width.
 - Memory traffic, and so cache footprint and bandwidth, grows linearly with the total width.
-- The stack's target hardware runs CPU + GPU today, and CPU + KPU later. The KPU is designed around number formats chosen per operator for energy and accuracy (cortex ADR 0015).
+- The stack's target hardware runs CPU + GPU today, and CPU + KPU later. The KPU is designed around number formats optimized per operator for energy and accuracy (Cortex ADR 0015).
 - A stack locked to binary64 can't use that, and a stack locked to one 16-bit format can't fly (§5).
 
 The framework has the compile-time seams to investigate this, but per-slot precision is a future change to the slot contracts:
@@ -156,18 +161,18 @@ The framework has the compile-time seams to investigate this, but per-slot preci
 
 ## 7. Why MTL5 and Universal
 
-The experiment and the product share a requirement: the same algorithm source has to run, unchanged, in many number systems, including formats with no hardware on the development host. For the scalar types and the linear algebra over them, the platform uses two Stillwater libraries (cortex ADR 0015):
+The experiment and the product share a requirement: the same algorithm source must run unchanged across many number systems, including formats with no hardware support on the development host. For the scalar types and the linear algebra over them, the platform uses two Stillwater libraries (cortex ADR 0015):
 
 - **[Universal](https://github.com/stillwater-sc/universal)** supplies the number systems.
-  - **Coverage beyond IEEE.** One parameterized `cfloat<nbits, es>` gives IEEE-layout formats of any width: binary32, bfloat16, binary16 and others. Universal also provides posits with their quire (an exact dot-product accumulator), fixed-point, logarithmic number systems, and intervals. A hypothesis such as "accumulation is the bottleneck" can be tested directly by switching only the accumulator to a quire or to a wider format.
-  - **No hardware needed.** The types are emulated in software, so a 16-bit experiment runs on any CI host. Results don't depend on whether a CPU has native fp16, on FPU modes, or on compiler flags such as FMA contraction *(assessment)*.
-  - **Already in use across the platform.** reflex instantiates its PID, quadrotor model and biquads in `posit<32,2>`, `posit<16,1>`, `cfloat<32,8>`, bfloat16 and binary16 in its own tests. cortex runs a Kalman filter over posits in its type-smoke tests.
+  - **Coverage beyond IEEE.** One parameterized `cfloat<nbits, es>` gives IEEE-layout formats of any width: binary32, bfloat16, binary16 and others. Universal also provides posits with their quire (an exact dot-product accumulator), fixed-point, logarithmic number systems, and intervals. You can test a hypothesis such as "accumulation is the bottleneck" by switching only the accumulator to a quire or a wider format.
+  - **No hardware needed.** The types are emulated in software, so a 16-bit experiment runs on any CI host. Results don't depend on whether a CPU has native FP16, on FPU modes, or on compiler flags such as FMA contraction *(assessment)*.
+  - **Already in use across the platform.** reflex instantiates its PID, quadrotor model, and biquads in `posit<32,2>`, `posit<16,1>`, `cfloat<32,8>`, bfloat16, and binary16 in its own tests. cortex runs a Kalman filter over posits in its type-smoke tests.
 - **[MTL5](https://github.com/stillwater-sc/mtl5)** supplies the linear algebra.
-  - **Generic over the value type.** Dense, sparse and fixed-size matrices, Krylov solvers and sparse direct solvers are templated on the scalar, so an EKF or QP written once runs in every Universal type. reflex's quadrotor model already runs on MTL5's fixed-size types.
+  - **Generic over the value type.** Dense, sparse, and fixed-size matrices, Krylov solvers, and sparse direct solvers are templated on the scalar, so an EKF or QP written once runs in every Universal type. reflex's quadrotor model already runs on MTL5's fixed-size types.
   - **Co-developed with Universal.** Genericity gaps get fixed upstream rather than worked around, for example stillwater-sc/mtl5#538 (cortex ADR 0015).
 - **Alternatives considered** *(assessment)*:
   - *Native `float`/`double` only.* This can't test 16-bit formats or posits, which is the question here.
-  - *Compiler extended types* (`_Float16`, `__bf16`). Availability depends on the compiler and target, they are IEEE layouts only, and there are no posits, fixed-point or quire.
+  - *Compiler extended types* (`_Float16`, `__bf16`). Availability depends on the compiler and target; they are IEEE layouts only, with no posits, fixed-point, or quire.
   - *Eigen with custom scalar types.* It's possible, but the platform repos standardized on MTL5. A second linear-algebra library would split the generic-code effort and the validated-type set.
 - **Costs we accept.**
   - Emulated types are much slower than hardware floats, so the sweep is an offline or nightly run, not a per-PR one.
@@ -177,7 +182,7 @@ The experiment and the product share a requirement: the same algorithm source ha
 ## 8. Evidence so far, from the sibling repos
 
 These are properties that tests in sibling repos already check. They aren't new measurements.
-- **The reflex PID closed loop** (`tests/sdk/pid.cpp`) runs 4 s at 1 kHz. It is required to match the `double` result within 1e-5 for the 32-bit types (`float`, `posit<32,2>`, `cfloat<32,8>`), and within 1e-2 for `posit<16,1>`. Those tolerances encode the expected 32-bit/16-bit gap of about three orders of magnitude.
+- **The reflex PID closed loop** (`tests/sdk/pid.cpp`) runs for 4 s at 1 kHz. It is required to match the `double` result within 1e-5 for the 32-bit types (`float`, `posit<32,2>`, `cfloat<32,8>`), and within 1e-2 for `posit<16,1>`. Those tolerances encode the expected 32-bit/16-bit gap of about three orders of magnitude.
 - **The reflex quadrotor model** (`tests/sdk/quadrotor_model.cpp`) holds its state invariants (unit attitude, finite state, energy and ground) in `posit<16,1>` and bfloat16 on a spinning, climbing vehicle. Its parameter validation rejects RP-1 in binary16 because k_f underflows. The invariants show the model stays *well-formed* in 16 bits. They say nothing about *accuracy*, which is what P1 measures.
 - **The reflex biquads** (`tests/sdk/dsp_biquad.cpp`) report notch depth for `posit<16,1>` and binary16 as a characterization, without gating it. The low-pass tests run in `double` and `float` only.
 
