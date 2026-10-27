@@ -6,7 +6,7 @@
 
 ## 1. The question
 
-Most sensor measurements carry 3–4 significant digits, about 1 part in 1,000 to 10,000. Actuators resolve no better: DShot's throttle is an 11-bit value, about 2,000 steps. If the inputs and outputs of estimation and control carry only three or four digits, do we need to compute in `double` precision with 53 fraction bits? Are there opportunities to improve performance and/or energy efficiency by using mixed precision?
+Most sensor measurements carry 3–4 significant digits, about 1 part in 1,000 to 10,000. Actuators resolve no better: DShot's throttle is an 11-bit value, about 2,000 steps. If the inputs and outputs of estimation and control carry only three or four digits, do we need to compute in `double` precision, with its 53-bit significand? Are there opportunities to improve performance and/or energy efficiency by using mixed precision?
 
 The short answer: a computation's required precision isn't set by its data precision. For most of the flight stack, the computational precision requirements rule out existing 16-bit formats like fp16 and bf16, which are now readily available in many GPUs and NPUs. Furthermore, these requirements don't apply equally to every component. That unevenness is the case for choosing the arithmetic **per component**, and for building on libraries that make that choice cheap to study.
 
@@ -24,7 +24,7 @@ A format with fewer significand digits than the measurement throws away informat
 
 - bfloat16 has an 8-bit significand: 1 part in 256, or 2.4 digits. That is **below** the 3–4 digits the question assumes.
 - binary16 has 11 bits: 1 part in 2,048, or 3.3 digits. That is at the low end of the range.
-- MEMS IMUs typically digitize to 16 bits *(assessment)*. Even the DShot output needs the full 16-bit width.
+- MEMS IMUs typically digitize to 16 bits *(assessment)*. Even the DShot throttle, an 11-bit value inside a 16-bit frame, needs all 11 significand bits of binary16.
 
 ### 2.2 Accumulation: small increments into large totals
 
@@ -34,7 +34,7 @@ Examples at this stack's magnitudes. The physics step is 1 kHz and the control s
 
 - **Position at 4 m/s, integrated at 1 kHz,** grows by 4 mm per step.
   - In bfloat16 at B0's start position (x ≈ 3.2 m, y ≈ 4.0 m), the ULP is 15.6–31.3 mm. The integration step is less than half an ULP, so the integrated position stalls.
-  - In binary16 beyond 32 m, the ULP is 31.3 mm, and the same accumulation stall occurs.
+  - In binary16 between 32 and 64 m, the ULP is 31.3 mm, and the same accumulation stall occurs.
 - **Position at a 250 Hz control step** grows by 16 mm at the 4 m/s cruise and 10 mm at the 2.5 m/s corner speed.
   - In binary16 between 32 and 64 m, ½ ULP is 15.6 mm.
   - At corner speed, the 10 mm step is lost entirely.
@@ -78,7 +78,7 @@ Time is the only quantity this repo fixes. `Timestamp` is int64 nanoseconds. As 
 | binary64 (cfloat<64,11> or double) | 64 | 53 | 2.220446e-16 | 2.225074e-308 | 1.797693e+308 |
 | binary48 (cfloat<48,8>) | 48 | 40 | 1.818989e-12 | 1.175494e-38 | 3.402824e+38 |
 | binary40 (cfloat<40,8>) | 40 | 32 | 4.656613e-10 | 1.175494e-38 | 3.402824e+38 |
-| binary32 (cfloat<32,8> or float) | 64 | 53 | 1.192093e-07 | 1.175494e-38 | 3.402823e+38 |
+| binary32 (cfloat<32,8> or float) | 32 | 24 | 1.192093e-07 | 1.175494e-38 | 3.402823e+38 |
 | binary24 (cfloat<24,8>) | 24 | 16 | 3.051758e-05 | 1.175494e-38 | 3.402772e+38 |
 | bfloat16 (cfloat<16,8> or bfloat) | 16 | 8 | 7.812500e-03 | 1.175494e-38 | 3.389531e+38 |
 | binary16 (cfloat<16,5> or FP16) | 16 | 11 | 9.765625e-04 | 6.103516e-05 | 6.550400e+04 |
@@ -86,6 +86,7 @@ Time is the only quantity this repo fixes. `Timestamp` is int64 nanoseconds. As 
 | posit<32,2> | 32 | up to 28 | 7.450581e-09 | 7.523164e-37 | 1.329228e+36 |
 | posit<24,2> | 24 | up to 20 | 1.907349e-06 | 3.231174e-27 | 3.094850e+26 |
 | posit<16,2> | 16 | up to 12 | 4.882813e-04 | 1.387779e-17 | 7.205759e+16 |
+| posit<16,1> | 16 | up to 13 | 2.441406e-04 | 3.725290e-09 | 2.684355e+08 |
 | lns<32,24> | 32 | 24 | 4.13148e-08 | 5.42101e-20 | 1.84467e+19 |
 | lns<16,8> | 16 | 8 | 0.00271028 | 5.43571e-20 | 1.83969e+19 |
 | fixpnt<32,16> | 32 | 16 | 0.0000152587890625 | 0.0000152587890625 | 32767.9999847412109375 |
@@ -134,7 +135,7 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
   - *Basis:* position ULPs of 0.25–0.5 m on most of the course, against a 0.75 m gate half-width. Integrators stall below ½ ULP (1.95e-3 at 0.5).
 - **H3: binary16 fails on range, before flight.** `reflex_params_from<binary16>` rejects RP-1, so the stack doesn't construct.
   - *Basis:* k_f = 8.9e-7 (the placeholder in `vehicles/rp1.yaml`) is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters; the check reflex already makes for its model.
-  - *What would refute it:* the stack construction, which would mean k_f never reaches the T path.
+  - *What would refute it:* the stack constructing, which would mean k_f never reaches the T path.
 - **H4: `posit<16,1>` fails, and the failure grows with distance from the origin.**
   - *Basis:* 12 fraction bits near 1 is better than binary16's 10. But at 64 m it has 9 bits, an ULP of 0.125 m, and its integrator ULP at 0.5 is 1.2e-4.
   - *Prediction:* it constructs (its range covers k_f), then fails P1. Gate errors are worse at the far end of the course (x > 32 m) than near the start.
@@ -147,7 +148,7 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
   - bfloat16 is the 16-bit format here because its range covers every intermediate value. A binary16 variant would also need every small constant kept in 32 bits (H3).
   - Testing it needs precision chosen within and across slots, which is the follow-up to #30 (§6).
 
-The hypotheses can fail in informative ways. If H1 fails, the stack has an unidentified conditioning or accumulation problem, and it would hurt float32 flight hardware too. If H2–H4 *pass*, the mechanisms in §2 matter less in closed loop than this analysis predicts, because feedback corrects the error. That is worth knowing on its own.
+The hypotheses can fail in informative ways. If `float` fails H1, the stack has an unidentified conditioning or accumulation problem, and it would hurt binary32 flight hardware too. A failure confined to `cfloat<32,8>` or `posit<32,2>` points at that format, and needs its own analysis. If H2–H4 *pass*, the mechanisms in §2 matter less in closed loop than this analysis predicts, because feedback corrects the error. That is worth knowing on its own.
 
 ## 6. Why articulate precision per component
 
