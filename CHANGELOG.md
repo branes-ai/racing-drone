@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/branes-ai/racing-drone/compare/v0.4.0...v0.5.0) (2026-10-27)
+
+
+### Features
+
+* **log:** record the planner reference as a log channel ([#26](https://github.com/branes-ai/racing-drone/issues/26)) ([cbcfba8](https://github.com/branes-ai/racing-drone/commit/cbcfba89d324e3d22a757af8f857580017943256))
+
 ## [0.4.0](https://github.com/branes-ai/racing-drone/compare/v0.3.0...v0.4.0) (2026-10-26)
 
 
