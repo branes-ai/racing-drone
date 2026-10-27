@@ -71,9 +71,9 @@ Time is the only quantity this repo fixes. `Timestamp` is int64 nanoseconds. As 
 
 ## 3. The formats
 
-**Table 1.** Format definitions: significand bits include the hidden bit; posit fraction bits vary with the value.
+**Table 1.** Format definitions: significand bits include the hidden bit; posit fraction bits vary with the value. The smallest-positive column is the smallest normal for the IEEE-layout `cfloat` formats, and the smallest positive value for posits (minpos), lns and fixpnt, which have no normal/subnormal split.
 
-| Format | Bits | Significand | ε (relative step at 1) | Smallest normal | Largest |
+| Format | Bits | Significand | ε (relative step at 1) | Smallest positive | Largest |
 |---|---|---|---|---|---|
 | binary64 (cfloat<64,11> or double) | 64 | 53 | 2.220446e-16 | 2.225074e-308 | 1.797693e+308 |
 | binary48 (cfloat<48,8>) | 48 | 40 | 1.818989e-12 | 1.175494e-38 | 3.402824e+38 |
@@ -135,7 +135,7 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
   - *Basis:* position ULPs of 0.25–0.5 m on most of the course, against a 0.75 m gate half-width. Integrators stall below ½ ULP (1.95e-3 at 0.5).
 - **H3: binary16 fails on range, before flight.** `reflex_params_from<binary16>` rejects RP-1, so the stack doesn't construct.
   - *Basis:* k_f = 8.9e-7 (the placeholder in `vehicles/rp1.yaml`) is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters; the check reflex already makes for its model.
-  - *What would refute it:* the stack constructing, which would mean k_f never reaches the T path.
+  - *What would refute it:* the stack constructing. That alone wouldn't say why: whether k_f was represented or validated differently than predicted needs its own check.
 - **H4: `posit<16,1>` fails, and the failure grows with distance from the origin.**
   - *Basis:* 12 fraction bits near 1 is better than binary16's 10. But at 64 m it has 9 bits, an ULP of 0.125 m, and its integrator ULP at 0.5 is 1.2e-4.
   - *Prediction:* it constructs (its range covers k_f), then fails P1. Gate errors are worse at the far end of the course (x > 32 m) than near the start.
