@@ -7,6 +7,7 @@
 #include <branes/racing/msg/geometry.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace branes::racing {
@@ -47,6 +48,24 @@ template <typename T>
         }
     }
     return true;
+}
+
+/// Gate observations in another scalar type, element by element (all entries, used or not).
+template <typename To, typename From>
+[[nodiscard]] constexpr GateObservations<To> cast(const GateObservations<From>& g) noexcept {
+    GateObservations<To> out{};
+    out.count = g.count;
+    for (std::uint32_t i = 0; i < kMaxVisibleGates; ++i) {
+        const GateObservation<From>& o = g.gates[i];
+        GateObservation<To>& c = out.gates[i];
+        c.gate_id = o.gate_id;
+        for (std::size_t k = 0; k < o.corners.size(); ++k) {
+            c.corners[k] = cast<To>(o.corners[k]);
+        }
+        c.covariance = cast<To>(o.covariance);
+        c.quality = To(o.quality);
+    }
+    return out;
 }
 
 /// One intruder (another drone or obstacle) seen in one image.

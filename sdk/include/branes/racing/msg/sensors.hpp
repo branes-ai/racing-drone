@@ -48,6 +48,12 @@ template <typename T>
     return (s.saturated & ~imu_saturation_mask) == 0;  // I1
 }
 
+/// An IMU sample in another scalar type, element by element.
+template <typename To, typename From>
+[[nodiscard]] constexpr ImuSample<To> cast(const ImuSample<From>& s) noexcept {
+    return ImuSample<To>{s.t, cast<To>(s.gyro), cast<To>(s.accel), s.saturated, To(s.temperature)};
+}
+
 // ── Camera ──────────────────────────────────────────────────────────
 
 enum class PixelFormat : std::uint8_t {

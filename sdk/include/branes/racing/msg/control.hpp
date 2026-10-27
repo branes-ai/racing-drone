@@ -55,6 +55,19 @@ template <typename T>
     return true;
 }
 
+/// A reference in another scalar type, element by element (all samples, used or not).
+template <typename To, typename From>
+[[nodiscard]] constexpr Reference<To> cast(const Reference<From>& r) noexcept {
+    Reference<To> out{};
+    out.count = r.count;
+    for (std::uint32_t i = 0; i < kMaxReferenceSamples; ++i) {
+        const ReferenceSample<From>& s = r.samples[i];
+        out.samples[i] = ReferenceSample<To>{
+            s.t, cast<To>(s.position), cast<To>(s.velocity), cast<To>(s.acceleration), To(s.yaw), To(s.progress)};
+    }
+    return out;
+}
+
 /// Which fields of a ThrustRates command are in use (ADR 0002).
 enum class CommandKind : std::uint8_t {
     thrust_rates = 0,  ///< collective thrust + body rates, through the FC INDI / rate loop
@@ -88,6 +101,12 @@ template <typename T>
         }
     }
     return true;
+}
+
+/// A command in another scalar type, element by element.
+template <typename To, typename From>
+[[nodiscard]] constexpr ThrustRates<To> cast(const ThrustRates<From>& u) noexcept {
+    return ThrustRates<To>{u.t, u.kind, To(u.thrust), cast<To>(u.body_rates), cast<To>(u.motors)};
 }
 
 }  // namespace branes::racing

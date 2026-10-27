@@ -51,6 +51,19 @@ template <typename T>
     return true;
 }
 
+/// A state estimate in another scalar type, element by element.
+template <typename To, typename From>
+[[nodiscard]] constexpr StateEstimate<To> cast(const StateEstimate<From>& x) noexcept {
+    return StateEstimate<To>{x.t_valid,
+                             cast<To>(x.position),
+                             cast<To>(x.velocity),
+                             cast<To>(x.attitude),
+                             cast<To>(x.body_rates),
+                             cast<To>(x.accel_bias),
+                             cast<To>(x.gyro_bias),
+                             cast<To>(x.covariance)};
+}
+
 /// Estimator self-assessment, consumed by the health ladder (SAF-03).
 template <typename T>
 struct EstimatorHealth {
