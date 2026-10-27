@@ -1,6 +1,6 @@
 # Precision sweep of baseline B0
 
-**Status:** Approved 2026-10-27, implemented (PR pending)
+**Status:** Approved 2026-10-27, implemented ([racing-drone#33](https://github.com/branes-ai/racing-drone/pull/33))
 **Issue:** [racing-drone#30](https://github.com/branes-ai/racing-drone/issues/30), part of the Phase 2 epic [racing-drone#9](https://github.com/branes-ai/racing-drone/issues/9)
 **Related:** [mixed-precision assessment](../../assessments/mixed-precision.md) (H1–H5), [B0 plan](../b0/README.md), [SITL plan](../sitl/README.md), cortex ADR 0015
 
@@ -9,6 +9,7 @@
 | Item | What | State |
 |---|---|---|
 | [racing-drone#30](https://github.com/branes-ai/racing-drone/issues/30) | This plan | Open |
+| [racing-drone#33](https://github.com/branes-ai/racing-drone/pull/33) | The implementation and results; this document landed with it | Open |
 | [racing-drone#31](https://github.com/branes-ai/racing-drone/pull/31) | The assessment that derives H1–H5 | Merged |
 | [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | B0 and gate P1, which the sweep reuses | Closed |
 
