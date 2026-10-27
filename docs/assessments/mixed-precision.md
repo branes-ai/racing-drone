@@ -59,7 +59,9 @@ Geometry solvers in the gate detector (multi-gate PnP) and the QP or NLP solvers
 Precision and range are separate failures:
 - **binary16 fails on range.** Its smallest normal is 6.1e-5 and its largest value 65,504.
   - The bias variances above fall below the smallest positive subnormal, 6.0e-8, and underflow to zero. The filter becomes certain of its biases and stops learning them.
-  - RP-1's thrust coefficient k_f = 8.9e-7 is below the smallest normal. It survives only as a subnormal with about 4 significant bits (8.9e-7 / 2⁻²⁴ ≈ 15).
+  - RP-1's thrust coefficient, k_f = 8.9e-7 N/(rad/s)², is below the smallest normal. It survives only as a subnormal with about 4 significant bits (8.9e-7 / 2⁻²⁴ ≈ 15).
+    - The value is the current placeholder in `vehicles/rp1.yaml`, chosen for about 12 N at 3,665 rad/s, not a measured one.
+    - The conclusion doesn't hinge on it. In SI units, a rotor this size has k_f = T/ω² of order 1e-6 to 1e-7, because thrusts of newtons come from speeds of thousands of rad/s *(assessment)*. That is well below binary16's normal range.
   - reflex's parameter validation (`quadrotor_params_valid`, invariant I1) rejects subnormal parameters, because their reciprocals overflow. So RP-1 can't be configured in binary16, and reflex's `tests/sdk/quadrotor_model.cpp` checks exactly that.
   - The battery capacity, 1e5 J, overflows.
 - **bfloat16 fails on precision.** It has binary32's range but only an 8-bit significand.
@@ -122,7 +124,7 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
 - **H2: bfloat16 fails on precision.** The stack constructs, but fails P1 by tracking error.
   - *Basis:* position ULPs of 0.25–0.5 m on most of the course, against a 0.75 m gate half-width. Integrators stall below ½ ULP (1.95e-3 at 0.5).
 - **H3: binary16 fails on range, before flight.** `reflex_params_from<binary16>` rejects RP-1, so the stack doesn't construct.
-  - *Basis:* k_f = 8.9e-7 is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters, the check reflex already makes for its model.
+  - *Basis:* k_f = 8.9e-7 (the placeholder in `vehicles/rp1.yaml`) is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters, the check reflex already makes for its model.
   - *What would refute it:* the stack constructing, which would mean k_f never reaches the T path.
 - **H4: `posit<16,1>` fails, and the failure grows with distance from the origin.**
   - *Basis:* 12 fraction bits near 1 is better than binary16's 10. But at 64 m it has 9 bits, an ULP of 0.125 m, and its integrator ULP at 0.5 is 1.2e-4.
