@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/branes-ai/racing-drone/compare/v0.5.1...v0.5.2) (2026-10-27)
+
+
+### Documentation
+
+* **assessments:** mixed precision in the racing stack ([#31](https://github.com/branes-ai/racing-drone/issues/31)) ([6ef5682](https://github.com/branes-ai/racing-drone/commit/6ef56822217841000ef09770c40041bfe873b7dc))
+
 ## [0.5.1](https://github.com/branes-ai/racing-drone/compare/v0.5.0...v0.5.1) (2026-10-27)
 
 
