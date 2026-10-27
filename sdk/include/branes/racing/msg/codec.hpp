@@ -222,6 +222,51 @@ inline std::optional<FrameHeader> get_frame_header(ByteReader& r) {
     return u;
 }
 
+// ── Reference ───────────────────────────────────────────────────────
+
+/// Encodes the `count` used samples only.
+[[nodiscard]] inline std::vector<std::byte> encode(const Reference<double>& ref) {
+    ByteWriter w;
+    w.u32(ref.count);
+    for (std::uint32_t i = 0; i < ref.count && i < kMaxReferenceSamples; ++i) {
+        const ReferenceSample<double>& s = ref.samples[i];
+        w.i64(s.t.ns);
+        detail::put(w, s.position);
+        detail::put(w, s.velocity);
+        detail::put(w, s.acceleration);
+        w.f64(s.yaw);
+        w.f64(s.progress);
+    }
+    return w.take();
+}
+
+/// The unused samples of the result are value-initialized.
+[[nodiscard]] inline std::optional<Reference<double>> decode_reference(std::span<const std::byte> b) {
+    ByteReader r(b);
+    Reference<double> ref{};
+    ref.count = r.u32();
+    if (ref.count > kMaxReferenceSamples) {
+        return std::nullopt;
+    }
+    for (std::uint32_t i = 0; i < ref.count; ++i) {
+        ReferenceSample<double>& s = ref.samples[i];
+        s.t.ns = r.i64();
+        s.position = detail::get_vec3(r);
+        s.velocity = detail::get_vec3(r);
+        s.acceleration = detail::get_vec3(r);
+        s.yaw = r.f64();
+        s.progress = r.f64();
+        if (!detail::finite(s.position) || !detail::finite(s.velocity) || !detail::finite(s.acceleration) ||
+            !std::isfinite(s.yaw) || !std::isfinite(s.progress)) {
+            return std::nullopt;
+        }
+    }
+    if (!r.done() || !valid(ref)) {
+        return std::nullopt;
+    }
+    return ref;
+}
+
 // ── TruthState (sim channel) ────────────────────────────────────────
 
 [[nodiscard]] inline std::vector<std::byte> encode(const TruthState<double>& x) {

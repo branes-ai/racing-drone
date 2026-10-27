@@ -31,7 +31,7 @@
 
 namespace branes::racing::log {
 
-inline constexpr std::uint32_t kLogVersion = 1;
+inline constexpr std::uint32_t kLogVersion = 2;  ///< 2: the reference channel
 
 /// Record channels. Inputs (< 16) are what the harness feeds the stack;
 /// outputs (≥ 16) are what the stack produced. Sim channels (4–6) are inputs
@@ -46,6 +46,7 @@ enum class Channel : std::uint16_t {
     sim_config = 6,    ///< the run's drawn randomization, as YAML text (SITL)
     state = 16,
     command = 17,
+    reference = 18,  ///< the planner's Reference, the controller's input
 };
 
 [[nodiscard]] constexpr bool is_output(Channel c) noexcept {
@@ -58,7 +59,7 @@ enum class Channel : std::uint16_t {
 }
 
 [[nodiscard]] constexpr bool is_known(std::uint16_t c) noexcept {
-    return (c >= 1 && c <= 6) || c == 16 || c == 17;
+    return (c >= 1 && c <= 6) || (c >= 16 && c <= 18);
 }
 
 /// Run provenance (ADR 0001): what produced the log, and from which inputs.

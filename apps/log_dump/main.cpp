@@ -8,17 +8,15 @@
 //   vehicle.yaml         the vehicle file embedded in the log, verbatim
 //   sim_config.yaml      the run's drawn randomization (SITL logs)
 //   <channel>.csv        one per channel present: imu, camera, tick, truth,
-//                        oracle_gates, state, command
+//                        oracle_gates, state, reference, command
 //
 // Every CSV row starts with t_ns (the record time, exact) and t_s (the same
 // in seconds). Doubles are printed in shortest round-trip form, so a value
 // read back is the logged value. Attitudes are the logged quaternion (body →
 // course) plus roll, pitch, yaw [rad] in the Z-Y-X convention; state.csv
 // carries the covariance diagonal only, and camera.csv the frame header
-// without pixels. oracle_gates.csv has one row per observed gate.
-//
-// The planner's reference trajectory is not a log channel, so it does not
-// appear here.
+// without pixels. oracle_gates.csv has one row per observed gate, and
+// reference.csv one row per reference sample.
 
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/log/log.hpp>
@@ -137,6 +135,8 @@ const char* file_name(racing::log::Channel c) {
         return "sim_config.yaml";
     case Channel::state:
         return "state.csv";
+    case Channel::reference:
+        return "reference.csv";
     case Channel::command:
         return "command.csv";
     }
@@ -171,6 +171,8 @@ std::string columns(racing::log::Channel c) {
         }
         return s;
     }
+    case Channel::reference:
+        return t + ",count,index,sample_t_ns" + vec3("p") + vec3("v") + vec3("a") + ",yaw,progress";
     case Channel::command:
         return t + ",stamp_ns,kind,thrust" + vec3("w") + ",motor_0,motor_1,motor_2,motor_3";
     case Channel::sim_config:
@@ -274,6 +276,30 @@ std::optional<std::string> rows_of(const racing::log::LogRecord& r, std::uint64_
             put(row, x->covariance[i * racing::kErrorStateDim + i]);
         }
         break;
+    }
+    case Channel::reference: {
+        const auto x = codec::decode_reference(r.payload);
+        if (!x) {
+            return std::nullopt;
+        }
+        // One row per sample; an empty reference contributes no row.
+        const std::string time = row;
+        row.clear();
+        for (std::uint32_t i = 0; i < x->count; ++i) {
+            const racing::ReferenceSample<double>& s = x->samples[i];
+            row += time;
+            put(row, std::uint64_t{x->count});
+            put(row, std::uint64_t{i});
+            put(row, s.t.ns);
+            put(row, s.position);
+            put(row, s.velocity);
+            put(row, s.acceleration);
+            put(row, s.yaw);
+            put(row, s.progress);
+            row += '\n';
+        }
+        count = x->count;
+        return row;
     }
     case Channel::command: {
         const auto x = codec::decode_command(r.payload);

@@ -302,7 +302,7 @@ TEST_CASE("stack: on_truth reaches the estimator, and the Runner feeds the truth
     REQUIRE(runner.feed(log::LogRecord{log::Channel::truth, x.t, codec::encode(x)}));
     const auto out = runner.feed(log::LogRecord{log::Channel::tick, Timestamp{2'000'000}, {}});
     REQUIRE(out);
-    REQUIRE(out->size() == 2);
+    REQUIRE(out->size() == 3);  // state, reference, command
     const auto state = codec::decode_state((*out)[0].payload);
     REQUIRE(state);
     CHECK(state->position == x.position);
@@ -312,4 +312,19 @@ TEST_CASE("stack: on_truth reaches the estimator, and the Runner feeds the truth
     const auto broken = runner.feed(log::LogRecord{log::Channel::truth, Timestamp{3'000'000}, {}});
     REQUIRE_FALSE(broken);
     CHECK(broken.error().find("undecodable truth") != std::string::npos);
+}
+
+TEST_CASE("stack: B0's tick returns the reference its planner computed", "[b0][stack]") {
+    const auto vehicle = config::load_vehicle(src / "vehicles/rp1.yaml");
+    REQUIRE(vehicle);
+    const CourseMap<double> m = a2rl();
+    auto s = harness::make_stack<GtStack<double>>(m, *vehicle, baseline_with({}));
+    REQUIRE(s);
+    s->on_truth(truth(1'000'000, {5, 4, 2}, {1, 0, 0}));
+    (void)s->on_tick(Timestamp{1'000'000});  // the first tick builds the path
+    s->on_truth(truth(2'000'000, {5.004, 4, 2}, {1, 0, 0}));
+    auto twin = s->planner();  // the planner as the second tick finds it
+    const TickOutput<double> y = s->on_tick(Timestamp{2'000'000});
+    REQUIRE(y.reference.count == 1);
+    CHECK(y.reference == twin.plan(s->course(), y.state));
 }

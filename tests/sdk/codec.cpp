@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <vector>
 
@@ -175,4 +176,76 @@ TEST_CASE("codec: invalid truth and gate records are rejected", "[codec]") {
     ByteWriter w;
     w.u32(kMaxVisibleGates + 1);  // too many gates
     REQUIRE_FALSE(codec::decode_gates(w.take()));
+}
+
+namespace {
+
+/// A valid reference with `n` samples: times strictly increase, progress never decreases.
+Reference<double> reference_of(std::uint32_t n) {
+    Reference<double> ref{};
+    ref.count = n;
+    for (std::uint32_t i = 0; i < n; ++i) {
+        ReferenceSample<double>& s = ref.samples[i];
+        const double k = static_cast<double>(i);
+        s.t = Timestamp{1'000'000 + 4'000'000 * static_cast<std::int64_t>(i)};
+        s.position = {1.0 + k, -2.0 + 0.5 * k, 3.0};
+        s.velocity = {4.0, 0.25 * k, -0.125};
+        s.acceleration = {0.0, -1.5, 0.5 * k};
+        s.yaw = 0.01 * k - 0.3;
+        s.progress = 0.5 * k;
+    }
+    return ref;
+}
+
+}  // namespace
+
+TEST_CASE("codec: Reference round trip encodes only the used samples", "[codec]") {
+    for (const std::uint32_t n : {0u, 1u, kMaxReferenceSamples}) {
+        const Reference<double> ref = reference_of(n);
+        const auto bytes = codec::encode(ref);
+        CHECK(bytes.size() == 4 + n * (8 + 11 * 8));  // count, then t + 11 doubles per sample
+        const auto back = codec::decode_reference(bytes);
+        REQUIRE(back);
+        CHECK(*back == ref);
+        CHECK(codec::encode(*back) == bytes);
+    }
+}
+
+TEST_CASE("codec: invalid reference records are rejected", "[codec]") {
+    ByteWriter w;
+    w.u32(kMaxReferenceSamples + 1);  // I1: too many samples
+    CHECK_FALSE(codec::decode_reference(w.take()));
+
+    // A NaN in each of the 11 doubles of a sample.
+    for (int field = 0; field < 11; ++field) {
+        Reference<double> ref = reference_of(2);
+        ReferenceSample<double>& s = ref.samples[1];
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        if (field < 3) {
+            s.position[static_cast<std::size_t>(field)] = nan;
+        } else if (field < 6) {
+            s.velocity[static_cast<std::size_t>(field - 3)] = nan;
+        } else if (field < 9) {
+            s.acceleration[static_cast<std::size_t>(field - 6)] = nan;
+        } else if (field == 9) {
+            s.yaw = nan;
+        } else {
+            s.progress = nan;
+        }
+        CAPTURE(field);
+        CHECK_FALSE(codec::decode_reference(codec::encode(ref)));
+    }
+
+    Reference<double> ref = reference_of(3);
+    ref.samples[2].t = ref.samples[1].t;  // I2: times must strictly increase
+    CHECK_FALSE(codec::decode_reference(codec::encode(ref)));
+    ref = reference_of(3);
+    ref.samples[2].progress = ref.samples[1].progress - 0.1;  // I3: progress never decreases
+    CHECK_FALSE(codec::decode_reference(codec::encode(ref)));
+
+    auto bytes = codec::encode(reference_of(2));
+    bytes.push_back(std::byte{0});  // one trailing byte
+    CHECK_FALSE(codec::decode_reference(bytes));
+    bytes.resize(bytes.size() - 2);  // truncated by one byte
+    CHECK_FALSE(codec::decode_reference(bytes));
 }

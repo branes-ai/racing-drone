@@ -69,10 +69,16 @@ add_test(NAME gate.b0.determinism
         -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
 
 # log_dump writes every record of a B0 log as CSV (apps/log_dump/main.cpp).
+# The fixture writes multi-sample references, which no current planner emits.
+add_executable(reference_log_fixture ${CMAKE_CURRENT_SOURCE_DIR}/tools/reference_log_fixture.cpp)
+target_link_libraries(reference_log_fixture PRIVATE branes::racing)
+racing_set_warnings(reference_log_fixture)
+set_target_properties(reference_log_fixture PROPERTIES FOLDER "Tests/tools")
 add_test(NAME tools.log_dump
     COMMAND ${CMAKE_COMMAND}
         -DSITL=$<TARGET_FILE:sitl_b0-gt-pid>
         -DDUMP=$<TARGET_FILE:log_dump>
+        -DFIXTURE=$<TARGET_FILE:reference_log_fixture>
         -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tools_log_dump
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/log_dump_test.cmake)
