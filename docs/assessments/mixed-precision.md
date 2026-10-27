@@ -75,17 +75,21 @@ Time is the only quantity this repo fixes. `Timestamp` is int64 nanoseconds. As 
 
 | Format | Bits | Significand | ε (relative step at 1) | Smallest normal | Largest |
 |---|---|---|---|---|---|
-| binary64 (`double`) | 64 | 53 | 2.2e-16 | 2.2e-308 | 1.8e308 |
-| binary48 (`cfloat<48,8>`) | 48 | 40 | tbd | tbd | tbd |
-| binary40 (`cfloat<40,8>`) | 40 | 32 | tbd | tbd | tbd |
-| binary32 (`float`, `cfloat<32,8>`) | 32 | 24 | 1.2e-7 | 1.2e-38 | 3.4e38 |
-| binary24 (`cfloat<24,8>`) | 24 | 26 | tbd | tbd | tbd |
-| bfloat16 (`cfloat<16,8>`) | 16 | 8 | 7.8e-3 | 1.2e-38 | 3.4e38 |
-| binary16 (`cfloat<16,5>`) | 16 | 11 | 9.8e-4 | 6.1e-5 | 65,504 |
-| `posit<48,2>` | 48 | up to 44 | tbd near 1 | minpos tbd | maxpos tbd |
-| `posit<32,2>` | 32 | up to 28 | 7.5e-9 near 1 | minpos 7.5e-37 | maxpos 1.3e36 |
-| `posit<24,2>` | 24 | up to 20 | tbd near 1 | minpos tbd | maxpos tbd |
-| `posit<16,1>` | 16 | up to 13 | 2.4e-4 near 1 | minpos 3.7e-9 | maxpos 2.7e8 |
+| binary64 (cfloat<64,11> or double) | 64 | 53 | 2.220446e-16 | 2.225074e-308 | 1.797693e+308 |
+| binary48 (cfloat<48,8>) | 48 | 40 | 1.818989e-12 | 1.175494e-38 | 3.402824e+38 |
+| binary40 (cfloat<40,8>) | 40 | 32 | 4.656613e-10 | 1.175494e-38 | 3.402824e+38 |
+| binary32 (cfloat<32,8> or float) | 64 | 53 | 1.192093e-07 | 1.175494e-38 | 3.402823e+38 |
+| binary24 (cfloat<24,8>) | 24 | 16 | 3.051758e-05 | 1.175494e-38 | 3.402772e+38 |
+| bfloat16 (cfloat<16,8> or bfloat) | 16 | 8 | 7.812500e-03 | 1.175494e-38 | 3.389531e+38 |
+| binary16 (cfloat<16,5> or FP16) | 16 | 11 | 9.765625e-04 | 6.103516e-05 | 6.550400e+04 |
+| posit<48,2> | 48 | up to 44 | 1.136868e-13 | 4.078315e-56 | 2.451993e+55 |
+| posit<32,2> | 32 | up to 28 | 7.450581e-09 | 7.523164e-37 | 1.329228e+36 |
+| posit<24,2> | 24 | up to 20 | 1.907349e-06 | 3.231174e-27 | 3.094850e+26 |
+| posit<16,2> | 16 | up to 12 | 4.882813e-04 | 1.387779e-17 | 7.205759e+16 |
+| lns<32,24> | 32 | 24 | 4.13148e-08 | 5.42101e-20 | 1.84467e+19 |
+| lns<16,8> | 16 | 8 | 0.00271028 | 5.43571e-20 | 1.83969e+19 |
+| fixpnt<32,16> | 32 | 16 | 0.0000152587890625 | 0.0000152587890625 | 32767.9999847412109375 |
+| fixpnt<16,8> | 16 | 8 | 0.00390625 | 0.00390625 | 127.99609375 |
 
 **Table 2.** ULP at the stack's magnitudes, derived from the format definitions. For posits, the fraction-bit count is in parentheses.
 
