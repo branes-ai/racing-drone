@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/branes-ai/racing-drone/compare/v0.5.0...v0.5.1) (2026-10-27)
+
+
+### Documentation
+
+* **plan:** mark the b0 and reference-log plans implemented ([#28](https://github.com/branes-ai/racing-drone/issues/28)) ([2a01ef0](https://github.com/branes-ai/racing-drone/commit/2a01ef0004332a46f814a9210a29ee54391505c6))
+
 ## [0.5.0](https://github.com/branes-ai/racing-drone/compare/v0.4.0...v0.5.0) (2026-10-27)
 
 
