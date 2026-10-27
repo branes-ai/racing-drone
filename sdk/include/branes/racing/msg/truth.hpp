@@ -42,4 +42,16 @@ template <typename T>
     return true;
 }
 
+/// A true state in another scalar type, element by element.
+template <typename To, typename From>
+[[nodiscard]] constexpr TruthState<To> cast(const TruthState<From>& x) noexcept {
+    return TruthState<To>{x.t,
+                          cast<To>(x.position),
+                          cast<To>(x.velocity),
+                          cast<To>(x.attitude),
+                          cast<To>(x.body_rates),
+                          cast<To>(x.rotor_speeds),
+                          x.on_ground};
+}
+
 }  // namespace branes::racing

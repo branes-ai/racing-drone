@@ -9,6 +9,10 @@
 ///  - Runner: feeds log records to a Stack and encodes its outputs. SITL and
 ///    replay both go through it, so a replay of a SITL log reproduces the
 ///    SITL outputs record for record.
+///
+/// The log is double. A stack in another scalar type T (the precision sweep,
+/// docs/plan/precision-sweep/) gets its course and inputs cast to T, and its
+/// outputs cast back; for T = double every cast is a copy.
 ///  - SyntheticSensors: the null SITL's deterministic IMU / camera / tick
 ///    event source.
 
@@ -135,11 +139,17 @@ struct FileContent {
 // ── stack construction ──────────────────────────────────────────────
 
 /// Stack::create() for a harness: the course, vehicle, and baseline files
-/// make the slot context. Pre: valid(map).
+/// make the slot context. The course is cast to the stack's scalar type, and
+/// a course that isn't valid() there is an error. Pre: valid(map).
 template <class StackT>
 [[nodiscard]] result<StackT, std::string>
 make_stack(const CourseMap<double>& map, const config::VehicleConfig& vehicle, const config::BaselineConfig& baseline) {
-    return StackT::create(map, SlotContext{vehicle, baseline, map});
+    using T = typename StackT::scalar_type;
+    const CourseMap<T> m = cast<T>(map);
+    if (!valid(m)) {
+        return std::string("the course is not valid in the stack's scalar type");
+    }
+    return StackT::create(m, SlotContext{vehicle, baseline, map});
 }
 
 // ── runner ──────────────────────────────────────────────────────────
@@ -153,11 +163,14 @@ struct Output {
 
 /// Feeds input records to a Stack and returns the encoded outputs.
 ///
-/// The stack runs in double for the harness logs. Inputs that do not decode
-/// are reported, never silently skipped: a log that does not replay cleanly is
-/// not replay-complete (ADR 0006).
+/// Records are double. Each decoded input is cast to the stack's scalar type T
+/// and each output back to double. Inputs that do not decode, or are not
+/// valid() once cast, are reported, never silently skipped: a log that does
+/// not replay cleanly is not replay-complete (ADR 0006).
 template <class StackT>
 class Runner {
+    using T = typename StackT::scalar_type;
+
 public:
     explicit Runner(StackT& stack) noexcept : stack_(stack) {}
 
@@ -171,7 +184,12 @@ public:
             if (!s) {
                 return std::string("undecodable IMU record at t=" + std::to_string(rec.t.ns));
             }
-            stack_.on_imu(*s);
+            const ImuSample<T> st = cast<T>(*s);
+            if (!valid(st)) {
+                return std::string("IMU record at t=" + std::to_string(rec.t.ns) +
+                                   " is not valid in the stack's scalar type");
+            }
+            stack_.on_imu(st);
             break;
         }
         case log::Channel::camera: {
@@ -190,11 +208,11 @@ public:
                                    " is earlier than the previous tick (t=" + std::to_string(last_tick_->ns) + ")");
             }
             last_tick_ = rec.t;
-            const TickOutput<double> y = stack_.on_tick(rec.t);
+            const TickOutput<T> y = stack_.on_tick(rec.t);
             // Pipeline order: estimate, reference, command.
-            out.push_back(Output{log::Channel::state, rec.t, codec::encode(y.state)});
-            out.push_back(Output{log::Channel::reference, rec.t, codec::encode(y.reference)});
-            out.push_back(Output{log::Channel::command, rec.t, codec::encode(y.command)});
+            out.push_back(Output{log::Channel::state, rec.t, codec::encode(cast<double>(y.state))});
+            out.push_back(Output{log::Channel::reference, rec.t, codec::encode(cast<double>(y.reference))});
+            out.push_back(Output{log::Channel::command, rec.t, codec::encode(cast<double>(y.command))});
             break;
         }
         case log::Channel::truth: {
@@ -204,7 +222,12 @@ public:
             if (!x || !valid(*x)) {
                 return std::string("undecodable truth record at t=" + std::to_string(rec.t.ns));
             }
-            stack_.on_truth(*x);
+            const TruthState<T> xt = cast<T>(*x);
+            if (!valid(xt)) {
+                return std::string("truth record at t=" + std::to_string(rec.t.ns) +
+                                   " is not valid in the stack's scalar type");
+            }
+            stack_.on_truth(xt);
             break;
         }
         case log::Channel::oracle_gates:

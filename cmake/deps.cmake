@@ -60,3 +60,28 @@ FetchContent_Declare(
     SYSTEM
 )
 FetchContent_MakeAvailable(reflex)
+
+# ── stillwater-sc/universal — number systems for the precision sweep (MIT) ──
+# The posits and cfloats that precision_sweep_<baseline> runs a stack in
+# (docs/plan/precision-sweep/). Header-only; the SDK, slots, and glue never
+# name a Universal type, so only the sweep tool and its tests link it. Pinned
+# to v5.11.0, as in reflex and cortex, and defined only if no one has yet (the
+# same targets as reflex's test-only fetch). SYSTEM, as for the other deps:
+# its headers are not warning-clean under our flags (stillwater-sc/universal#1265).
+if(NOT TARGET universal::universal)
+    FetchContent_Declare(
+        universal
+        GIT_REPOSITORY https://github.com/stillwater-sc/universal.git
+        GIT_TAG        v5.11.0
+        GIT_SHALLOW    TRUE
+        SOURCE_SUBDIR  _header_only_no_build
+    )
+    FetchContent_MakeAvailable(universal)
+    # Universal's headers include both <sw/universal/...> and <universal/...>.
+    add_library(universal INTERFACE)
+    add_library(universal::universal ALIAS universal)
+    target_include_directories(universal SYSTEM INTERFACE
+        ${universal_SOURCE_DIR}/include
+        ${universal_SOURCE_DIR}/include/sw)
+    target_compile_features(universal INTERFACE cxx_std_20)
+endif()

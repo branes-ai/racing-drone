@@ -108,7 +108,7 @@ cmake --build --preset gcc-debug
 ctest --preset gcc-debug
 ```
 
-Every baseline in [`baselines/`](baselines/) becomes four executables: `flight_stack_<name>`, `replay_<name>`, `sitl_<name>`, and `sitl_batch_<name>` ([ADR 0001](docs/adr/0001-baseline-composition-framework.md)). With baseline B0:
+Every baseline in [`baselines/`](baselines/) becomes four executables: `flight_stack_<name>`, `replay_<name>`, `sitl_<name>`, and `sitl_batch_<name>` ([ADR 0001](docs/adr/0001-baseline-composition-framework.md)). B0 also gets `precision_sweep_b0-gt-pid`, which runs its stack in each scalar type of the [precision sweep](docs/plan/precision-sweep/README.md). With baseline B0:
 
 ```bash
 B=build/gcc-debug/apps
@@ -117,16 +117,18 @@ $B/score_log --log run.brlog --speed-limit 5                                    
 $B/replay_b0-gt-pid --log run.brlog --out replay.brlog --verify                 # reproduce the outputs record for record
 $B/log_dump --log run.brlog --out-dir run                                       # every channel as CSV, for plotting
 $B/sitl_batch_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --min-success 1   # many seeds, as the gates run
+$B/precision_sweep_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --out-dir sweep  # the stack in float, posits, bfloat16, ...
 $B/flight_stack_b0-gt-pid --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
 ```
 
-In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>`, and `score_log` and `log_dump` are under `Tools`. Each starts in the source root with the debugger arguments below filled in. `sitl_<name>` and `sitl_batch_<name>` take the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)); `replay_<name>` reads the log `sitl_<name>` writes; `flight_stack_<name>`, `score_log`, and `log_dump` use the fixed values shown. They differ from the commands above:
+In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>`, and `score_log` and `log_dump` are under `Tools`. Each starts in the source root with the debugger arguments below filled in. `sitl_<name>`, `sitl_batch_<name>` and `precision_sweep_<name>` take the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)); `replay_<name>` reads the log `sitl_<name>` writes; `flight_stack_<name>`, `score_log`, and `log_dump` use the fixed values shown. They differ from the commands above:
 
 | Target | Debugger arguments |
 |---|---|
 | `sitl_<name>` | `--scenario <DEBUG_SCENARIO> --out <build>/<name>.brlog` |
 | `replay_<name>` | `--log <build>/<name>.brlog --out <build>/<name>-replay.brlog --verify` |
 | `sitl_batch_<name>` | `--scenario <DEBUG_SCENARIO> --seeds 1 --jobs 1` (one seed on one thread, for stepping) |
+| `precision_sweep_<name>` | `--scenario <DEBUG_SCENARIO> --seeds 1 --jobs 1 --out-dir <build>/<name>-sweep` |
 | `flight_stack_<name>` | `--course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10` |
 | `score_log` | `--log <build>/b0-gt-pid.brlog` |
 | `log_dump` | `--log <build>/b0-gt-pid.brlog --out-dir <build>/b0-gt-pid-dump` |
@@ -137,7 +139,7 @@ Run `sitl_<name>` first: `replay_<name>`, `score_log`, and `log_dump` read the l
 
 ```text
 racing-drone/
-├── apps/         # harness sources (flight_stack, replay, sitl, sitl_batch) built once per baseline, and the score / log_dump tools
+├── apps/         # harness sources (flight_stack, replay, sitl, sitl_batch, precision_sweep) built per baseline, and the score / log_dump tools
 ├── baselines/    # one YAML per baseline: slot composition + parameters
 ├── cmake/        # deps, warnings, slot registry, baseline target generation
 ├── courses/      # course files (gates, sequence, laps, geofence)

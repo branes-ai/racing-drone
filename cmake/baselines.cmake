@@ -13,9 +13,11 @@
 #   4. generates <build>/generated/<name>/racing_baseline.hpp, which defines
 #      branes::racing::baseline::{name, composition_hash, Composition<T>},
 #   5. adds flight_stack_<name>, replay_<name>, sitl_<name>, and
-#      sitl_batch_<name> (many seeds in-process, for the phase gates).
+#      sitl_batch_<name> (many seeds in-process, for the phase gates), and with
+#      PRECISION_SWEEP precision_sweep_<name> (the stack in each scalar type of
+#      docs/plan/precision-sweep/; links Universal).
 #
-#   racing_add_baseline(<name> [DEBUG_SCENARIO <scenarios/file.yaml>])
+#   racing_add_baseline(<name> [PRECISION_SWEEP] [DEBUG_SCENARIO <scenarios/file.yaml>])
 #
 # Visual Studio starts every harness in the source root, so relative paths such
 # as scenarios/<file>.yaml resolve. DEBUG_SCENARIO (relative to the source root)
@@ -24,7 +26,7 @@
 include_guard(GLOBAL)
 
 function(racing_add_baseline name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "DEBUG_SCENARIO" "")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "PRECISION_SWEEP" "DEBUG_SCENARIO" "")
     if(arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "racing_add_baseline(${name}): unexpected arguments '${arg_UNPARSED_ARGUMENTS}'")
     endif()
@@ -103,7 +105,11 @@ function(racing_add_baseline name)
     configure_file(${PROJECT_SOURCE_DIR}/cmake/racing_baseline.hpp.in ${gen_dir}/racing_baseline.hpp @ONLY)
 
     # ── 5. harness targets ──────────────────────────────────────────────
-    foreach(harness flight_stack replay sitl sitl_batch)
+    set(harnesses flight_stack replay sitl sitl_batch)
+    if(arg_PRECISION_SWEEP)
+        list(APPEND harnesses precision_sweep)
+    endif()
+    foreach(harness IN LISTS harnesses)
         set(target ${harness}_${name})
         add_executable(${target} ${PROJECT_SOURCE_DIR}/apps/${harness}/main.cpp)
         target_include_directories(${target} PRIVATE ${gen_dir})
@@ -128,9 +134,16 @@ function(racing_add_baseline name)
             "--scenario ${arg_DEBUG_SCENARIO} --seeds 1 --jobs 1")
         set_target_properties(flight_stack_${name} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS
             "--course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10")
+        if(arg_PRECISION_SWEEP)
+            set_target_properties(precision_sweep_${name} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS
+                "--scenario ${arg_DEBUG_SCENARIO} --seeds 1 --jobs 1 --out-dir \"${CMAKE_BINARY_DIR}/${name}-sweep\"")
+        endif()
     endif()
     # SITL closes the loop on the reflex dynamics (sim/); the batch runs seeds
     # on worker threads.
     target_link_libraries(sitl_${name} PRIVATE branes::racing_sim)
     target_link_libraries(sitl_batch_${name} PRIVATE branes::racing_sim Threads::Threads)
+    if(arg_PRECISION_SWEEP)
+        target_link_libraries(precision_sweep_${name} PRIVATE branes::racing_sim Threads::Threads universal::universal)
+    endif()
 endfunction()
