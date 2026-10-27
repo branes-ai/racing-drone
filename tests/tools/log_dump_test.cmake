@@ -1,8 +1,11 @@
 # log_dump on a B0 SITL log (apps/log_dump/main.cpp).
 #
 #  1. log_dump reads every record: its total equals the count SITL wrote.
-#  2. tick.csv, state.csv, and command.csv each hold one row per tick (the
-#     stack emits one state and one command per tick).
+#  2. tick.csv, state.csv, reference.csv, and command.csv each hold one row
+#     per tick: the stack emits one state, one reference, and one command per
+#     tick, and B0's planner puts one sample in each reference. The reference
+#     channel holds exactly one record per tick, so a log has `ticks` more
+#     records than before the channel existed (#25).
 #  3. course.yaml and vehicle.yaml are the scenario's files, byte for byte.
 #  4. In every CSV, the first and last rows have as many fields as the header.
 #  5. A second dump is byte-identical to the first.
@@ -44,7 +47,14 @@ if(NOT CMAKE_MATCH_1 EQUAL records)
     message(FATAL_ERROR "log_dump read ${CMAKE_MATCH_1} records, SITL wrote ${records}")
 endif()
 
-foreach(name tick state command)
+if(NOT dump_out MATCHES "reference\\.csv +([0-9]+) records")
+    message(FATAL_ERROR "no reference channel in: ${dump_out}")
+endif()
+if(NOT CMAKE_MATCH_1 EQUAL ticks)
+    message(FATAL_ERROR "${CMAKE_MATCH_1} reference records, expected one per tick (${ticks})")
+endif()
+
+foreach(name tick state reference command)
     file(STRINGS ${WORK_DIR}/a/${name}.csv lines)
     list(LENGTH lines n)
     math(EXPR rows "${n} - 1")

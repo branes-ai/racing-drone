@@ -137,3 +137,21 @@ TEST_CASE("log: bad magic, truncation, and missing files are errors", "[log]") {
     }
     cleanup(cut);
 }
+
+TEST_CASE("log: a version-1 log (before the reference channel) is rejected", "[log]") {
+    const auto p = temp_file("version1");
+    write_sample(p);
+    {
+        std::fstream f(p, std::ios::binary | std::ios::in | std::ios::out);
+        f.seekp(8);  // the version follows the 8-byte magic
+        const char v1[4] = {1, 0, 0, 0};
+        f.write(v1, 4);
+    }
+    {
+        const auto r = LogReader::open(p);  // scoped: closed before cleanup()
+        REQUIRE_FALSE(r);
+        CHECK(r.error().message == "unsupported log version 1");
+    }
+    REQUIRE(kLogVersion == 2u);
+    cleanup(p);
+}

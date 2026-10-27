@@ -191,7 +191,9 @@ public:
             }
             last_tick_ = rec.t;
             const TickOutput<double> y = stack_.on_tick(rec.t);
+            // Pipeline order: estimate, reference, command.
             out.push_back(Output{log::Channel::state, rec.t, codec::encode(y.state)});
+            out.push_back(Output{log::Channel::reference, rec.t, codec::encode(y.reference)});
             out.push_back(Output{log::Channel::command, rec.t, codec::encode(y.command)});
             break;
         }
