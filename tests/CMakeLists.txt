@@ -21,6 +21,16 @@ foreach(source ${SIM_SRC})
     target_compile_definitions(${name} PRIVATE RACING_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 endforeach()
 
+# ── Scalar types (docs/plan/precision-sweep/) ──────────────────────────────
+# The harness casts and the contracts in every type of the precision sweep;
+# these tests link Universal, as the sweep tool does.
+file(GLOB PRECISION_SRC CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/precision/*.cpp)
+compile_all(FOLDER "Tests/precision" LIBS branes::racing_sim universal::universal SOURCES ${PRECISION_SRC})
+foreach(source ${PRECISION_SRC})
+    get_filename_component(name ${source} NAME_WE)
+    target_compile_definitions(${name} PRIVATE RACING_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+endforeach()
+
 # ── Baselines ──────────────────────────────────────────────────────────────
 # Tests against a baseline's generated composition header (null for now).
 file(GLOB BASELINE_SRC CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/baselines/*.cpp)
@@ -82,6 +92,16 @@ add_test(NAME tools.log_dump
         -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tools_log_dump
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/log_dump_test.cmake)
+
+# The precision sweep on one seed (docs/plan/precision-sweep/): every type has
+# a result, a rerun is byte-identical, and double matches sitl_batch.
+add_test(NAME sweep.b0.smoke
+    COMMAND ${CMAKE_COMMAND}
+        -DSWEEP=$<TARGET_FILE:precision_sweep_b0-gt-pid>
+        -DBATCH=$<TARGET_FILE:sitl_batch_b0-gt-pid>
+        -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/sweep_b0
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/precision_sweep_test.cmake)
 
 # P1 smoke, on every PR (test plan L2 PR tier): 10 nominal seeds, all succeed.
 add_test(NAME gate.p1.smoke
