@@ -1,6 +1,6 @@
 # Baseline B0 `gt-pid` and gate P1
 
-**Status:** Approved 2026-10-26, in implementation
+**Status:** Approved 2026-10-26, implemented ([racing-drone#20](https://github.com/branes-ai/racing-drone/pull/20))
 **Issue:** [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17), part of the Phase 1 epic [racing-drone#8](https://github.com/branes-ai/racing-drone/issues/8)
 **Related:** [implementation plan](../implementation-plan.md) Phase 1, [test plan](../test-plan.md) §5–§6, [SITL plan](../sitl/README.md), [architecture](../../arch/framework-architecture.md), [ADR 0001](../../adr/0001-baseline-composition-framework.md)
 
@@ -12,8 +12,8 @@ B0 is the first baseline that flies the course. It answers "can the stack fly th
 
 | Item | What | State |
 |---|---|---|
-| [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | This plan: B0 `gt-pid` baseline and gate P1 | Open |
-| [racing-drone#20](https://github.com/branes-ai/racing-drone/pull/20) | The implementation; this document lands with it | Open |
+| [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | This plan: B0 `gt-pid` baseline and gate P1 | Closed |
+| [racing-drone#20](https://github.com/branes-ai/racing-drone/pull/20) | The implementation; this document landed with it | Merged |
 
 ### What it builds on (merged)
 

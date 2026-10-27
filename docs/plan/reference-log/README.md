@@ -1,6 +1,6 @@
 # Planner reference in the log
 
-**Status:** Approved 2026-10-26, in implementation
+**Status:** Approved 2026-10-26, implemented ([racing-drone#26](https://github.com/branes-ai/racing-drone/pull/26))
 **Issue:** [racing-drone#25](https://github.com/branes-ai/racing-drone/issues/25), part of the Phase 1 epic [racing-drone#8](https://github.com/branes-ai/racing-drone/issues/8)
 **Related:** [test plan](../test-plan.md) §9, [architecture](../../arch/framework-architecture.md), [B0 plan](../b0/README.md), [ADR 0006](../../adr/0006-hot-path-in-process-zenoh-off-path.md)
 
@@ -10,8 +10,8 @@ This plan records the planner's `Reference` as a log channel, so a run shows wha
 
 | Item | What | State |
 |---|---|---|
-| [racing-drone#25](https://github.com/branes-ai/racing-drone/issues/25) | This plan | Open |
-| [racing-drone#26](https://github.com/branes-ai/racing-drone/pull/26) | The implementation; this document lands with it | Open |
+| [racing-drone#25](https://github.com/branes-ai/racing-drone/issues/25) | This plan | Closed |
+| [racing-drone#26](https://github.com/branes-ai/racing-drone/pull/26) | The implementation; this document landed with it | Merged |
 | [racing-drone#23](https://github.com/branes-ai/racing-drone/pull/23) | `log_dump`, which gains `reference.csv` here | Merged |
 
 ## Problem
