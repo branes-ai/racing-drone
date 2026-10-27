@@ -10,8 +10,11 @@
 #  4. In every CSV, the first and last rows have as many fields as the header.
 #  5. A second dump is byte-identical to the first.
 #  6. A missing log exits with code 1 and an error naming it.
+#  7. reference.csv has one row per sample, not per record: references of 0,
+#     1, and 3 samples (FIXTURE) give 3 records and 4 rows, with (count,
+#     index) = (1,0), (3,0), (3,1), (3,2).
 #
-# Inputs: SITL, DUMP (executables), SOURCE_DIR, WORK_DIR.
+# Inputs: SITL, DUMP, FIXTURE (executables), SOURCE_DIR, WORK_DIR.
 
 file(REMOVE_RECURSE ${WORK_DIR})
 file(MAKE_DIRECTORY ${WORK_DIR})
@@ -103,6 +106,24 @@ if(NOT "${rc}" STREQUAL "1")
 endif()
 if(NOT "${missing_err}" MATCHES "missing\\.brlog")
     message(FATAL_ERROR "log_dump's error does not name the missing log: ${missing_err}")
+endif()
+
+run(fixture_out ${FIXTURE} ${WORK_DIR}/fixture.brlog)
+run(fixture_dump ${DUMP} --log ${WORK_DIR}/fixture.brlog --out-dir ${WORK_DIR}/f)
+if(NOT fixture_dump MATCHES "reference\\.csv +3 records, 4 rows")
+    message(FATAL_ERROR "expected 3 reference records and 4 rows: ${fixture_dump}")
+endif()
+file(STRINGS ${WORK_DIR}/f/reference.csv lines)
+list(POP_FRONT lines header)
+set(pairs "")
+foreach(line IN LISTS lines)
+    string(REPLACE "," ";" cols "${line}")
+    list(GET cols 2 count)
+    list(GET cols 3 index)
+    list(APPEND pairs "${count}:${index}")
+endforeach()
+if(NOT pairs STREQUAL "1:0;3:0;3:1;3:2")
+    message(FATAL_ERROR "reference.csv (count:index) rows are '${pairs}', expected '1:0;3:0;3:1;3:2'")
 endif()
 
 message(STATUS "log_dump: passed")

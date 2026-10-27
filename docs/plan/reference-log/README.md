@@ -29,7 +29,7 @@ It follows [racing-drone#23](https://github.com/branes-ai/racing-drone/pull/23) 
 
 ### 1. Message and codec (`sdk/include/branes/racing/msg/codec.hpp`)
 - `encode(const Reference<double>&)` and `decode_reference(span)`.
-- Wire format: `count` u32, then only the `count` used samples. Each sample is `t` i64 followed by 12 f64: position, velocity and acceleration (3 each), yaw and progress. That is 104 bytes per sample.
+- Wire format: `count` u32, then only the `count` used samples. Each sample is `t` i64 followed by 11 f64: position, velocity and acceleration (3 each), yaw and progress. That is 8 + 11 × 8 = 96 bytes per sample.
 - Decoding rejects:
   - `count > kMaxReferenceSamples`;
   - a non-finite value;
@@ -62,9 +62,9 @@ It follows [racing-drone#23](https://github.com/branes-ai/racing-drone/pull/23) 
 
 ## Size (derived from the format, not measured)
 - A record header is 14 bytes (u16 + u32 + i64).
-- One sample costs 4 + 104 = 108 payload bytes, so 122 bytes per tick. Every current planner (null, scripted-hop, B0's `WaypointPlanner`) emits exactly one sample.
-- At B0's 250 Hz that is 30.5 kB/s.
-- A planner filling all 64 samples would write 4 + 64 × 104 + 14 = 6,674 B per tick, or 1.67 MB/s at 250 Hz. That fits SITL. For flight it goes into the ADR 0006 ring sizing when such a planner exists. Decimating the reference is a later, separate decision.
+- One sample costs 4 + 96 = 100 payload bytes, so 114 bytes per tick. Every current planner (null, scripted-hop, B0's `WaypointPlanner`) emits exactly one sample.
+- At B0's 250 Hz that is 28.5 kB/s.
+- A planner filling all 64 samples would write 4 + 64 × 96 + 14 = 6,162 B per tick, or 1.54 MB/s at 250 Hz. That fits SITL. For flight it goes into the ADR 0006 ring sizing when such a planner exists. Decimating the reference is a later, separate decision.
 
 ## Acceptance criteria (stated before implementation)
 1. **Codec round-trip:** `decode_reference(encode(r)) == r` for `count` 0, 1 and 64. Decoding rejects:
@@ -98,4 +98,6 @@ Each is a separate channel with its own size trade-off, and can be its own issue
    - `NullPlanner`: its `plan()` is `const`.
    - B0's stateful `WaypointPlanner`: the test copies the planner just before the second tick, and checks that the copy's `plan()` on the same state gives the reference the tick returned.
 3. **Decoding is canonical.** `decode_reference` value-initializes the unused samples. `Reference`'s `operator==` compares all 64 slots, so a reference with leftover data past `count` would not compare equal after a round trip. Every planner in the repo builds its reference from `Reference<T>{}`, so none has leftover data.
-4. **`TickOutput` grows** by `sizeof(Reference<double>)`, about 6.7 kB, returned by value on each tick. The planner already builds this value on the stack, and the copy happens off the FC path. If a profile ever shows it, the fix is to return the planner's output by reference.
+4. **`TickOutput` grows** by `sizeof(Reference<double>)` = 8 + 64 × 96 = 6,152 B (the `count` plus padding, then the samples), returned by value on each tick. The planner already builds this value on the stack, and the copy happens off the FC path. If a profile ever shows it, the fix is to return the planner's output by reference.
+5. **The size figures were corrected in review.** The approved plan said a sample holds 12 doubles (104 B). The fields are 3 + 3 + 3 + 1 + 1 = 11 doubles, so a sample is 96 B. The code and its test (`codec: Reference round trip`) always used 96 B. The size section above now shows the corrected figures, and so does the #25 body.
+6. **`log_dump`'s one-row-per-sample rule has its own test.** Every current planner emits one sample, so a SITL log can't tell one row per sample from one row per record. `tests/tools/reference_log_fixture.cpp` writes references of 0, 1 and 3 samples. `tools.log_dump` requires 3 records, 4 rows, and the (count, index) pairs (1,0), (3,0), (3,1), (3,2). It fails against an exporter that writes one row per record (checked).
