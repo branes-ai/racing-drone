@@ -1,6 +1,6 @@
 # Precision sweep of baseline B0
 
-**Status:** Approved 2026-10-27
+**Status:** Approved 2026-10-27, implemented (PR pending)
 **Issue:** [racing-drone#30](https://github.com/branes-ai/racing-drone/issues/30), part of the Phase 2 epic [racing-drone#9](https://github.com/branes-ai/racing-drone/issues/9)
 **Related:** [mixed-precision assessment](../../assessments/mixed-precision.md) (H1–H5), [B0 plan](../b0/README.md), [SITL plan](../sitl/README.md), cortex ADR 0015
 
@@ -109,6 +109,14 @@ When reflex's validator rejects the parameters, `reflex_params_from<T>` appends 
 - **Debug-build asserts.** A 16-bit type can drive a slot to NaN, and the slots' contract asserts would then abort a Debug build. The Runner's post-cast checks catch bad inputs, not bad outputs. If the smoke test aborts in a Debug preset, the fix is a checked return in the slot (reported as `run_error`), never a weaker assert; any such change is listed in the PR.
 - **Runtime.** A `double` seed of `b0-nominal` takes about 0.1 s (gcc-release, one run). Emulated types are slower by an unmeasured factor; the measured sweep time goes in the results file.
 - **MSVC and Universal.** Not yet built on MSVC in this repo. A toolchain failure is a disclosed departure (AC 5).
+
+## Implementation notes
+
+- **Results:** [`docs/assessments/data/precision-sweep-b0.md`](../../assessments/data/precision-sweep-b0.md), generated at the implementation commit, with its `summary.jsonl` and `lap_delta.jsonl` beside it. The per-type `<type>.jsonl` files aren't committed; the table's command line regenerates them. The verdicts are in the [assessment, §9](../../assessments/mixed-precision.md#9-results-the-uniform-t-sweep-of-b0).
+- **Reproducibility:** two runs at that commit gave byte-identical per-type files and `lap_delta.jsonl`. The committed run used `--timing`, so only its wall-time column changes between runs.
+- **Departure from AC 2:** posits round values below minpos to ±minpos, never to zero, so there the error exceeds ½ ULP. The test applies the posit rule instead (§ Model and contracts).
+- **Debug-build risk:** `sweep.b0.smoke` passes in gcc-debug and clang-debug with every type, so no slot needed a checked return.
+- **`GateObservations`'s cast** is tested but unused until a detector's observations cross the harness.
 
 ## Out of scope
 Per-slot scalar types and H5 (the follow-up); the simulator, FC, scorer or log in anything but `double`; speed or energy on hardware.

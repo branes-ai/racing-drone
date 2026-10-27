@@ -191,8 +191,26 @@ These are properties that tests in sibling repos already check. They aren't new 
 - **The reflex quadrotor model** (`tests/sdk/quadrotor_model.cpp`) holds its state invariants (unit attitude, finite state, energy and ground) in `posit<16,1>` and bfloat16 on a spinning, climbing vehicle. Its parameter validation rejects RP-1 in binary16 because k_f underflows. The invariants show the model stays *well-formed* in 16 bits. They say nothing about *accuracy*, which is what P1 measures.
 - **The reflex biquads** (`tests/sdk/dsp_biquad.cpp`) report notch depth for `posit<16,1>` and binary16 as a characterization, without gating it. The low-pass tests run in `double` and `float` only.
 
-## 9. Next steps
+## 9. Results: the uniform-T sweep of B0
 
-1. [#30](https://github.com/branes-ai/racing-drone/issues/30): the uniform-T sweep of B0 on P1, testing H1–H4. Results get a section here, citing the table the tool generates.
-2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5. To be filed after #30.
-3. B1's EKF in binary32 and `posit<32,2>`, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.3 applies in earnest.
+[#30](https://github.com/branes-ai/racing-drone/issues/30) ran B0 on gate P1 in each type, with the simulator, FC, scorer and log in `double` ([plan](../plan/precision-sweep/README.md)). Every number is in the generated table, [`data/precision-sweep-b0.md`](data/precision-sweep-b0.md), with the command line and commit that reproduce it; the per-type summaries and per-seed lap differences are beside it. This section gives the verdicts and doesn't copy the numbers.
+
+- **H1 holds.** `float`, `cfloat<32,8>` and `posit<32,2>` construct and pass P1. Their lap-time, gate-error and speed percentiles equal `double`'s at the table's precision, and the Lap Δ column bounds the per-seed differences.
+- **H2 is refuted.** bfloat16 constructs and passes P1. Its precision shows, but stays inside the gate: slower laps, a larger median gate error and a lower top speed than `double`.
+- **H3 holds.** binary16 fails construction, and the reason names `rotor.thrust_coefficient` as subnormal (the table's Failures section), as predicted.
+- **H4 is refuted on P1.** `posit<16,1>` constructs and passes P1, with laps faster than `double`'s and a top speed above the controller's velocity cap (`max_speed_m_s` in `baselines/b0-gt-pid.yaml`), though under the scenario's speed limit. Its second prediction, gate errors growing with distance from the origin, isn't measured: the table doesn't split gate error by position.
+
+Why H2 and H4 were wrong, as far as it is known:
+- **The predicted accumulation isn't in B0's stack.** §2.2's position examples integrate velocity into position in T. In B0, the simulator does that integration in `double`. The ground-truth estimator then hands the stack the true state each tick, cast to T: one rounding of at most ½ ULP, not an accumulated stall.
+- **What B0 does accumulate is fed back.** The stack's accumulators are the controllers' integrators. Their lost increments (§2.2) leave errors that the proportional terms correct, the closed-loop outcome §5 named as informative.
+- **Open: why `posit<16,1>` flies faster than `double`** and above the velocity cap. The cause isn't known yet (§10).
+
+What this does and doesn't show:
+- It shows that B0, a stack without a filter or optimizer, flies P1 in bfloat16 and `posit<16,1>`, the two 16-bit formats tested whose range holds its parameters.
+- It doesn't overturn §2's mechanisms for the components that have them. B1's EKF integrates in T and carries the ill-conditioned covariance of §2.3, and B1's MPC solves a QP. B0 has neither, so this sweep doesn't test those predictions (§4, Table 3).
+
+## 10. Next steps
+
+1. Find why `posit<16,1>` flies B0 faster than `double` and above the velocity cap (§9), and measure H4's distance prediction with gate error split by position.
+2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5. To be filed now that #30 has landed.
+3. B1's EKF and MPC in binary32, `posit<32,2>` and the 16-bit formats, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.2–§2.3 apply in earnest, and the sweep tool runs B1 once it has a baseline file.
