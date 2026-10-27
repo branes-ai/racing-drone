@@ -47,7 +47,7 @@ Rounding errors that aren't lost compound instead. Re-normalizing a quaternion e
 ### 2.3 Conditioning: steps that magnify rounding error
 
 An operation with condition number κ can magnify relative input error by κ, so it costs about log₁₀κ digits. The worst place in this stack will be the estimator's covariance, once B1 replaces ground truth with an EKF ([ADR 0004](../adr/0004-gate-relative-hybrid-estimation.md)):
-- Its diagonal spans about ten orders of magnitude. Position variance is around 1e-2 m², and gyro-bias variance around 1e-10 (rad/s)² *(typical values, assessment)*.
+- Its diagonal spans eight orders of magnitude or more. Position variance is around 1e-2 m², and gyro-bias variance around 1e-10 (rad/s)² *(typical values, assessment)*.
 - The update `P = (I − KH)P` subtracts nearly equal quantities.
 - Even in `double`, practical filters use the Joseph form or square-root forms to keep `P` symmetric positive definite.
 - Single-precision filters exist and fly: PX4's EKF2 is written in single precision *(assessment)*. They survive only because they were formulated carefully, and that care is part of the precision budget.
@@ -58,8 +58,9 @@ Geometry solvers in the gate detector (multi-gate PnP) and the QP or NLP solvers
 
 Precision and range are separate failures:
 - **binary16 fails on range.** Its smallest normal is 6.1e-5 and its largest value 65,504.
-  - The bias variances above underflow to zero, so the filter becomes certain of its biases and stops learning them.
-  - RP-1's thrust coefficient k_f = 8.9e-7 is not representable. reflex's `tests/sdk/quadrotor_model.cpp` checks that `quadrotor_params_valid` rejects RP-1 in binary16 for this reason.
+  - The bias variances above fall below the smallest positive subnormal, 6.0e-8, and underflow to zero. The filter becomes certain of its biases and stops learning them.
+  - RP-1's thrust coefficient k_f = 8.9e-7 is below the smallest normal. It survives only as a subnormal with about 4 significant bits (8.9e-7 / 2⁻²⁴ ≈ 15).
+  - reflex's parameter validation (`quadrotor_params_valid`, invariant I1) rejects subnormal parameters, because their reciprocals overflow. So RP-1 can't be configured in binary16, and reflex's `tests/sdk/quadrotor_model.cpp` checks exactly that.
   - The battery capacity, 1e5 J, overflows.
 - **bfloat16 fails on precision.** It has binary32's range but only an 8-bit significand.
 - **Posits trade one for the other.** They taper: more fraction bits near 1 and fewer at the extremes. The trade suits values that cluster near 1, and penalizes large course-frame coordinates (Table 2).
@@ -121,14 +122,19 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
 - **H2: bfloat16 fails on precision.** The stack constructs, but fails P1 by tracking error.
   - *Basis:* position ULPs of 0.25–0.5 m on most of the course, against a 0.75 m gate half-width. Integrators stall below ½ ULP (1.95e-3 at 0.5).
 - **H3: binary16 fails on range, before flight.** `reflex_params_from<binary16>` rejects RP-1, so the stack doesn't construct.
-  - *Basis:* k_f = 8.9e-7 < 6.1e-5, the check reflex already makes for its model.
+  - *Basis:* k_f = 8.9e-7 is below the smallest normal, 6.1e-5, and so it's subnormal. reflex's validator rejects subnormal parameters, the check reflex already makes for its model.
   - *What would refute it:* the stack constructing, which would mean k_f never reaches the T path.
 - **H4: `posit<16,1>` fails, and the failure grows with distance from the origin.**
   - *Basis:* 12 fraction bits near 1 is better than binary16's 10. But at 64 m it has 9 bits, an ULP of 0.125 m, and its integrator ULP at 0.5 is 1.2e-4.
   - *Prediction:* it constructs (its range covers k_f), then fails P1. Gate errors are worse on the course's far end (x > 32 m) than near the start.
-- **H5: mixed precision recovers 16 bits.** A B0 with its accumulators in 32 bits and everything else in a 16-bit format passes P1. The accumulators are the controller integrators and the course-frame positions.
+- **H5: mixed precision recovers 16 bits.** The configuration:
+  - **binary32:** the accumulators (controller integrators, course-frame positions) and the vehicle parameters and constants (k_f among them);
+  - **bfloat16:** all other arithmetic, the stateless products and the gain multiplications.
+
+  Prediction: this B0 passes P1.
   - *Basis:* §2–§4. The failures predicted in H2–H4 all come from accumulation and range, not from the stateless arithmetic.
-  - Testing it needs per-slot scalar types, which is the follow-up to #30.
+  - bfloat16 is the 16-bit format here because its range covers every intermediate value. A binary16 variant would also need every small constant kept in 32 bits (H3).
+  - Testing it needs precision chosen within and across slots, which is the follow-up to #30 (§6).
 
 The hypotheses can fail in informative ways. If H1 fails, the stack has a conditioning or accumulation problem we haven't identified, and it would hurt float32 flight hardware too. If H2–H4 *pass*, the mechanisms in §2 matter less in closed loop than this analysis predicts, because feedback corrects the error. That is worth knowing on its own.
 
@@ -140,9 +146,9 @@ Precision is a cost, not only a correctness question *(assessment)*:
 - The stack's target hardware runs CPU + GPU today, and CPU + KPU later. The KPU is designed around number formats chosen per operator for energy and accuracy (cortex ADR 0015).
 - A stack locked to binary64 can't use that, and a stack locked to one 16-bit format can't fly (§5).
 
-The framework already has the seams this needs:
+The framework has the compile-time seams to investigate this, but per-slot precision is a future change to the slot contracts:
 - **Slots are templated on the scalar type** (architecture §3, cortex ADR 0015), so a slot's numerics are a compile-time parameter, not a rewrite.
-- **Slot boundaries are message contracts** (`StateEstimate`, `Reference`, `ThrustRates`, …), so the conversion points between precisions are explicit, few and testable. #30 adds the casts at the harness boundary. Per-slot types would put the same casts at slot boundaries.
+- **Slot boundaries are message contracts** (`StateEstimate`, `Reference`, `ThrustRates`, …). Today one `T` runs through the whole `Stack`, so connected slots share it. Per-slot types therefore need either explicit adapters or cross-type slot contracts at those boundaries, with conversion and rounding rules the follow-up design must define. #30 adds the first such conversions, at the harness boundary, with a ½-ULP round-to-nearest bound.
 - **The baseline file names the composition** ([ADR 0001](../adr/0001-baseline-composition-framework.md)). A per-slot scalar type is one more field per slot, giving a baseline such as "B1 with the estimator in `posit<32,2>` and the controller's stateless path in bfloat16" as its own scoreboard row.
 - **Replay is exact and the log stays binary64.** Any precision configuration can be compared with any other on the same recorded inputs.
 
@@ -171,10 +177,10 @@ The experiment and the product share a requirement: the same algorithm source ha
 These are properties that tests in sibling repos already check. They aren't new measurements.
 - **The reflex PID closed loop** (`tests/sdk/pid.cpp`) runs 4 s at 1 kHz. It is required to match the `double` result within 1e-5 for the 32-bit types (`float`, `posit<32,2>`, `cfloat<32,8>`), and within 1e-2 for `posit<16,1>`. Those tolerances encode the expected 32-bit/16-bit gap of about three orders of magnitude.
 - **The reflex quadrotor model** (`tests/sdk/quadrotor_model.cpp`) holds its state invariants (unit attitude, finite state, energy and ground) in `posit<16,1>` and bfloat16 on a spinning, climbing vehicle. Its parameter validation rejects RP-1 in binary16 because k_f underflows. The invariants show the model stays *well-formed* in 16 bits. They say nothing about *accuracy*, which is what P1 measures.
-- **The reflex biquads** (`tests/sdk/dsp_biquad.cpp`) report notch depth and low-pass error for `posit<16,1>` and binary16 as a characterization, without gating it.
+- **The reflex biquads** (`tests/sdk/dsp_biquad.cpp`) report notch depth for `posit<16,1>` and binary16 as a characterization, without gating it. The low-pass tests run in `double` and `float` only.
 
 ## 9. Next steps
 
 1. [#30](https://github.com/branes-ai/racing-drone/issues/30): the uniform-T sweep of B0 on P1, testing H1–H4. Results get a section here, citing the table the tool generates.
-2. Per-slot scalar types in the composition and the baseline file, and H5. To be filed after #30.
+2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5. To be filed after #30.
 3. B1's EKF in binary32 and `posit<32,2>`, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.3 applies in earnest.
