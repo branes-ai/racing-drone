@@ -44,6 +44,7 @@ namespace branes::racing {
 template <typename T>
 struct TickOutput {
     StateEstimate<T> state;
+    Reference<T> reference;  ///< the planner's output, the controller's input
     ThrustRates<T> command;
 
     friend constexpr bool operator==(const TickOutput&, const TickOutput&) = default;
@@ -141,7 +142,7 @@ public:
         fc_.send(u, now);
         last_tick_ = now;
         assert(check_invariant());
-        return TickOutput<T>{x, u};
+        return TickOutput<T>{x, ref, u};
     }
 
     [[nodiscard]] const CourseMap<T>& course() const noexcept {

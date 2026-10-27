@@ -5,6 +5,7 @@
 #include <branes/racing/compose/stack.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/msg/codec.hpp>
 #include <branes/racing/slots/null.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -50,6 +51,8 @@ TEST_CASE("Stack: null composition produces valid, time-stamped outputs", "[stac
     CHECK(valid(y.command));
     CHECK(y.state.t_valid == Timestamp{1'000'000});
     CHECK(y.command.t == Timestamp{1'000'000});
+    CHECK(valid(y.reference));
+    CHECK(y.reference == stack.planner().plan(stack.course(), y.state));  // the planner's output, as computed
 
     // Same scalar-generic composition in float.
     NullStack<float> fstack(cast<float>(course->map));
@@ -146,4 +149,26 @@ TEST_CASE("Runner rejects a tick earlier than the previous one", "[stack]") {
     const auto back = runner.feed(log::LogRecord{log::Channel::tick, Timestamp{50}, {}});
     REQUIRE_FALSE(back);
     CHECK(back.error().find("earlier than the previous tick") != std::string::npos);
+}
+
+TEST_CASE("Runner: each tick yields state, reference, and command, in that order", "[stack]") {
+    const auto course = config::load_course(src / "courses/a2rl-2025.yaml");
+    REQUIRE(course);
+    NullStack<double> stack(course->map);
+    harness::Runner runner(stack);
+    const Timestamp t{4'000'000};
+    const auto out = runner.feed(log::LogRecord{log::Channel::tick, t, {}});
+    REQUIRE(out);
+    REQUIRE(out->size() == 3);
+    CHECK((*out)[0].channel == log::Channel::state);
+    CHECK((*out)[1].channel == log::Channel::reference);
+    CHECK((*out)[2].channel == log::Channel::command);
+    for (const auto& o : *out) {
+        CHECK(o.t == t);
+    }
+    const auto ref = codec::decode_reference((*out)[1].payload);
+    REQUIRE(ref);
+    const auto state = codec::decode_state((*out)[0].payload);
+    REQUIRE(state);
+    CHECK(*ref == stack.planner().plan(stack.course(), *state));
 }
