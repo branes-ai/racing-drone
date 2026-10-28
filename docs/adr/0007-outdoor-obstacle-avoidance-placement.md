@@ -39,7 +39,7 @@ There is a second question underneath. The composition framework is mission-neut
 
    **The planner is not yet a `Planner` slot implementation.** The current slot takes only the course map and the state estimate ([`slots.hpp`](../../sdk/include/branes/racing/slots/slots.hpp)). A depth-driven planner also needs a depth observation and a goal. Putting it behind the slot therefore needs a revised `Planner` contract, decided where the planner enters a mission (Decision 3), under the slot registry of [ADR 0001](0001-baseline-composition-framework.md).
 
-2. **The mission goes in its own mission repo,** with only mission content and no algorithms, as the tiers require. That means the randomized outdoor scenes and scenarios, the vehicle and its sensor configuration, the trained weights for that vehicle, and the success-rate-against-speed scoring and acceptance. The mission belongs in an existing mission repo whose profile fits (for example `isr-drone`), or in a new one. That is decided when the work starts.
+2. **The mission goes in its own mission repo,** with only mission content and no algorithms, as the tiers require. That means the randomized outdoor scenes and scenarios, the vehicle and its sensor configuration, the trained weights for that vehicle, and the success-rate-against-speed scoring and acceptance. That repo is `scout-drone` (named after this ADR was proposed).
 
 3. **Racing-drone takes the planner only as a comparison baseline, later.** Once the planner exists in cortex and the `Planner` contract carries a depth observation and a goal (Decision 1), a baseline may put it behind the slot and compare it with the waypoint and MPCC planners on an obstacle course. A2RL announced that Season 2 would feature "a more technically complex track featuring dynamic obstacles and mission-style tasks" [2]. Such a baseline adds a depth sensor through the existing sensor interfaces (requirements §2, DAA-09). It is therefore not an A2RL-legal baseline, and it is reported as such.
 
@@ -47,7 +47,7 @@ There is a second question underneath. The composition framework is mission-neut
    - **Until then:** keep mission-neutral code free of racing-only types.
    - **Racing-only:** gates, courses, the oracle gate projector, the scorer.
    - **Mission-neutral:** slots, contracts, `Stack`, harness, log, time base, the simulator core.
-   - Where the framework goes (a new repo, or a platform repo) is decided in its own ADR when the second mission repo is created.
+   - Where the framework goes is decided in [ADR 0008](0008-anatomy-mission-framework.md): the `anatomy` repo.
 
 ## Consequences
 
