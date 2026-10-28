@@ -21,6 +21,7 @@
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <random>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -29,8 +30,22 @@ using namespace branes::racing;
 
 namespace {
 
+/// A path in this process's own temporary directory, so concurrent runs of the
+/// test never share files.
 std::filesystem::path temp_path(const std::string& name) {
-    return std::filesystem::temp_directory_path() / ("racing_neutral_harness_" + name);
+    static const std::filesystem::path dir = [] {
+        std::random_device rd;
+        for (;;) {
+            const auto d = std::filesystem::temp_directory_path() /
+                           ("racing_neutral_harness_" + std::to_string(rd()) + "_" + std::to_string(rd()));
+            std::error_code ec;
+            if (std::filesystem::create_directory(d, ec)) {
+                return d;  // created by this process: no other run uses it
+            }
+            REQUIRE_FALSE(ec);  // existed already: draw another name
+        }
+    }();
+    return dir / name;
 }
 
 std::string read_all(const std::filesystem::path& p) {
@@ -151,4 +166,5 @@ TEST_CASE("neutral: dump_records writes a mission's channel in its own format", 
     }
     std::filesystem::remove(log_path, ec);
     std::filesystem::remove_all(out_dir, ec);
+    std::filesystem::remove(log_path.parent_path(), ec);  // this process's directory, now empty
 }

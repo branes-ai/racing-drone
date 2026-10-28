@@ -195,7 +195,7 @@ PR 1c of the plan is split in two. **1c** covers the simulator, the batch runner
 
 `sitl_batch`'s summary (laps, gate errors, speeds, failures) and `precision_sweep` stay racing: they are about racing's score.
 
-The manifest lists 56 files, adding the 6 new neutral headers above and the new test `tests/sdk/neutral_harness.cpp` (neutral headers only). That test covers verification messages, the tick bound, the pool, number parsing, and a dump with another mission's channel.
+The manifest lists 56 files, adding the 5 new neutral headers above and the new test `tests/sdk/neutral_harness.cpp` (neutral headers only). That test covers verification messages, the tick bound, the pool, number parsing, and a dump with another mission's channel.
 
 **Acceptance:**
 1. **Tests:** 217 of 217 pass on `gcc-debug` and on `clang-debug` (212 before, plus 5 new).
