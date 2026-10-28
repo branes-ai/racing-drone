@@ -1,6 +1,6 @@
 # Gate error by gate, and H4's distance prediction
 
-**Status:** Approved 2026-10-27, in implementation
+**Status:** Approved 2026-10-27, implemented ([racing-drone#43](https://github.com/branes-ai/racing-drone/pull/43))
 **Issue:** [racing-drone#35](https://github.com/branes-ai/racing-drone/issues/35), part of the Phase 2 epic [racing-drone#9](https://github.com/branes-ai/racing-drone/issues/9)
 **Related:** [precision sweep plan](../precision-sweep/README.md), [time-base plan](../time-base/README.md), [mixed-precision assessment](../../assessments/mixed-precision.md) §9 (H4)
 
@@ -8,8 +8,8 @@
 
 | Item | What | State |
 |---|---|---|
-| [racing-drone#35](https://github.com/branes-ai/racing-drone/issues/35) | This plan | Open |
-| [racing-drone#43](https://github.com/branes-ai/racing-drone/pull/43) | The per-gate statistics, the regenerated sweep, and H4's verdict; this document lands with it | Open |
+| [racing-drone#35](https://github.com/branes-ai/racing-drone/issues/35) | This plan | Closed |
+| [racing-drone#43](https://github.com/branes-ai/racing-drone/pull/43) | The per-gate statistics, the regenerated sweep, and H4's verdict; this document landed with it | Merged |
 | [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40) | The controller's dt defect #35 found, fixed first | Closed |
 
 ## Problem
