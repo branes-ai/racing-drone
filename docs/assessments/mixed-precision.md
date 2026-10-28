@@ -198,12 +198,12 @@ These are properties that tests in sibling repos already check. They aren't new 
 - **H1 holds.** `float`, `cfloat<32,8>` and `posit<32,2>` construct and pass P1. Their lap-time, gate-error and speed percentiles equal `double`'s at the table's precision, and the Lap Δ column bounds the per-seed differences.
 - **H2 is refuted.** bfloat16 constructs and passes P1. Its precision shows, but stays inside the gate: slower laps, a larger median gate error and a lower top speed than `double`.
 - **H3 holds.** binary16 fails construction, and the reason names `rotor.thrust_coefficient` as subnormal (the table's Failures section), as predicted.
-- **H4 is refuted on P1.** `posit<16,1>` constructs and passes P1, with laps faster than `double`'s and a top speed above the controller's velocity cap (`max_speed_m_s` in `baselines/b0-gt-pid.yaml`), though under the scenario's speed limit. Its second prediction, gate errors growing with distance from the origin, isn't measured: the table doesn't split gate error by position.
+- **H4 is refuted on P1.** `posit<16,1>` constructs and passes P1, with lap times, gate errors and top speed close to `double`'s and under the controller's velocity cap (`max_speed_m_s` in `baselines/b0-gt-pid.yaml`). Its second prediction, gate errors growing with distance from the origin, isn't measured: the table doesn't split gate error by position ([#35](https://github.com/branes-ai/racing-drone/issues/35)).
 
 Why H2 and H4 were wrong, as far as it is known:
 - **The predicted accumulation isn't in B0's stack.** §2.2's position examples integrate velocity into position in T. In B0, the simulator does that integration in `double`. The ground-truth estimator then hands the stack the true state each tick, cast to T: one rounding of at most ½ ULP, not an accumulated stall.
 - **What B0 does accumulate is fed back.** The stack's accumulators are the controllers' integrators. Their lost increments (§2.2) leave errors that the proportional terms correct, the closed-loop outcome §5 named as informative.
-- **Open: why `posit<16,1>` flies faster than `double`** and above the velocity cap. The cause isn't known yet (§10, [#35](https://github.com/branes-ai/racing-drone/issues/35)).
+- **A defect, not a format effect, first made `posit<16,1>` fly faster than `double`.** The first sweep ([#33](https://github.com/branes-ai/racing-drone/pull/33)) had it lapping faster than `double` and above the velocity cap. The cause was the controller's dt: `CascadedPid` computed it as `T(Δns) * T(1e-9)`. In `posit<16,1>`, 4,000,000 rounds to 2²² and 1e-9 rounds up to minpos (posits don't underflow), so a 4 ms tick became 15.6 ms. The velocity integrators then ran 3.9× too fast. [#40](https://github.com/branes-ai/racing-drone/issues/40) converts tick intervals through a checked `TimeBase` ([plan](../plan/time-base/README.md)), with one rounding into T and an accuracy derived from the controller's gains; a type that can't meet it fails construction. The table is regenerated with that fix. `double` is unchanged bit for bit. The one-rounding dt moves `float`'s, `cfloat<32,8>`'s and `posit<32,2>`'s per-seed laps slightly (the Lap Δ column), not their percentiles at the table's precision.
 
 What this does and doesn't show:
 - It shows that B0, a stack without a filter or optimizer, flies P1 in bfloat16 and `posit<16,1>`, the two 16-bit formats tested whose range holds its parameters.
@@ -211,6 +211,6 @@ What this does and doesn't show:
 
 ## 10. Next steps
 
-1. Find why `posit<16,1>` flies B0 faster than `double` and above the velocity cap (§9), and measure H4's distance prediction with gate error split by position ([#35](https://github.com/branes-ai/racing-drone/issues/35)).
+1. Measure H4's distance prediction with gate error split by position ([#35](https://github.com/branes-ai/racing-drone/issues/35)). Why `posit<16,1>` first flew B0 faster than `double` is found and fixed (§9, [#40](https://github.com/branes-ai/racing-drone/issues/40)).
 2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5 ([#36](https://github.com/branes-ai/racing-drone/issues/36)).
 3. B1's EKF and MPC in binary32, `posit<32,2>` and the 16-bit formats, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.2–§2.3 apply in earnest, and the sweep tool runs B1 once it has a baseline file ([#37](https://github.com/branes-ai/racing-drone/issues/37)).
