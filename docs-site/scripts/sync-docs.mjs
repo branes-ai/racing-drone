@@ -1,7 +1,9 @@
 // Generates the site's content from the repo's docs/ (docs/plan/docs-site).
 //
 //   docs/**/*.md        → src/content/docs/**  (README.md → index.md)
-//   docs/README.md      → the home page
+//   docs/index.mdx      → the home page (docs/plan/docs-site-landing)
+//   docs/README.md      → the documentation map, /overview/ (the home page
+//                         when there is no docs/index.mdx)
 //   sidebar             → src/generated/sidebar.json
 //
 // Nothing under src/content/docs/ is authored by hand; it is deleted and
@@ -27,8 +29,13 @@ const BRANCH = 'main';
 const GROUP_LABELS = {
   adr: 'Decisions (ADRs)',
   arch: 'Architecture',
+  'getting-started': 'Getting Started',
   plan: 'Plans',
 };
+
+// The landing page: MDX, for Starlight's hero and components.
+const LANDING = 'index.mdx';
+const hasLanding = fs.existsSync(path.join(DOCS_DIR, LANDING));
 
 const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']);
 
@@ -46,6 +53,8 @@ function walk(dir) {
 
 // docs-relative path of a document → its output path and its site route.
 function pageOf(rel) {
+  if (rel === LANDING) return { outRel: LANDING, slug: '', route: '/' };
+  if (rel === 'README.md' && hasLanding) return { outRel: 'overview.md', slug: 'overview', route: '/overview/' };
   const dir = path.posix.dirname(rel);
   const base = path.posix.basename(rel, '.md');
   const isIndex = base === 'README';
@@ -118,6 +127,25 @@ for (const rel of mdFiles) {
   docs.set(rel, { ...d, ...pageOf(rel) });
 }
 
+// The landing page: its front matter is kept as written (title required), and
+// its body is parsed like any document's, for links and anchors.
+let landingFront = null;
+if (hasLanding) {
+  const text = fs.readFileSync(path.join(DOCS_DIR, LANDING), 'utf8');
+  const m = text.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!m) {
+    errors.push(`docs/${LANDING}: no front matter`);
+  } else {
+    landingFront = m[1];
+    const title = landingFront.match(/^title:\s*(.+)$/m);
+    if (!title) errors.push(`docs/${LANDING}: no title in the front matter`);
+    const body = parse(path.join(DOCS_DIR, LANDING));
+    const offset = m[0].split('\n').length - 1;
+    const tagged = lines(text.slice(m[0].length));
+    docs.set(LANDING, { ...body, tagged, offset, title: title ? title[1] : null, titleLine: -1, ...pageOf(LANDING) });
+  }
+}
+
 // Rewrites one link target found in docs/<rel>, line `lineNo`.
 function rewrite(target, rel, lineNo, copies) {
   if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//')) return target;
@@ -183,7 +211,7 @@ fs.mkdirSync(OUT_DIR, { recursive: true });
 const copies = new Set();
 
 for (const [rel, d] of docs) {
-  if (d.title === null) continue;
+  if (d.title === null || rel === LANDING) continue;
   const body = d.tagged
     .map((t, i) => (i === d.titleLine ? null : t.code ? t.line : rewriteLine(t.line, rel, i + 1, copies)))
     .filter((l) => l !== null)
@@ -201,6 +229,23 @@ for (const [rel, d] of docs) {
   fs.writeFileSync(out, front + body);
 }
 
+if (landingFront !== null) {
+  const d = docs.get(LANDING);
+  // Each relative hero action (`link: ./x/`) must be the route of a page.
+  const routes = new Set([...docs.values()].map((p) => p.route));
+  for (const [i, line] of landingFront.split('\n').entries()) {
+    const m = line.match(/^\s*link:\s*['"]?(\.\/[^'"\s]*)/);
+    if (m && !routes.has(m[1].slice(1).replace(/\/?$/, '/'))) {
+      errors.push(`docs/${LANDING}:${i + 2}: hero link ${m[1]} is not a page`);
+    }
+  }
+  const body = d.tagged
+    .map((t, i) => (t.code ? t.line : rewriteLine(t.line, LANDING, i + 1 + d.offset, copies)))
+    .join('\n');
+  const editUrl = `editUrl: ${JSON.stringify(`${GITHUB}/edit/${BRANCH}/docs/${LANDING}`)}`;
+  fs.writeFileSync(path.join(OUT_DIR, LANDING), `---\n${landingFront}\n${editUrl}\n---\n${body}`);
+}
+
 for (const rel of copies) {
   const out = path.join(OUT_DIR, rel);
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -208,24 +253,36 @@ for (const rel of copies) {
 }
 
 // Sidebar: one group per top-level folder, in the order docs/README.md's table
-// lists them, then any others alphabetically. Within a group: the folder's
-// README, its documents, then its subfolders' documents.
+// lists them, then any others alphabetically. Within a group: the documents
+// the folder's table row links to, in that order; then the folder's README,
+// its other documents, and its subfolders' documents.
 const folders = [...new Set(mdFiles.filter((r) => r.includes('/')).map((r) => r.split('/')[0]))];
 const order = [];
+const rowLinks = new Map();
 const index = docs.get('README.md');
 if (index) {
   for (const { line, code } of index.tagged) {
     const m = !code && line.match(/^\|\s*\[?([A-Za-z0-9_-]+)\/\]?/);
-    if (m && folders.includes(m[1]) && !order.includes(m[1])) order.push(m[1]);
+    if (!m || !folders.includes(m[1]) || order.includes(m[1])) continue;
+    order.push(m[1]);
+    const cells = line.split('|').slice(2).join('|');
+    const linked = [...cells.matchAll(/\]\(([^)#\s]+)/g)].map((x) => path.posix.normalize(x[1]));
+    rowLinks.set(m[1], [...new Set(linked)]);
   }
 }
 for (const f of folders.sort()) if (!order.includes(f)) order.push(f);
 
-const sidebar = [{ label: 'Overview', link: '/' }];
+// With a landing page, the documentation map is the last item of the first
+// group; without one, it is the home page, linked first.
+const sidebar = hasLanding ? [] : [{ label: 'Overview', link: '/' }];
 for (const folder of order) {
   const pages = [...docs.entries()]
     .filter(([rel, d]) => rel.startsWith(`${folder}/`) && d.title !== null)
     .sort(([a], [b]) => {
+      const links = rowLinks.get(folder) ?? [];
+      const la = links.indexOf(a);
+      const lb = links.indexOf(b);
+      if (la !== lb) return la === -1 ? 1 : lb === -1 ? -1 : la - lb;
       const ia = a === `${folder}/README.md`;
       const ib = b === `${folder}/README.md`;
       if (ia !== ib) return ia ? -1 : 1;
@@ -239,6 +296,10 @@ for (const folder of order) {
     label: GROUP_LABELS[folder] ?? folder[0].toUpperCase() + folder.slice(1),
     items: pages.map(([, d]) => ({ label: d.title, slug: d.slug })),
   });
+}
+const map = docs.get('README.md');
+if (hasLanding && map && map.title !== null && sidebar.length > 0) {
+  sidebar[0].items.push({ label: map.title, slug: map.slug });
 }
 
 if (errors.length) {
