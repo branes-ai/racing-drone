@@ -10,9 +10,10 @@ That makes it the ideal forcing function for the Branes.AI platform. Every weakn
 
 ## How the platform fits together
 
-The Branes.AI stack has four tiers. This repo sits in the top one:
+The Branes.AI stack has five tiers. This repo sits in the top one:
 
-- **Mission**: one repo per vehicle and mission (`racing-drone`, `interceptor-drone`, `isr-drone`, `nano-drone`, ...). It owns the mission capability and composes platform components; algorithms do not live there.
+- **Mission**: one repo per vehicle and mission. `racing-drone` and `scout-drone` are the two that stand up the architecture; more follow (`interceptor-drone`, `isr-drone`, `nano-drone`, `counter-uas`). A mission repo owns its task: its world, the slots that see it, its stack and scorer, and its data. Algorithms do not live there.
+- **Mission framework**: [`anatomy`](https://github.com/branes-ai/anatomy), the body plan every mission composes its vehicle with: the data contracts, the slot concepts and their composition, configs, the replay log, the harness, and the closed-loop simulator. It holds no algorithms and no mission.
 - **Platform**: three sister repos, `cortex`, `synapse`, and `reflex`, that provide the functionality and services a mission is built from. None of them sits above the others.
 - **Math**: [MTL5](https://github.com/stillwater-sc/mtl5) provides high-performance linear algebra and [Universal](https://github.com/stillwater-sc/universal) provides computer arithmetic (posits, intervals, mixed precision, hardware-aligned types).
 - **Hardware**: CPU, CPU + GPU, CPU + KPU, and KPU. Today the stack runs on CPU; GPU and KPU support are planned.
