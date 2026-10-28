@@ -82,8 +82,13 @@ def main():
     roots = [os.path.join(anatomy, p, "include") for p in ("sdk", "glue", "sim")]
     headers = []
     for root in roots:
+        found = []
         for dirpath, _, files in os.walk(root):
-            headers += [os.path.relpath(os.path.join(dirpath, f), root) for f in files if f.endswith(".hpp")]
+            found += [os.path.relpath(os.path.join(dirpath, f), root) for f in files if f.endswith(".hpp")]
+        # A build without anatomy's sources would otherwise empty every bridge.
+        if not found:
+            raise SystemExit(f"gen_anatomy_bridges: no headers under {root}; is {args.build} configured?")
+        headers += found
     includes = [f"-I{r}" for r in roots] + [
         f"-isystem{os.path.join(deps, p)}"
         for p in ("reflex-src/sdk/include", "mtl5-src/include", "mtl5-build/include", "universal-src/include",
@@ -130,6 +135,12 @@ def main():
     for obj in ast_objects(dump):
         if obj.get("kind") == "NamespaceDecl":
             walk(obj, [])
+
+    # Write nothing unless every bridge has names: a partial AST must not
+    # replace a good header with an empty one.
+    for lib, (file_name, _, _) in BRIDGES.items():
+        if not names[lib]:
+            raise SystemExit(f"gen_anatomy_bridges: no names for {file_name}; nothing written")
 
     for lib, (file_name, what, extra) in BRIDGES.items():
         out = [
