@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/branes-ai/racing-drone/compare/v0.8.2...v0.8.3) (2026-10-28)
+
+
+### Code Refactoring
+
+* **sdk:** split the slots, slot context, stack and harness in place ([#60](https://github.com/branes-ai/racing-drone/issues/60)) ([3c45f5b](https://github.com/branes-ai/racing-drone/commit/3c45f5bb15a57f45a3be8d4335bfb8e159dcd1cc))
+
 ## [0.8.2](https://github.com/branes-ai/racing-drone/compare/v0.8.1...v0.8.2) (2026-10-28)
 
 
