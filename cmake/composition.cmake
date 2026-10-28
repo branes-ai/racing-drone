@@ -37,6 +37,7 @@ endfunction()
 
 # composition_generate(<registry> <name> FILE <baseline.yaml> TEMPLATE <header.in> OUTPUT <header>)
 #
+#   0. registers FILE as a configure dependency (editing it reruns CMake),
 #   1. parses the `composition:` block of FILE (two-space-indented `slot: Impl` lines),
 #   2. checks that every slot of the registry is named exactly once, with an
 #      implementation registered for that slot,
@@ -53,6 +54,12 @@ function(composition_generate registry name)
         message(FATAL_ERROR "composition_generate(${registry} ${name}): FILE, TEMPLATE and OUTPUT are required")
     endif()
     set(file ${arg_FILE})
+    if(NOT EXISTS ${file})
+        message(FATAL_ERROR "composition_generate(${registry} ${name}): ${file} not found")
+    endif()
+    # Editing the baseline file reruns CMake, so the generated header (and its
+    # composition hash) never goes stale. configure_file() tracks the template.
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file})
     get_property(slots GLOBAL PROPERTY COMPOSITION_${registry}_SLOTS)
 
     # ── 1. parse the composition block ──────────────────────────────────

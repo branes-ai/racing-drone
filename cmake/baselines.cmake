@@ -42,7 +42,6 @@ function(racing_add_baseline name)
     if(NOT EXISTS ${file})
         message(FATAL_ERROR "racing_add_baseline(${name}): ${file} not found")
     endif()
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file})
 
     # ── 1–4. the composition: parsed, checked, hashed, and its header ───
     set(gen_dir ${CMAKE_BINARY_DIR}/generated/${name})
