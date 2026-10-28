@@ -84,6 +84,8 @@ Algorithms do not live here. Perception and planning go in `cortex`, control and
 
 ## Roadmap
 
+The documentation in [`docs/`](docs/README.md) is published at <https://branes-ai.github.io/racing-drone/>.
+
 The detailed plan is in [`docs/plan/implementation-plan.md`](docs/plan/implementation-plan.md), with requirements in [`docs/requirements/mission-requirements.md`](docs/requirements/mission-requirements.md). Phases 1–7 each end in a *baseline* (a named composition of components; see [`docs/arch/framework-architecture.md`](docs/arch/framework-architecture.md)) that runs in the scenario suite. Phases 0 and 8 are infrastructure phases with their own gates:
 
 0. **Framework skeleton:** slots, data contracts, vehicle/course/scenario/baseline files, logging and replay.
@@ -143,7 +145,8 @@ racing-drone/
 ├── baselines/    # one YAML per baseline: slot composition + parameters
 ├── cmake/        # deps, warnings, slot registry, baseline target generation
 ├── courses/      # course files (gates, sequence, laps, geofence)
-├── docs/         # requirements, assessments, architecture, plans, ADRs
+├── docs/         # requirements, assessments, architecture, plans, ADRs: the source of the docs site
+├── docs-site/    # Starlight site generated from docs/, published to GitHub Pages
 ├── scenarios/    # SITL scenarios (course + vehicle + duration + seed)
 ├── sdk/          # branes::racing: data contracts, slots, Stack, config loaders, log, harness pieces
 ├── tests/        # Catch2 unit tests, baseline tests, phase gates

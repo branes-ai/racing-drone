@@ -1,0 +1,28 @@
+/* Racing Drone docs theme: dark slate with a gate-teal accent. */
+
+:root {
+  --sl-color-accent-low: #0c3a34;
+  --sl-color-accent: #21c7b0;
+  --sl-color-accent-high: #b4f5ea;
+
+  --sl-color-bg: #12151b;
+  --sl-color-bg-nav: #191d25;
+  --sl-color-bg-sidebar: #191d25;
+}
+
+/* Light mode keeps the same accent, darkened for contrast. */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #c9f3ec;
+  --sl-color-accent: #0b7d6e;
+  --sl-color-accent-high: #053b34;
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: #f7f7f8;
+  --sl-color-bg-sidebar: #f7f7f8;
+}
+
+/* Wide tables scroll inside their own box instead of widening the page at
+   phone width. */
+.sl-markdown-content table {
+  display: block;
+  overflow-x: auto;
+}
