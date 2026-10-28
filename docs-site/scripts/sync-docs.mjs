@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import GithubSlugger from 'github-slugger';
+import GithubSlugger, { slug as slugify } from 'github-slugger';
 
 const SITE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO_DIR = path.resolve(SITE_DIR, '..');
@@ -50,7 +50,10 @@ function pageOf(rel) {
   const base = path.posix.basename(rel, '.md');
   const isIndex = base === 'README';
   const outRel = path.posix.join(dir, isIndex ? 'index.md' : `${base}.md`);
-  const slug = isIndex ? (dir === '.' ? '' : dir) : path.posix.join(dir, base).replace(/^\.\//, '');
+  // The route as Starlight's loader derives it: each path segment slugified
+  // (lowercased, spaces to hyphens, punctuation dropped).
+  const segments = (isIndex ? dir : path.posix.join(dir, base)).split('/').filter((x) => x !== '.' && x !== '');
+  const slug = segments.map((x) => slugify(x)).join('/');
   return { outRel, slug, route: slug === '' ? '/' : `/${slug}/` };
 }
 
@@ -89,12 +92,13 @@ function parse(file) {
     if (t.code) return;
     const m = t.line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
     if (!m) return;
-    const id = slugger.slug(headingText(m[2]));
+    // The title is removed from the page, so it takes no slug: a later heading
+    // with the same text renders as #text, not #text-1.
     if (m[1].length === 1 && title === null) {
       title = headingText(m[2]);
       titleLine = i;
     } else {
-      anchors.add(id);
+      anchors.add(slugger.slug(headingText(m[2])));
     }
   });
   return { text, tagged, title, titleLine, anchors };
