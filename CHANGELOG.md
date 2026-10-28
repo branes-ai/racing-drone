@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/branes-ai/racing-drone/compare/v0.8.1...v0.8.2) (2026-10-28)
+
+
+### Documentation
+
+* **adr:** 0008, the mission framework moves to anatomy ([#55](https://github.com/branes-ai/racing-drone/issues/55)) ([f85ff73](https://github.com/branes-ai/racing-drone/commit/f85ff73a7a3870942e02266a53f60a33e775e20b))
+
 ## [0.8.1](https://github.com/branes-ai/racing-drone/compare/v0.8.0...v0.8.1) (2026-10-28)
 
 
