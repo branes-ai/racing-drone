@@ -14,11 +14,9 @@
 // (log/dump.hpp), which documents the CSV formats; this file adds racing's
 // own channel, oracle_gates (one row per observed gate), and the header files.
 
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/log/channels.hpp>
-#include <branes/racing/log/dump.hpp>
-#include <branes/racing/log/log.hpp>
-#include <branes/racing/msg/codec.hpp>
 #include <branes/racing/msg/gate_codec.hpp>
 
 #include <array>

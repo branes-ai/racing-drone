@@ -17,7 +17,6 @@ on:
       - 'docs-site/**'
       - 'sdk/include/**'
       - 'sim/include/**'
-      - 'baselines/glue/include/**'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 

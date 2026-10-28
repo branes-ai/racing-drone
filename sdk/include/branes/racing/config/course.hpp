@@ -8,9 +8,8 @@
 /// result<X, ConfigError>. Every emitter writes a file that loads back to an
 /// equal value (round trip), with doubles written to 17 significant digits.
 
-#include <branes/racing/config/error.hpp>
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/result.hpp>
 
 #include <filesystem>
 #include <string>

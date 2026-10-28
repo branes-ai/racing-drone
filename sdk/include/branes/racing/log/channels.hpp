@@ -5,7 +5,7 @@
 /// Racing-only (docs/assessments/framework-boundary.md). The id is the one
 /// racing logs have always used, so existing logs read unchanged.
 
-#include <branes/racing/log/log.hpp>
+#include <branes/racing/anatomy.hpp>
 
 #include <array>
 

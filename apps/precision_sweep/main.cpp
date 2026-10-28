@@ -28,13 +28,13 @@
 // --min-success (default 0.99, gate P1) only marks the table's P1 column.
 // Exits 0 once every type has a result; nonzero on usage or setup errors.
 
+#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_sweep.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
-#include <branes/racing/harness/parallel.hpp>
 #include <branes/racing/sim/batch.hpp>
 #include <branes/racing/sim/gate_resolution.hpp>
 #include <branes/racing/sim/score.hpp>
-#include <branes/racing/sim/sweep_types.hpp>
 
 #include "racing_baseline.hpp"
 

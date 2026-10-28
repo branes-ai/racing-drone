@@ -4,7 +4,7 @@
 ///
 /// Fixed capacity, so a cycle never allocates (SW-01).
 
-#include <branes/racing/msg/geometry.hpp>
+#include <branes/racing/anatomy.hpp>
 
 #include <array>
 #include <cstddef>

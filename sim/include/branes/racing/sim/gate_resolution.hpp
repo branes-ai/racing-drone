@@ -5,9 +5,9 @@
 /// Racing-only (docs/assessments/framework-boundary.md); ulp_at, the
 /// resolution at a value, is mission-neutral (sweep_types.hpp).
 
+#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_sweep.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/msg/geometry.hpp>
-#include <branes/racing/sim/sweep_types.hpp>
 
 #include <algorithm>
 #include <array>

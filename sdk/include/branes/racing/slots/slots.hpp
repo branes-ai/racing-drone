@@ -13,13 +13,9 @@
 /// Every slot is templated on the scalar type T (cortex ADR 0015). The data
 /// contracts it exchanges live in branes/racing/msg/.
 
-#include <branes/racing/msg/control.hpp>
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/msg/estimate.hpp>
 #include <branes/racing/msg/perception.hpp>
-#include <branes/racing/msg/sensors.hpp>
-#include <branes/racing/msg/time.hpp>
-#include <branes/racing/slots/neutral.hpp>
 
 #include <concepts>
 

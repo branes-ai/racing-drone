@@ -3,7 +3,7 @@
 ```text
 racing-drone/
 ├── apps/         # harness sources (flight_stack, replay, sitl, sitl_batch, precision_sweep) built per baseline, and the score / log_dump tools
-├── baselines/    # one YAML per baseline: slot composition + parameters; glue/ holds the platform adapters
+├── baselines/    # one YAML per baseline: slot composition + parameters
 ├── cmake/        # deps, warnings, slot registry, baseline target generation
 ├── courses/      # course files (gates, sequence, laps, geofence)
 ├── docs/         # requirements, assessments, architecture, plans, ADRs: the source of this site
@@ -14,6 +14,8 @@ racing-drone/
 ├── tests/        # Catch2 unit tests, baseline tests, phase gates
 └── vehicles/     # vehicle files (mass, inertia, rotors, drag, IMU, camera)
 ```
+
+The mission-neutral framework (the data contracts, slots and composition, configs, the log, the harness, the reflex glue, and the closed-loop simulator) is not in this repo: it is [anatomy](https://github.com/branes-ai/anatomy), fetched at a pinned release (`cmake/deps.cmake`). `sdk/include/branes/racing/anatomy*.hpp` bring its names into `branes::racing` ([plan](../plan/consume-anatomy/README.md)).
 
 ## Where the documents are
 

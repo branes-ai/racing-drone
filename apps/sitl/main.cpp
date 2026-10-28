@@ -9,12 +9,11 @@
 // holds every input event, the sim channels (truth, oracle gates, the drawn
 // randomization), and every output, so replay_<baseline> can reproduce the run.
 
+#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_sim.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
-#include <branes/racing/log/log.hpp>
-#include <branes/racing/msg/codec.hpp>
 #include <branes/racing/sim/simulator.hpp>
-#include <branes/racing/sim/sitl_loop.hpp>
 
 #include "racing_baseline.hpp"
 

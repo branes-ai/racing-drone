@@ -4,10 +4,10 @@
 // holds at the end; SlotContext builds slots that support it; the stack and
 // the Runner deliver truth to TruthConsumer slots.
 
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/compose/stack.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
-#include <branes/racing/msg/codec.hpp>
 #include <branes/racing/slots/context.hpp>
 #include <branes/racing/slots/ground_truth.hpp>
 #include <branes/racing/slots/null.hpp>

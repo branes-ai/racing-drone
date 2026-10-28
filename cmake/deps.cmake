@@ -85,3 +85,33 @@ if(NOT TARGET universal::universal)
         ${universal_SOURCE_DIR}/include/sw)
     target_compile_features(universal INTERFACE cxx_std_20)
 endif()
+
+# ── branes-ai/anatomy — the mission framework (MIT) ──────────────────
+# The data contracts, slots and composition, configs, the log, the harness, the
+# reflex glue and the closed-loop simulator (docs/adr/0008-anatomy-mission-framework.md,
+# docs/plan/consume-anatomy/). Pinned to a release commit; bumps go via
+# dedicated PRs, which regenerate the bridge headers (tools/gen_anatomy_bridges.py).
+# Declared after racing-drone's own dependencies, so where both name one
+# (yaml-cpp, reflex, Universal) the first declaration, racing-drone's, is used;
+# the check below fails the configure if anatomy pins reflex differently. Its
+# tests are off because it is not the top-level project. SYSTEM, as for reflex.
+FetchContent_Declare(
+    anatomy
+    GIT_REPOSITORY https://github.com/branes-ai/anatomy.git
+    GIT_TAG        d177d2be384bf558f587d3dda9e0009c12fd1ab5  # v0.1.0
+    SYSTEM
+)
+FetchContent_MakeAvailable(anatomy)
+
+# anatomy and racing-drone must pin the same reflex (the first declaration
+# wins, so a mismatch would build anatomy against racing-drone's reflex).
+file(STRINGS ${anatomy_SOURCE_DIR}/cmake/deps.cmake anatomy_reflex_tag
+     REGEX "GIT_TAG +[0-9a-f]+ +# main after reflex")
+file(STRINGS ${CMAKE_CURRENT_LIST_FILE} racing_reflex_tag
+     REGEX "GIT_TAG +[0-9a-f]+ +# main after reflex")
+string(REGEX MATCH "[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]+" anatomy_reflex_tag "${anatomy_reflex_tag}")
+string(REGEX MATCH "[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]+" racing_reflex_tag "${racing_reflex_tag}")
+if(NOT anatomy_reflex_tag STREQUAL racing_reflex_tag)
+    message(FATAL_ERROR "anatomy pins reflex ${anatomy_reflex_tag}, racing-drone ${racing_reflex_tag}: "
+                        "bump them together (cmake/deps.cmake)")
+endif()

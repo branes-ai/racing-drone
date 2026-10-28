@@ -4,7 +4,7 @@
 // cascade's limits. Its dt accuracy is ε_max from the velocity gains
 // (docs/plan/time-base/), and a dt its TimeBase rejects is held and counted.
 
-#include <branes/racing/glue/cascaded_pid.hpp>
+#include <branes/racing/anatomy_glue.hpp>
 #include <branes/racing/slots/context.hpp>
 #include <branes/racing/slots/slots.hpp>
 

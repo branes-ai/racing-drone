@@ -12,11 +12,11 @@
 //  - CascadedPid builds at 250 Hz in every type whose vehicle parameters
 //    construct (binary16's don't, before the controller is reached).
 
+#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_glue.hpp>
+#include <branes/racing/anatomy_sweep.hpp>
 #include <branes/racing/config/config.hpp>
-#include <branes/racing/glue/cascaded_pid.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/msg/time.hpp>
-#include <branes/racing/sim/sweep_types.hpp>
 #include <branes/racing/slots/context.hpp>
 
 #include "precision_fixtures.hpp"

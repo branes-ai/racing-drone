@@ -16,9 +16,9 @@
 // max speed, failures), optionally one JSON line per run, and exits nonzero
 // if the success fraction is below --min-success (default 1).
 
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
-#include <branes/racing/harness/parallel.hpp>
 #include <branes/racing/sim/batch.hpp>
 #include <branes/racing/sim/score.hpp>
 

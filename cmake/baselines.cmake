@@ -1,7 +1,7 @@
 # cmake/baselines.cmake — turn baselines/<name>.yaml into build targets.
 #
 # Racing-only (docs/assessments/framework-boundary.md); steps 1–4 are the
-# mission-neutral composition_generate() (cmake/composition.cmake), over
+# mission-neutral composition_generate() (anatomy cmake/composition.cmake), over
 # racing's registry (cmake/slot_registry.cmake).
 #
 # docs/adr/0001-baseline-composition-framework.md: a baseline file has a
@@ -28,7 +28,7 @@
 # also pre-fills the debugger arguments: sitl_<name> writes
 # <build>/<name>.brlog, which replay_<name> then verifies.
 include_guard(GLOBAL)
-include(${CMAKE_CURRENT_LIST_DIR}/composition.cmake)
+include(${ANATOMY_CMAKE_DIR}/composition.cmake)
 
 function(racing_add_baseline name)
     cmake_parse_arguments(PARSE_ARGV 1 arg "PRECISION_SWEEP" "DEBUG_SCENARIO" "")
@@ -59,7 +59,7 @@ function(racing_add_baseline name)
         set(target ${harness}_${name})
         add_executable(${target} ${PROJECT_SOURCE_DIR}/apps/${harness}/main.cpp)
         target_include_directories(${target} PRIVATE ${gen_dir})
-        target_link_libraries(${target} PRIVATE branes::racing branes::racing_glue)
+        target_link_libraries(${target} PRIVATE branes::racing branes::anatomy_glue)
         target_compile_definitions(${target} PRIVATE
             RACING_BASELINES_DIR="${PROJECT_SOURCE_DIR}/baselines")
         racing_set_warnings(${target})
