@@ -51,7 +51,7 @@ The Branes.AI stack has five tiers. This repo sits in the top one:
 
 Arrows point from a tier to the tier below it that it builds on. They show how the tiers relate, not the dependencies of individual repos: each repo's build declares the libraries it actually uses. A mission also uses platform components directly: it composes them into anatomy's slots.
 
-The platform is modeled on the mammalian nervous system. This repo is the whole organism; the sister repos provide its brain, its reflexes, and the synapses that run its learned models:
+The platform is modeled on the mammalian nervous system. This repo is the whole organism; the platform repos provide its brain, its reflexes, and the synapses that run its learned models, and anatomy provides the body plan they are assembled into:
 
 | Repo | Biological analogue | What it provides to the racing drone | Time scale |
 |---|---|---|---|
