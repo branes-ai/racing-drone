@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.5](https://github.com/branes-ai/racing-drone/compare/v0.8.4...v0.8.5) (2026-10-28)
+
+
+### Code Refactoring
+
+* consume the framework from anatomy v0.1.0 ([#66](https://github.com/branes-ai/racing-drone/issues/66)) ([898f86e](https://github.com/branes-ai/racing-drone/commit/898f86e58e631c4c81d38ed5f249ad79269e70b4))
+
 ## [0.8.4](https://github.com/branes-ai/racing-drone/compare/v0.8.3...v0.8.4) (2026-10-28)
 
 
