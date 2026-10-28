@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/branes-ai/racing-drone/compare/v0.8.0...v0.8.1) (2026-10-28)
+
+
+### Documentation
+
+* **adr:** 0007, where outdoor obstacle avoidance lives ([#54](https://github.com/branes-ai/racing-drone/issues/54)) ([fe2e6bd](https://github.com/branes-ai/racing-drone/commit/fe2e6bd5221d5d0b79a14cc4fcfd6903536691d5))
+
 ## [0.8.0](https://github.com/branes-ai/racing-drone/compare/v0.7.0...v0.8.0) (2026-10-28)
 
 
