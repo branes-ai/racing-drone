@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/branes-ai/racing-drone/compare/v0.5.2...v0.6.0) (2026-10-27)
+
+
+### Features
+
+* **sim:** precision sweep of baseline b0 across scalar types ([#33](https://github.com/branes-ai/racing-drone/issues/33)) ([fb06aec](https://github.com/branes-ai/racing-drone/commit/fb06aec1fac2c387431ca5a46f4c2abb53d364f8))
+
 ## [0.5.2](https://github.com/branes-ai/racing-drone/compare/v0.5.1...v0.5.2) (2026-10-27)
 
 
