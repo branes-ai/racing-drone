@@ -65,4 +65,4 @@ The comparison is `posit<16,1>` against `double`, paired by seed, lap and gate, 
 
 ## Out of scope
 
-- **Why `posit<16,1>`'s excess grows along each straight** (assessment §9): the table shows it, but its cause isn't established here.
+- **Why `posit<16,1>`'s excess grows along each straight** (assessment §9): the table shows it, but its cause isn't established here. Filed as [#44](https://github.com/branes-ai/racing-drone/issues/44).
