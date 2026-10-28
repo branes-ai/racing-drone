@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.6](https://github.com/branes-ai/racing-drone/compare/v0.8.5...v0.8.6) (2026-10-28)
+
+
+### Documentation
+
+* the five-tier stack diagram, with anatomy and scout-drone ([#68](https://github.com/branes-ai/racing-drone/issues/68)) ([d880f28](https://github.com/branes-ai/racing-drone/commit/d880f28e65498549f4fd7b8ae2dc593494a35784))
+
 ## [0.8.5](https://github.com/branes-ai/racing-drone/compare/v0.8.4...v0.8.5) (2026-10-28)
 
 
