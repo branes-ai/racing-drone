@@ -9,11 +9,11 @@
 /// racing supplies its simulator, its stack, its scorer (Scorer, with the
 /// scenario's speed limit), and its channels.
 
+#include <branes/racing/anatomy_sim.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/log/channels.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/sim/closed_loop.hpp>
 #include <branes/racing/sim/score.hpp>
 #include <branes/racing/sim/simulator.hpp>
 

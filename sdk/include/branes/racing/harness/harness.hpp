@@ -12,15 +12,11 @@
 /// docs/plan/precision-sweep/) gets its course and inputs cast to T, and its
 /// outputs cast back; for T = double every cast is a copy.
 
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/compose/stack.hpp>
 #include <branes/racing/config/config.hpp>
-#include <branes/racing/harness/args.hpp>
-#include <branes/racing/harness/files.hpp>
-#include <branes/racing/harness/runner.hpp>
-#include <branes/racing/harness/synthetic.hpp>
 #include <branes/racing/log/channels.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/result.hpp>
 
 #include <filesystem>
 #include <string>

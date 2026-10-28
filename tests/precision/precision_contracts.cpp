@@ -6,15 +6,14 @@
 //    course that isn't valid in T as an error;
 //  - reflex_params_from<T> names the vehicle parameters T cannot represent.
 
+#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_glue.hpp>
+#include <branes/racing/anatomy_sweep.hpp>
 #include <branes/racing/compose/stack.hpp>
 #include <branes/racing/config/config.hpp>
-#include <branes/racing/glue/reflex_params.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/msg/geometry.hpp>
-#include <branes/racing/sim/sweep_types.hpp>
 #include <branes/racing/slots/null.hpp>
-#include <branes/racing/util/splitmix64.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>

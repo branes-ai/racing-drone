@@ -43,13 +43,12 @@ A framework generalized from one mission bakes in that mission's assumptions. On
 
    Anatomy takes the world type as a template parameter wherever the course appears today (`SlotContext`, the simulator, the batch runner). It does not define a task-facing slot.
 
-4. **Two build targets.**
-   - **`branes::anatomy`:** contracts, log, harness and config. Its only dependency is yaml-cpp.
+4. **Three build targets** (amended with step 5.2; [plan](../plan/consume-anatomy/README.md)).
+   - **`branes::anatomy`:** contracts, slots, composition, configs, log and harness. Its only dependency is yaml-cpp.
+   - **`branes::anatomy_glue`:** the reflex adapters (`CascadedPid`, `reflex_params`), which add reflex.
    - **`branes::anatomy_sim`:** the simulator core, which adds reflex (and Universal, for the precision-sweep types).
 
-   This is the split racing-drone already has (`branes::racing` and `branes::racing_sim`).
-
-   A mission's flight stack links only the first.
+   This is the split racing-drone had (`branes::racing`, `branes::racing_glue`, `branes::racing_sim`). As proposed, this ADR had two targets; the third keeps a flight stack that uses `CascadedPid` from linking the simulator.
 
 5. **The migration runs in three steps, each one keeping racing-drone's tests and gates green.**
    1. **Split in place, in racing-drone.** Each mixed file is split along the audit's lines, inside `branes::racing`, with no behavior change. Logs, replays, `sitl_batch` summaries and precision-sweep results stay byte-identical; the reference-log fixture and gates P0 and P1 check that.
@@ -73,4 +72,9 @@ A framework generalized from one mission bakes in that mission's assumptions. On
 - **Anatomy's version is a dependency of every mission.** A contract change in anatomy ships through its releases, like reflex's.
 - **ADR 0001's slot registry is split.** The registry mechanism moves to anatomy; the list of slots becomes per mission.
 
-**Current state:** proposed. Step 5.1, the split in place, is done ([plan](../plan/framework-split/README.md); #59, #60, #62 and PR 1d): `cmake/framework_boundary.cmake` lists the neutral files, and a ctest keeps them free of racing headers. Steps 5.2 and 5.3 have not started.
+**Current state:** proposed.
+- **Step 5.1, the split in place, is done** ([plan](../plan/framework-split/README.md); #59, #60, #62, #64).
+- **Step 5.2, the move, is done:**
+  - anatomy v0.1.0 holds the framework (branes-ai/anatomy#1, #3);
+  - racing-drone consumes it ([plan](../plan/consume-anatomy/README.md)) through generated bridge headers, with its outputs byte-identical.
+- **Step 5.3, scout-drone, has not started.**

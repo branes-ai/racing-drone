@@ -42,9 +42,8 @@
 ///   I2: passages_ follows the course sequence, lap after lap
 ///   I3: complete() ⇔ lap_ == map_.laps
 
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/msg/estimate.hpp>
-#include <branes/racing/msg/truth.hpp>
 #include <branes/racing/sim/gates.hpp>
 
 #include <cassert>

@@ -5,9 +5,9 @@
 //  - in_plane_ulp<T> takes the world axes spanning each a2rl-2025 gate's
 //    plane: y and z for the gates facing ±x, x and z for gates 6 and 11.
 
+#include <branes/racing/anatomy_sweep.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/sim/gate_resolution.hpp>
-#include <branes/racing/sim/sweep_types.hpp>
 
 #include "precision_fixtures.hpp"
 

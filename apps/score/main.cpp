@@ -9,11 +9,10 @@
 // --speed-limit (the scenario's speed_limit_m_s), a faster run fails. Any baseline's log scores
 // the same way, so the scoreboard compares like with like.
 
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/log/channels.hpp>
-#include <branes/racing/log/log.hpp>
-#include <branes/racing/msg/codec.hpp>
 #include <branes/racing/sim/score.hpp>
 
 #include <charconv>
