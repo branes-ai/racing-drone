@@ -5,6 +5,8 @@
 
 Facts drawn from a paper or article are cited. Statements marked *(assessment)* are our own judgment.
 
+For the history behind this survey (why racing, the IROS competitions, AlphaPilot and A2RL, and what each generation of systems solved), see [autonomous drone racing](autonomous-drone-racing.md).
+
 ## 1. Where the field is
 
 | System | Year | Sensing | Estimation | Control | Result |
