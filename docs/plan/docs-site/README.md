@@ -1,6 +1,6 @@
 # Plan: publish ./docs as a GitHub Pages site
 
-Issue: #48. Status: in progress.
+Issue: #48. Status: implemented in #49.
 
 ## Goal
 
