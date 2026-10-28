@@ -20,7 +20,7 @@ struct ReferenceSample {
     Vec3<T> velocity{};
     Vec3<T> acceleration{};
     T yaw{0};       ///< [rad]
-    T progress{0};  ///< path parameter along the course (MPCC progress variable)
+    T progress{0};  ///< the reference's path parameter (MPCC progress variable) [m]
 
     friend constexpr bool operator==(const ReferenceSample&, const ReferenceSample&) = default;
 };

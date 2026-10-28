@@ -13,6 +13,7 @@
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 
 #include "racing_baseline.hpp"
@@ -53,7 +54,7 @@ int main(int argc, char** argv) {
         return fail(baseline.error());
     }
 
-    auto reader = racing::log::LogReader::open(*in_path);
+    auto reader = racing::log::LogReader::open(*in_path, racing::log::kRacingChannels);
     if (!reader) {
         return fail(reader.error().path + ": " + reader.error().message);
     }
@@ -71,8 +72,8 @@ int main(int argc, char** argv) {
         if (!f) {
             return fail("cannot read " + *c);
         }
-        header.course_yaml = f->text;
-        header.course_hash = f->hash;
+        header.world_yaml = f->text;
+        header.world_hash = f->hash;
         header.reference = false;
     }
     if (const auto v = args->value("vehicle")) {
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
         return fail("--verify cannot be combined with --course / --vehicle overrides");
     }
 
-    auto course = racing::config::parse_course(header.course_yaml, "course (from " + *in_path + ")");
+    auto course = racing::config::parse_course(header.world_yaml, "course (from " + *in_path + ")");
     if (!course) {
         return fail(course.error().to_string());
     }

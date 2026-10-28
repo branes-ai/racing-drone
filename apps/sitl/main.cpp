@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     if (!scenario) {
         return fail(scenario.error().to_string());
     }
-    auto course = racing::config::load_course(scenario->course_path);
+    auto course = racing::config::load_course(scenario->world_path);
     if (!course) {
         return fail(course.error().to_string());
     }
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     if (!vehicle) {
         return fail(vehicle.error().to_string());
     }
-    const auto course_file = racing::harness::read_with_hash(scenario->course_path);
+    const auto course_file = racing::harness::read_with_hash(scenario->world_path);
     const auto vehicle_file = racing::harness::read_with_hash(scenario->vehicle_path);
     const auto scenario_hash = racing::sha256_file_hex(*scenario_path);
     if (!course_file || !vehicle_file || !scenario_hash) {
@@ -90,10 +90,10 @@ int main(int argc, char** argv) {
     racing::log::LogHeader header;
     header.baseline_name = std::string(racing::baseline::name);
     header.composition_hash = std::string(racing::baseline::composition_hash);
-    header.course_hash = course_file->hash;
+    header.world_hash = course_file->hash;
     header.vehicle_hash = vehicle_file->hash;
     header.scenario_hash = *scenario_hash;
-    header.course_yaml = course_file->text;
+    header.world_yaml = course_file->text;
     header.vehicle_yaml = vehicle_file->text;
     auto writer = racing::log::LogWriter::open(*out_path, header);
     if (!writer) {

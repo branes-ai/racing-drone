@@ -131,3 +131,16 @@ add_test(NAME compile_fail.time_base.narrow_wide
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target time_base_narrow_wide --config $<CONFIG>)
 set_tests_properties(compile_fail.time_base.narrow_wide PROPERTIES
     PASS_REGULAR_EXPRESSION "Wide has fewer significand digits than T")
+
+# The framework boundary (docs/plan/framework-split): the files listed as
+# mission-neutral in cmake/framework_boundary.cmake include no racing-only
+# header. The second test checks that the check fails, with the right
+# messages, on manifests that violate it.
+add_test(NAME boundary.neutral_includes
+    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${PROJECT_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_test.cmake)
+add_test(NAME boundary.detects_violation
+    COMMAND ${CMAKE_COMMAND}
+            -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_test.cmake
+            "-DARGS=-DSOURCE_DIR=${PROJECT_SOURCE_DIR};-DMANIFEST=${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_violation.cmake"
+            "-DEXPECT=gate_codec.hpp: includes <branes/racing/msg/perception.hpp>, which is not mission-neutral;dot_include.hpp: includes <branes/racing/msg/perception.hpp>, which is not mission-neutral"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/expect_failure.cmake)

@@ -19,8 +19,10 @@
 // reference.csv one row per reference sample.
 
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 #include <branes/racing/msg/codec.hpp>
+#include <branes/racing/msg/gate_codec.hpp>
 
 #include <algorithm>
 #include <charconv>
@@ -120,6 +122,9 @@ struct Sink {
 
 const char* file_name(racing::log::Channel c) {
     using racing::log::Channel;
+    if (c == racing::log::oracle_gates) {
+        return "oracle_gates.csv";
+    }
     switch (c) {
     case Channel::imu:
         return "imu.csv";
@@ -129,8 +134,6 @@ const char* file_name(racing::log::Channel c) {
         return "tick.csv";
     case Channel::truth:
         return "truth.csv";
-    case Channel::oracle_gates:
-        return "oracle_gates.csv";
     case Channel::sim_config:
         return "sim_config.yaml";
     case Channel::state:
@@ -146,6 +149,13 @@ const char* file_name(racing::log::Channel c) {
 std::string columns(racing::log::Channel c) {
     using racing::log::Channel;
     const std::string t = "t_ns,t_s";
+    if (c == racing::log::oracle_gates) {
+        std::string s = t + ",count,index,gate_id";
+        for (int i = 0; i < 4; ++i) {
+            s += ",u" + std::to_string(i) + ",v" + std::to_string(i);
+        }
+        return s + ",quality";
+    }
     switch (c) {
     case Channel::imu:
         return t + ",stamp_ns" + vec3("gyro") + vec3("accel") + ",saturated,temperature";
@@ -156,13 +166,6 @@ std::string columns(racing::log::Channel c) {
     case Channel::truth:
         return t + ",stamp_ns" + vec3("p") + vec3("v") + quat("q") + vec3("w") +
                ",rotor_0,rotor_1,rotor_2,rotor_3,on_ground";
-    case Channel::oracle_gates: {
-        std::string s = t + ",count,index,gate_id";
-        for (int i = 0; i < 4; ++i) {
-            s += ",u" + std::to_string(i) + ",v" + std::to_string(i);
-        }
-        return s + ",quality";
-    }
     case Channel::state: {
         std::string s =
             t + ",t_valid_ns" + vec3("p") + vec3("v") + quat("q") + vec3("w") + vec3("accel_bias") + vec3("gyro_bias");
@@ -188,6 +191,30 @@ std::optional<std::string> rows_of(const racing::log::LogRecord& r, std::uint64_
     namespace codec = racing::codec;
     std::string row = start(r.t);
     count = 1;
+    if (r.channel == racing::log::oracle_gates) {
+        const auto x = codec::decode_gates(r.payload);
+        if (!x) {
+            return std::nullopt;
+        }
+        // One row per observed gate; a frame with none contributes no row.
+        const std::string time = row;
+        row.clear();
+        for (std::uint32_t i = 0; i < x->count; ++i) {
+            const racing::GateObservation<double>& o = x->gates[i];
+            row += time;
+            put(row, std::uint64_t{x->count});
+            put(row, std::uint64_t{i});
+            put(row, std::int64_t{o.gate_id});
+            for (const auto& c : o.corners) {
+                put(row, c[0]);
+                put(row, c[1]);
+            }
+            put(row, o.quality);
+            row += '\n';
+        }
+        count = x->count;
+        return row;
+    }
     switch (r.channel) {
     case Channel::imu: {
         const auto x = codec::decode_imu(r.payload);
@@ -235,30 +262,6 @@ std::optional<std::string> rows_of(const racing::log::LogRecord& r, std::uint64_
         }
         put(row, std::uint64_t{x->on_ground});
         break;
-    }
-    case Channel::oracle_gates: {
-        const auto x = codec::decode_gates(r.payload);
-        if (!x) {
-            return std::nullopt;
-        }
-        // One row per observed gate; a frame with none contributes no row.
-        const std::string time = row;
-        row.clear();
-        for (std::uint32_t i = 0; i < x->count; ++i) {
-            const racing::GateObservation<double>& o = x->gates[i];
-            row += time;
-            put(row, std::uint64_t{x->count});
-            put(row, std::uint64_t{i});
-            put(row, std::int64_t{o.gate_id});
-            for (const auto& c : o.corners) {
-                put(row, c[0]);
-                put(row, c[1]);
-            }
-            put(row, o.quality);
-            row += '\n';
-        }
-        count = x->count;
-        return row;
     }
     case Channel::state: {
         const auto x = codec::decode_state(r.payload);
@@ -352,17 +355,17 @@ int main(int argc, char** argv) {
         return fail(out_dir.string() + ": " + ec.message());
     }
 
-    auto reader = racing::log::LogReader::open(*in_path);
+    auto reader = racing::log::LogReader::open(*in_path, racing::log::kRacingChannels);
     if (!reader) {
         return fail(reader.error().path + ": " + reader.error().message);
     }
     const racing::log::LogHeader& h = reader->header();
     const std::string provenance = "baseline: " + h.baseline_name + "\ncomposition_hash: " + h.composition_hash +
-                                   "\ncourse_hash: " + h.course_hash + "\nvehicle_hash: " + h.vehicle_hash +
+                                   "\ncourse_hash: " + h.world_hash + "\nvehicle_hash: " + h.vehicle_hash +
                                    "\nscenario_hash: " + h.scenario_hash +
                                    "\nreference: " + (h.reference ? "true" : "false") + "\n";
     for (const auto& [name, text] : {std::pair<const char*, const std::string&>{"header.yaml", provenance},
-                                     {"course.yaml", h.course_yaml},
+                                     {"course.yaml", h.world_yaml},
                                      {"vehicle.yaml", h.vehicle_yaml}}) {
         if (!write_text(out_dir / name, text)) {
             return fail((out_dir / name).string() + ": cannot write the file");

@@ -6,11 +6,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <limits>
 #include <string>
+#include <string_view>
 
 using namespace branes::racing;
 using namespace branes::racing::config;
@@ -131,7 +133,7 @@ TEST_CASE("scenario: null-smoke resolves its files relative to itself", "[config
     REQUIRE(s);
     CHECK(s->seed == 20261024u);
     CHECK(s->duration_s == 0.2);
-    CHECK(std::filesystem::equivalent(s->course_path, src / "courses/a2rl-2025.yaml"));
+    CHECK(std::filesystem::equivalent(s->world_path, src / "courses/a2rl-2025.yaml"));
     CHECK(std::filesystem::equivalent(s->vehicle_path, src / "vehicles/rp1.yaml"));
 
     const auto back = parse_scenario(emit_scenario(*s), "emitted", src / "scenarios");
@@ -293,4 +295,63 @@ TEST_CASE("fault_event_valid checks every invariant", "[config]") {
     CHECK(bad([](FaultEvent& e) { e.scale = -0.1; }));
     CHECK(bad([](FaultEvent& e) { e.rotor = 4; }));
     CHECK(bad([](FaultEvent& e) { e.gyro[1] = std::numeric_limits<double>::infinity(); }));
+}
+
+TEST_CASE("scenario: racing's oracle noise is read, checked, and round-trips", "[config]") {
+    const std::string head =
+        "name: t\ncourse: ../courses/a2rl-2025.yaml\nvehicle: ../vehicles/rp1.yaml\nduration_s: 1\nseed: 1\n";
+    const auto plain = parse_scenario(head, "case", src / "scenarios");
+    REQUIRE(plain);
+    REQUIRE(follows_racing_schema(*plain));
+    CHECK(oracle_corner_sigma_px(*plain) == 1.0);  // the fallback
+
+    const auto set = parse_scenario(head + "sim: {oracle_corner_sigma_px: 2.5}\n", "case", src / "scenarios");
+    REQUIRE(set);
+    CHECK(oracle_corner_sigma_px(*set) == 2.5);
+    const auto back = parse_scenario(emit_scenario(*set), "emitted", src / "scenarios");
+    REQUIRE(back);
+    CHECK(*back == *set);
+
+    const auto negative = parse_scenario(head + "sim: {oracle_corner_sigma_px: -1}\n", "case", src / "scenarios");
+    REQUIRE_FALSE(negative);
+    CHECK(negative.error().key == "sim.oracle_corner_sigma_px");
+    CHECK(negative.error().message == "must be ≥ 0");
+}
+
+TEST_CASE("scenario: the loader takes another mission's schema", "[config]") {
+    // A mission whose world file is a `site:` and that has its own `sim:`
+    // parameter: the loader names neither racing key.
+    const std::array<WorldSimParam, 1> extra = {WorldSimParam{"depth_sigma_m", 0.05, 0.0}};
+    const ScenarioSchema schema{"site", extra};
+    const std::string head =
+        "name: t\nsite: ../courses/a2rl-2025.yaml\nvehicle: ../vehicles/rp1.yaml\nduration_s: 1\nseed: 1\n";
+
+    const auto s = parse_scenario(head + "sim: {depth_sigma_m: 0.2}\n", "case", src / "scenarios", schema);
+    REQUIRE(s);
+    CHECK(s->world_ref == "../courses/a2rl-2025.yaml");
+    REQUIRE(s->world_sim.size() == 1u);
+    CHECK(s->world_sim[0] == 0.2);
+    const auto back = parse_scenario(emit_scenario(*s, schema), "emitted", src / "scenarios", schema);
+    REQUIRE(back);
+    CHECK(*back == *s);
+
+    // Racing's keys are unknown under this schema, and the other way round.
+    CHECK(parse_scenario(head + "sim: {oracle_corner_sigma_px: 1}\n", "case", src / "scenarios", schema).error().key ==
+          "sim.oracle_corner_sigma_px");
+    CHECK(parse_scenario(head, "case", src / "scenarios").error().key == "site");
+    const auto missing = parse_scenario(
+        "name: t\nvehicle: ../vehicles/rp1.yaml\nduration_s: 1\nseed: 1\n", "case", src / "scenarios", schema);
+    REQUIRE_FALSE(missing);
+    CHECK(missing.error().key == "site");
+}
+
+TEST_CASE("baseline: the loader takes another mission's slot list", "[config]") {
+    const std::array<std::string_view, 2> slots = {"controller", "planner"};
+    const std::string yaml = "name: two\ncomposition:\n  controller: A\n  planner: B\n";
+    const auto b = parse_baseline(yaml, "case", slots);
+    REQUIRE(b);
+    CHECK(b->composition.size() == 2u);
+    CHECK(composition_hash(*b, slots) != composition_hash(*b));  // racing's seven slots hash differently
+    CHECK(parse_baseline(yaml, "case").error().key == "composition.daa_tracker");  // racing needs all seven
+    CHECK(parse_baseline(yaml + "  estimator: C\n", "case", slots).error().key == "composition.estimator");
 }

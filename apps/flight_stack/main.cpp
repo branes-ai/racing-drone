@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
             const auto hb = racing::sha256_file_hex(b);
             return ha && hb && *ha == *hb;
         };
-        if (!same_file(*course_path, scenario->course_path) || !same_file(*vehicle_path, scenario->vehicle_path)) {
+        if (!same_file(*course_path, scenario->world_path) || !same_file(*vehicle_path, scenario->vehicle_path)) {
             return fail("the scenario's course / vehicle differ from --course / --vehicle");
         }
     }

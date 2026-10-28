@@ -17,11 +17,11 @@ std::vector<std::byte> encode_header(const LogHeader& h) {
     ByteWriter w;
     w.str(h.baseline_name);
     w.str(h.composition_hash);
-    w.str(h.course_hash);
+    w.str(h.world_hash);
     w.str(h.vehicle_hash);
     w.str(h.scenario_hash);
     w.boolean(h.reference);
-    w.str(h.course_yaml);
+    w.str(h.world_yaml);
     w.str(h.vehicle_yaml);
     return w.take();
 }
@@ -31,11 +31,11 @@ std::optional<LogHeader> decode_header(std::span<const std::byte> b) {
     LogHeader h;
     h.baseline_name = r.str();
     h.composition_hash = r.str();
-    h.course_hash = r.str();
+    h.world_hash = r.str();
     h.vehicle_hash = r.str();
     h.scenario_hash = r.str();
     h.reference = r.boolean();
-    h.course_yaml = r.str();
+    h.world_yaml = r.str();
     h.vehicle_yaml = r.str();
     if (!r.done()) {
         return std::nullopt;
@@ -120,7 +120,18 @@ result<ok_t, LogError> LogWriter::close() {
 
 // ── LogReader ───────────────────────────────────────────────────────
 
-result<LogReader, LogError> LogReader::open(const std::filesystem::path& path) {
+result<LogReader, LogError> LogReader::open(const std::filesystem::path& path, std::span<const Channel> mission) {
+    for (std::size_t i = 0; i < mission.size(); ++i) {
+        const auto id = static_cast<std::uint16_t>(mission[i]);
+        if (is_framework(id)) {
+            return LogError{path.string(), "mission channel " + std::to_string(id) + " is a framework channel"};  // I2
+        }
+        for (std::size_t j = 0; j < i; ++j) {
+            if (mission[j] == mission[i]) {
+                return LogError{path.string(), "mission channel " + std::to_string(id) + " named twice"};  // I2
+            }
+        }
+    }
     std::ifstream in(path, std::ios::binary);
     if (!in) {
         return LogError{path.string(), "cannot open the log file"};
@@ -151,7 +162,7 @@ result<LogReader, LogError> LogReader::open(const std::filesystem::path& path) {
     if (!header) {
         return LogError{path.string(), "corrupt header"};
     }
-    return LogReader(std::move(in), path, std::move(*header));
+    return LogReader(std::move(in), path, std::move(*header), std::vector<Channel>(mission.begin(), mission.end()));
 }
 
 result<std::optional<LogRecord>, LogError> LogReader::next() {
@@ -168,7 +179,7 @@ result<std::optional<LogRecord>, LogError> LogReader::next() {
     const std::uint16_t channel = r.u16();
     const std::uint32_t size = r.u32();
     const std::int64_t t = r.i64();
-    if (!is_known(channel)) {
+    if (!is_known(channel, mission_)) {
         return LogError{path_.string(), "unknown channel " + std::to_string(channel)};
     }
     if (size > kMaxPayload) {
