@@ -10,7 +10,7 @@ A published site for this repo's documentation at <https://branes-ai.github.io/r
 
 - **`docs-site/`**: Starlight, with the same Astro and Starlight versions as reflex and cortex, and the same base-path link rewriting for Pages.
 - **`docs-site/scripts/sync-docs.mjs`** generates `docs-site/src/content/docs/` (gitignored) from `docs/`, before every `dev` and `build`:
-  - every `docs/**/*.md` becomes a page; a folder's `README.md` becomes that folder's index, and `docs/README.md` the home page;
+  - every `docs/**/*.md` becomes a page; a folder's `README.md` becomes that folder's index, and `docs/README.md` the home page (since #52, `docs/index.mdx` is the home page and `docs/README.md` the documentation map: [landing-page plan](../docs-site-landing/README.md));
   - the page title is the document's first `# ` heading, which is removed from the body (Starlight renders the title);
   - each page's "Edit page" link opens its source in `docs/`;
   - a relative link to another document in `docs/` becomes a link to its page, with the anchor kept;

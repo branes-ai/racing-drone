@@ -1,0 +1,84 @@
+---
+title: Racing Drone
+description: Branes.AI mission and flight controller for an autonomous racing drone, assembled from the cortex, synapse and reflex platform repos.
+template: splash
+hero:
+  tagline: Perception, planning and optimal control from the Branes.AI platform, assembled into a drone that flies a race course on its own, as fast as physics allows.
+  image:
+    file: ../../assets/hero.svg
+  actions:
+    - text: Get Started
+      link: ./getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/branes-ai/racing-drone
+      icon: external
+      variant: minimal
+---
+
+{/* The site's landing page (docs/plan/docs-site-landing). It is MDX for the
+    hero and the cards; docs/README.md is the documentation map. */}
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What Racing Drone is
+
+**Racing Drone** is the mission repo of the Branes.AI platform: the whole
+organism. [Cortex](https://branes-ai.github.io/cortex/) perceives the world and
+plans where to fly, [Reflex](https://branes-ai.github.io/reflex/) makes the
+airframe follow that path and keeps it safe, and
+[Synapse](https://github.com/branes-ai/synapse) runs the learned models. This
+repo owns the mission, wires them to a vehicle, and measures the result.
+
+An autonomous racing drone is one of the hardest real-time embodied-AI problems
+that fits on a desk. Every weakness in perception latency, state-estimation
+accuracy, control bandwidth or compute efficiency shows up as lap time or as a
+crash, which makes racing the platform's forcing function
+([why racing](assessments/autonomous-drone-racing.md)).
+
+<CardGrid>
+	<Card title="Baselines, not one stack" icon="puzzle">
+		A racing drone is a baseline: components composed into fixed slots
+		(estimator, planner, controller, safety filter, ...). Every baseline builds
+		into the same SITL, batch, replay and flight-stack executables, so
+		baselines compare like for like.
+	</Card>
+	<Card title="Deterministic and replayable" icon="approve-check">
+		Integer-nanosecond time and a log of every input and output. A SITL run
+		replays record for record, and CI checks that logs are byte-identical.
+	</Card>
+	<Card title="Scored like a race" icon="rocket">
+		Laps, gate errors, collisions and success rate over many seeds, on an
+		A2RL-class vehicle and course. Every phase ends in a gate a baseline must
+		pass.
+	</Card>
+	<Card title="Any scalar type" icon="setting">
+		The stack is templated on its scalar type. The precision sweep flies the
+		same baseline in `float`, posits, bfloat16 and more, to find what precision
+		each component needs.
+	</Card>
+</CardGrid>
+
+## The platform at a glance
+
+| Repo | Analogue | What it provides to the racing drone | Time scale |
+|---|---|---|---|
+| [`cortex`](https://github.com/branes-ai/cortex) | Cerebral cortex | Perception (VIO, gate detection, SLAM), world model, path planning | ~5–100 Hz |
+| [`synapse`](https://github.com/branes-ai/synapse) | The synapses | Learned models as static, allocation-free compute graphs | Deterministic |
+| [`reflex`](https://github.com/branes-ai/reflex) | Brainstem, spinal cord | Stabilization, trajectory tracking (PID → MPC), fault recovery, safety envelopes | ~100 Hz–8 kHz |
+| **`racing-drone`** | The whole organism | Mission logic, vehicle integration, simulation and flight testing | — |
+
+## Where to go next
+
+- **[Introduction](getting-started/introduction.md)**: the vision, the platform, and what this repo owns.
+- **[Build & Test](getting-started/build-and-test.md)**: build, run a closed loop, score it, replay it.
+- **[Autonomous drone racing](assessments/autonomous-drone-racing.md)**: why racing, from the IROS competitions to A2RL.
+- **[Mission requirements](requirements/mission-requirements.md)**: the mission profile, the reference vehicle, and the requirements.
+- **[Framework architecture](arch/framework-architecture.md)**: slots, data contracts, baselines and data flow.
+- **[Implementation plan](plan/implementation-plan.md)**: the phases and their baselines.
+- **[Documentation map](README.md)**: every document, by folder.
+
+> Status: Phase 0 (the framework skeleton) is complete, and Phase 1 has
+> started. SITL closes the loop on the reflex dynamics model, and the first
+> baseline, B0 `gt-pid`, flies the course: gate P1 runs 10 seeds on every PR
+> and 500 seeds nightly.
