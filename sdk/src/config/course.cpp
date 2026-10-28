@@ -1,6 +1,6 @@
 #include <branes/racing/config/course.hpp>
 
-#include "parse.hpp"
+#include "yaml_parse.hpp"
 
 namespace branes::racing::config {
 

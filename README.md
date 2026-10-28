@@ -80,7 +80,7 @@ The platform is modeled on the mammalian nervous system. This repo is the whole 
 - **Hardware-in-the-loop and flight testing:** HIL rigs, flight logs, and lap-time / tracking-error benchmarks
 - **Performance accounting:** latency, energy, and compute budgets per pipeline stage on the target flight computer
 
-Algorithms do not live here. Perception and planning go in `cortex`, control and safety go in `reflex`, and this repo composes them.
+Algorithms do not live here. Perception and planning go in `cortex`, control and safety go in `reflex`, and this repo composes them. The mission-neutral framework it composes them with (data contracts, slots and composition, configs, the replay log, the harness, the closed-loop simulator) is [`anatomy`](https://github.com/branes-ai/anatomy), shared by every mission repo ([ADR 0008](docs/adr/0008-anatomy-mission-framework.md)).
 
 ## Roadmap
 
@@ -148,7 +148,7 @@ racing-drone/
 ├── docs/         # requirements, assessments, architecture, plans, ADRs: the source of the docs site
 ├── docs-site/    # Starlight site generated from docs/, published to GitHub Pages
 ├── scenarios/    # SITL scenarios (course + vehicle + duration + seed)
-├── sdk/          # branes::racing: data contracts, slots, Stack, config loaders, log, harness pieces
+├── sdk/          # branes::racing: the course and gates, racing's slots and Stack, configs, channels; the anatomy bridges
 ├── tests/        # Catch2 unit tests, baseline tests, phase gates
 └── vehicles/     # vehicle files (mass, inertia, rotors, drag, IMU, camera)
 ```

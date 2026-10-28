@@ -1,18 +1,17 @@
 #pragma once
-/// @file parse.hpp
+/// @file yaml_parse.hpp
 /// @brief YAML parsing and emitting helpers shared by the config loaders.
 ///
 /// Private to sdk/src/config (yaml-cpp stays an implementation detail of the
-/// loaders). Mission-neutral (docs/assessments/framework-boundary.md).
+/// loaders). A copy of anatomy's private sdk/src/config/parse.hpp (anatomy
+/// v0.1.0), for racing's course loader: anatomy does not export its YAML
+/// helpers (docs/plan/consume-anatomy/). Keep it in step with anatomy's.
 ///
 /// Parsing uses exceptions internally (yaml-cpp throws); every public entry
 /// point catches them with guarded() and returns a ConfigError, so the API
 /// never throws.
 
-#include <branes/racing/config/error.hpp>
-#include <branes/racing/msg/geometry.hpp>
-#include <branes/racing/msg/time.hpp>
-#include <branes/racing/result.hpp>
+#include <branes/racing/anatomy.hpp>
 
 #include <yaml-cpp/yaml.h>
 

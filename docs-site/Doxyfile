@@ -1,9 +1,9 @@
 PROJECT_NAME           = "Racing Drone C++ API"
-PROJECT_BRIEF          = "branes::racing — framework, simulator and baseline glue"
+PROJECT_BRIEF          = "branes::racing — racing's contracts, slots, stack, simulator and scoreboard"
 OUTPUT_DIRECTORY       = public
 HTML_OUTPUT            = api
 GENERATE_LATEX         = NO
-INPUT                  = ../sdk/include ../sim/include ../baselines/glue/include
+INPUT                  = ../sdk/include ../sim/include
 RECURSIVE              = YES
 FILE_PATTERNS          = *.hpp *.h
 EXTRACT_ALL            = YES

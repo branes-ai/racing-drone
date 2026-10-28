@@ -34,11 +34,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/deps.cmake)
 find_package(Threads REQUIRED)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/warnings.cmake)
 
-# The framework library: data contracts, slots, config loaders, log, harnesses.
+# Racing's part of the framework: the course, the gates, racing's slots and
+# stack, its configs and channels. The mission-neutral framework is anatomy
+# (cmake/deps.cmake), which these build on.
 add_subdirectory(sdk)
-
-# Slot adapters around platform components (reflex), shared by the baselines.
-add_subdirectory(baselines/glue)
 
 # The SITL harness library: reflex dynamics, sensor models, oracle gates,
 # faults, and the scoreboard (docs/plan/sitl/).

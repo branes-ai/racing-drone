@@ -31,11 +31,8 @@
 /// Intruder detections have no producing slot yet; on_frame() hands the DAA
 /// tracker an empty set until the DroneNet detector lands (Phase 6).
 
-#include <branes/racing/compose/tick.hpp>
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/msg/course.hpp>
-#include <branes/racing/msg/intruders.hpp>
-#include <branes/racing/msg/truth.hpp>
-#include <branes/racing/result.hpp>
 #include <branes/racing/slots/context.hpp>
 #include <branes/racing/slots/slots.hpp>
 

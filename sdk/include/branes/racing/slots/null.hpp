@@ -10,7 +10,7 @@
 /// from its inputs. They exercise the framework end to end (composition,
 /// harnesses, log, replay) before any real component exists.
 
-#include <branes/racing/slots/neutral_nulls.hpp>
+#include <branes/racing/anatomy.hpp>
 #include <branes/racing/slots/slots.hpp>
 
 namespace branes::racing {

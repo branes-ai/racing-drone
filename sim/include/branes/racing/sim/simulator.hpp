@@ -13,14 +13,12 @@
 ///
 ///   sim_config (t = 0 only) → IMU deliveries → camera → oracle_gates → truth → tick
 
+#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_sim.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/log/channels.hpp>
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/msg/gate_codec.hpp>
-#include <branes/racing/msg/time.hpp>
-#include <branes/racing/msg/truth.hpp>
-#include <branes/racing/result.hpp>
-#include <branes/racing/sim/basic_simulator.hpp>
 #include <branes/racing/sim/gates.hpp>
 
 #include <optional>
