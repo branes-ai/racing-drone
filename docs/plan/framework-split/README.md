@@ -87,7 +87,8 @@ Each PR updates the manifest and the tests that move with its files.
   - The baseline loader and `composition_hash` take the mission's slot list.
   - `config.hpp` became racing's aggregate: `kRacingScenario` (`course:`, `oracle_corner_sigma_px`), `kSlotNames`, and one-argument racing loaders, so racing call sites barely change.
   - `Simulator::create` returns an error for a scenario without racing's parameters, instead of reading past the end.
-- **Boundary:** `cmake/framework_boundary.cmake` lists 29 neutral files, and the ctest `boundary.neutral_includes` checks them. `boundary.detects_violation` checks that the check fails on a manifest that lists the racing gate codec as neutral.
+- **Boundary:** `cmake/framework_boundary.cmake` lists 29 neutral files, and the ctest `boundary.neutral_includes` checks them. Include paths are normalized first, so `<./branes/...>` is checked too. `boundary.detects_violation` runs the check on manifests that list the racing gate codec, and a fixture that includes a racing header through `<./branes/...>`, as neutral. It requires a non-zero exit and both messages.
+- **`is_framework`** is a switch over every `Channel` enumerator with no default, so a new enumerator left out of it fails the build (`-Wswitch`).
 - **New tests:**
   - a mission channel reads only when named, and I2 is enforced;
   - racing's oracle noise parses, is checked, and round-trips;
@@ -97,7 +98,7 @@ Each PR updates the manifest and the tests that move with its files.
 1. **Tests:** 208 of 208 pass on `gcc-debug` and on `clang-debug` (201 on main, plus 7 new). CI covers Release and MSVC.
 2. **Byte-identity:** `tools/compare_outputs.sh` with `gcc-release`, on main and on the branch. All 39 output files are identical: 3 SITL logs, 3 replays, `score_log`, 12 `log_dump` CSV and YAML files, a 20-seed `sitl_batch`, a 20-seed precision sweep (11 files), and the harnesses' stdout.
 
-   The first comparison differed only in the stdout lines that print the output directory, which differs between runs. The script now writes that directory as `<out>`, and with it every file compares equal.
+   The first comparison differed only in the stdout lines that print the output directory, which differs between runs. The script now writes that directory as `<out>`, and blanks the precision sweep's printed wall times (the files it writes carry none without `--timing`). With that, every file compares equal.
 3. **Boundary:** `boundary.neutral_includes` passes, and `boundary.detects_violation` passes.
 4. **Interface:** no command line, YAML key, channel id, or on-disk header field changed. clang-format 18 (CI's version) finds nothing in the 41 changed C++ files.
 

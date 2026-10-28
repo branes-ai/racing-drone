@@ -59,8 +59,22 @@ enum class Channel : std::uint16_t {
 }
 
 /// True if `c` is one of the framework's channels (an enumerator of Channel).
+/// The switch lists every enumerator and has no default, so a new enumerator
+/// left out of it is a -Wswitch error (warnings are errors), and this check
+/// cannot drift from the enum.
 [[nodiscard]] constexpr bool is_framework(std::uint16_t c) noexcept {
-    return (c >= 1 && c <= 4) || c == 6 || (c >= 16 && c <= 18);
+    switch (static_cast<Channel>(c)) {
+    case Channel::imu:
+    case Channel::camera:
+    case Channel::tick:
+    case Channel::truth:
+    case Channel::sim_config:
+    case Channel::state:
+    case Channel::command:
+    case Channel::reference:
+        return true;
+    }
+    return false;
 }
 
 /// True if `c` is a framework channel or one of `mission`'s.

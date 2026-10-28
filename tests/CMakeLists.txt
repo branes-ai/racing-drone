@@ -134,12 +134,13 @@ set_tests_properties(compile_fail.time_base.narrow_wide PROPERTIES
 
 # The framework boundary (docs/plan/framework-split): the files listed as
 # mission-neutral in cmake/framework_boundary.cmake include no racing-only
-# header. The second test checks that the check fails on a violation.
+# header. The second test checks that the check fails, with the right
+# messages, on manifests that violate it.
 add_test(NAME boundary.neutral_includes
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${PROJECT_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_test.cmake)
 add_test(NAME boundary.detects_violation
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
-            -DMANIFEST=${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_violation.cmake
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_test.cmake)
-set_tests_properties(boundary.detects_violation PROPERTIES
-    PASS_REGULAR_EXPRESSION "gate_codec.hpp: includes <branes/racing/msg/perception.hpp>, which is not mission-neutral")
+    COMMAND ${CMAKE_COMMAND}
+            -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_test.cmake
+            "-DARGS=-DSOURCE_DIR=${PROJECT_SOURCE_DIR};-DMANIFEST=${CMAKE_CURRENT_SOURCE_DIR}/tools/boundary_violation.cmake"
+            "-DEXPECT=gate_codec.hpp: includes <branes/racing/msg/perception.hpp>, which is not mission-neutral;dot_include.hpp: includes <branes/racing/msg/perception.hpp>, which is not mission-neutral"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/expect_failure.cmake)

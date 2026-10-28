@@ -38,7 +38,10 @@ done
 "$B/precision_sweep_b0-gt-pid" --scenario scenarios/b0-nominal.yaml --seeds 20 --out-dir "$O/b0-gt-pid.sweep" > "$O/b0-gt-pid.sweep.txt"
 
 # The harnesses print their output paths; name the directory, so the text
-# compares equal across runs into different directories.
+# compares equal across runs into different directories. The precision sweep
+# prints each type's wall time; blank it (the files it writes carry none
+# without --timing).
 sed -i "s|$O|<out>|g" "$O"/*.txt
+sed -i -E 's/\(([0-9]+\.[0-9]+) s\)$/(<wall> s)/' "$O/b0-gt-pid.sweep.txt"
 
 echo "compare_outputs: wrote $(find "$O" -type f | wc -l) files to $O"
