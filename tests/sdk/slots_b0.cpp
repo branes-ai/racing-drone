@@ -28,9 +28,9 @@ static_assert(Estimator<GroundTruthEstimator<double>, double>);
 static_assert(TruthConsumer<GroundTruthEstimator<double>, double>);
 static_assert(Planner<WaypointPlanner<double>, double>);
 static_assert(Planner<WaypointPlanner<float>, float>);  // scalar-generic
-static_assert(ContextBuilt<WaypointPlanner<double>>);
-static_assert(!ContextBuilt<GroundTruthEstimator<double>>);
-static_assert(!ContextBuilt<NullController<double>>);
+static_assert(ContextBuilt<WaypointPlanner<double>, SlotContext>);
+static_assert(!ContextBuilt<GroundTruthEstimator<double>, SlotContext>);
+static_assert(!ContextBuilt<NullController<double>, SlotContext>);
 static_assert(!TruthConsumer<NullEstimator<double>, double>);
 
 namespace {
@@ -297,7 +297,7 @@ TEST_CASE("stack: on_truth reaches the estimator, and the Runner feeds the truth
     const auto b = baseline_with({});
     auto s = harness::make_stack<GtStack<double>>(m, *vehicle, b);
     REQUIRE(s);
-    harness::Runner runner(*s);
+    harness::Runner runner(*s, log::kRacingChannels);
     const TruthState<double> x = truth(2'000'000, {5, 4, 2}, {1, 0, 0});
     REQUIRE(runner.feed(log::LogRecord{log::Channel::truth, x.t, codec::encode(x)}));
     const auto out = runner.feed(log::LogRecord{log::Channel::tick, Timestamp{2'000'000}, {}});

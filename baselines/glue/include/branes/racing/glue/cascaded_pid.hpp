@@ -57,7 +57,7 @@
 #include <branes/racing/msg/estimate.hpp>
 #include <branes/racing/msg/time.hpp>
 #include <branes/racing/result.hpp>
-#include <branes/racing/slots/context.hpp>
+#include <branes/racing/slots/slot_context.hpp>
 #include <branes/reflex/control/attitude.hpp>
 #include <branes/reflex/control/cascade.hpp>
 #include <branes/reflex/control/position.hpp>
@@ -95,9 +95,11 @@ public:
     /// max_speed_m_s (default 4.5) and control_rate_hz (the apps' default).
     /// Fails if the vehicle cannot hover with margin (thrust-to-weight ≤ 1.25),
     /// a parameter is out of range, or T can't convert the control period to
-    /// the dt accuracy ε_max.
-    [[nodiscard]] static result<CascadedPid, std::string> from_context(const SlotContext& ctx) {
-        const auto p = reflex_params_from<T>(ctx.vehicle, ctx.course.start.position[2]);
+    /// the dt accuracy ε_max. Mission-neutral: it reads only the vehicle, the
+    /// baseline, and the world's start pose.
+    template <MissionWorld World>
+    [[nodiscard]] static result<CascadedPid, std::string> from_context(const BasicSlotContext<World>& ctx) {
+        const auto p = reflex_params_from<T>(ctx.vehicle, ctx.world.start.position[2]);
         if (!p) {
             return p.error();
         }

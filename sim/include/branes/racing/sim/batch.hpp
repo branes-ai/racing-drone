@@ -53,7 +53,7 @@ template <class StackT>
         out.error = stack.error();
         return out;
     }
-    harness::Runner runner(*stack);
+    harness::Runner runner(*stack, log::kRacingChannels);
     Scorer scorer(map, scenario.speed_limit_m_s);
     while (auto ev = sim->next()) {
         if (ev->channel == log::Channel::truth) {

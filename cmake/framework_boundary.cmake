@@ -39,9 +39,24 @@ set(RACING_NEUTRAL_FILES
     sdk/src/config/parse.hpp
     sdk/src/config/scenario.cpp
     sdk/src/config/vehicle.cpp
+    # Slots: the neutral concepts, the slot context, nulls, and neutral slots
+    sdk/include/branes/racing/slots/ground_truth_core.hpp
+    sdk/include/branes/racing/slots/neutral.hpp
+    sdk/include/branes/racing/slots/neutral_nulls.hpp
+    sdk/include/branes/racing/slots/scripted.hpp
+    sdk/include/branes/racing/slots/slot_context.hpp
+    # Composition and harness: what a harness needs from a stack, and the runner
+    sdk/include/branes/racing/compose/tick.hpp
+    sdk/include/branes/racing/harness/args.hpp
+    sdk/include/branes/racing/harness/files.hpp
+    sdk/include/branes/racing/harness/runner.hpp
+    sdk/include/branes/racing/harness/synthetic.hpp
     # Simulator models
     sim/include/branes/racing/sim/fc.hpp
     sim/include/branes/racing/sim/imu.hpp
     # Reflex glue
+    baselines/glue/include/branes/racing/glue/cascaded_pid.hpp
     baselines/glue/include/branes/racing/glue/reflex_params.hpp
+    # Tests of the neutral pieces, driven by a mission that is not racing
+    tests/sim/neutral_mission.cpp
 )
