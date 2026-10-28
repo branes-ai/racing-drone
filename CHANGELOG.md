@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://github.com/branes-ai/racing-drone/compare/v0.7.0...v0.8.0) (2026-10-28)
+
+
+### Features
+
+* **docs-site:** a landing page and getting started, like cortex's and reflex's ([#53](https://github.com/branes-ai/racing-drone/issues/53)) ([54ce20d](https://github.com/branes-ai/racing-drone/commit/54ce20d50e41253494db4c115465487af96d2ce1)), closes [#52](https://github.com/branes-ai/racing-drone/issues/52)
+* **docs-site:** publish ./docs as a github pages site ([#49](https://github.com/branes-ai/racing-drone/issues/49)) ([db44a16](https://github.com/branes-ai/racing-drone/commit/db44a16e723a23cc84704ef035f4c06d06ef995b))
+
+
+### Documentation
+
+* **assessments:** a history of autonomous drone racing, iros adr and a2rl ([#51](https://github.com/branes-ai/racing-drone/issues/51)) ([59ba30e](https://github.com/branes-ai/racing-drone/commit/59ba30eb4a9bebf6515890c52b95d2597ad912ad))
+* **guides:** work through the stack in visual studio ([#46](https://github.com/branes-ai/racing-drone/issues/46)) ([81ab841](https://github.com/branes-ai/racing-drone/commit/81ab84118ec3f0c17fa9aef7e91877473bfcf21f))
+
 ## [0.7.0](https://github.com/branes-ai/racing-drone/compare/v0.6.2...v0.7.0) (2026-10-28)
 
 
