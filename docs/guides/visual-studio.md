@@ -46,7 +46,7 @@ What to look for:
 - the thrust staying inside the cascade's limits;
 - `time_base().rel_tol()` holding the controller's dt accuracy, which it derives from its gains.
 
-Every class invariant and contract is an `assert`, so a Debug build stops exactly where one is violated.
+The classes check their invariants and preconditions with `assert`, so a Debug build stops where an asserted one fails. Setup is checked differently: a bad config, course or scalar type is a returned error, reported before the run starts. `TimeBase`'s type requirements are `static_assert`s, so they fail at compile time.
 
 ## 2. The run's result: `score_log`, `log_dump`, `replay_b0-gt-pid`
 
@@ -56,17 +56,23 @@ Run these on the log from step 1.
 |---|---|
 | `score_log` | One JSON line: success, laps, gate errors (true and estimated), collision, geofence breach, max speed, and the first failure. Here the run fails because the scenario is short. Every baseline is scored the same way, so the scoreboard compares like with like |
 | `log_dump` | CSV files in `build/msvc/b0-gt-pid-dump/`, one per channel: `truth`, `state`, `reference`, `command`, … Plot `truth.csv` x/y against `reference.csv` to see the path flown against the planner's target |
-| `replay_b0-gt-pid` | With `--verify`, it re-runs the stack on the log's inputs and checks that the outputs match bit for bit. Any run can be replayed and inspected later, without the simulator. Break in `Runner::feed` during a replay and you see the same ticks |
+| `replay_b0-gt-pid` | With `--verify`, it re-runs the stack on the log's inputs and checks that the outputs match bit for bit. A SITL run can be replayed and inspected later from its log, without the simulator. Break in `Runner::feed` during a replay and you see the same ticks |
 
 ## 3. Many seeds: `sitl_batch_b0-gt-pid`
 
-The default arguments run one seed on one thread, for stepping. For gate P1 ([test plan](../plan/test-plan.md) §6), run the Release configuration with:
+The default arguments run one seed on one thread, for stepping. For gate P1 ([test plan](../plan/test-plan.md) §6), select `sitl_batch_b0-gt-pid` in the Release configuration, and set its Debugger Command Arguments (project Properties → Debugging) to:
 
 ```
 --scenario scenarios/b0-nominal.yaml --seeds 500 --min-success 0.99
 ```
 
-Each seed randomizes mass, inertia and drag. The summary gives the success rate, the lap-time and gate-error percentiles, the max speed, and the failures. A run is reproducible on its own:
+Or run it from the source root in a terminal:
+
+```
+build\msvc\apps\Release\sitl_batch_b0-gt-pid.exe --scenario scenarios/b0-nominal.yaml --seeds 500 --min-success 0.99
+```
+
+Each seed randomizes mass, inertia and drag. The summary gives the success rate, the lap-time and gate-error percentiles, the max speed, and the failures. A batch writes no log: it is reproducible from its seeds and arguments instead. A run is reproducible on its own:
 - `--first-seed <s> --seeds 1` reruns seed s;
 - or set `seed:` in a scenario copy for `sitl_b0-gt-pid`, to step through it.
 
@@ -75,7 +81,9 @@ Each seed randomizes mass, inertia and drag. The summary gives the success rate,
 The sweep ([plan](../plan/precision-sweep/README.md)) runs the same stack in each type of `sim/include/branes/racing/sim/sweep_types.hpp`: `double`, `float`, `cfloat<32,8>`, `posit<32,2>`, bfloat16, binary16 and `posit<16,1>`. The simulator, FC, scorer and log stay in `double`.
 
 - **To debug:** keep the 1-seed default, and break in `apps/precision_sweep/main.cpp`, `sweep_type<T>`, which is called once per type. Step into `run_one` to watch the stack in T. Universal's types show their values in the debugger.
-- **To reproduce the results:** run Release with `--scenario scenarios/b0-nominal.yaml --seeds 500 --out-dir <dir>`. Compare `<dir>/summary.md` with `docs/assessments/data/precision-sweep-b0.md`. The software types make this the slowest run in the repo.
+- **To reproduce the results:** select `precision_sweep_b0-gt-pid` in the Release configuration, and set its Debugger Command Arguments to `--scenario scenarios/b0-nominal.yaml --seeds 500 --out-dir <dir>`. Or run `build\msvc\apps\Release\precision_sweep_b0-gt-pid.exe` with those arguments from the source root. The software types make this the slowest run in the repo.
+  - **Comparing with the committed results:** the committed `docs/assessments/data/precision-sweep-b0.md` was generated with two more flags. `--commit` records the commit in the header, and `--timing` adds a wall-time column. Its "Command" and "Commit" lines name them.
+  - Compare the result columns of `<dir>/summary.md`, and the files `gate_error.jsonl` and `lap_delta.jsonl`, with the committed ones. The header lines and wall times differ by construction.
 
 What it tells you is in the [mixed-precision assessment](../assessments/mixed-precision.md) §9:
 - which types construct the stack;
@@ -106,5 +114,5 @@ The CMake integration lists every Catch2 case. Each `.cpp` under `tests/<layer>/
 ## What to take away
 
 - **Layers:** the simulator, FC, scorer and log run in `double` and are the ground truth. The stack runs in its scalar type T, behind casts at the harness boundary.
-- **Reproducibility:** every run is deterministic and replayable from its log.
+- **Reproducibility:** every run is deterministic. A SITL run is replayable from its log; batch and sweep runs write no log, and are reproducible from their seeds and arguments.
 - **Contracts:** every layer has contracts you can watch hold, or fail, in the debugger.
