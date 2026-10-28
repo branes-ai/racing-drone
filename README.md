@@ -10,14 +10,21 @@ That makes it the ideal forcing function for the Branes.AI platform. Every weakn
 
 ## How the platform fits together
 
-The Branes.AI stack has four tiers. This repo sits in the top one:
+The Branes.AI stack has five tiers. This repo sits in the top one:
 
 ```text
-+--------------+ +-------------------+ +-----------+ +------------+
-| racing-drone | | interceptor-drone | | isr-drone | | nano-drone | ...  Mission
-+--------------+ +-------------------+ +-----------+ +------------+
-        |                  |                 |              |
-        v                  v                 v              v
++--------------+ +-------------+
+| racing-drone | | scout-drone | ...                                     Mission
++--------------+ +-------------+
+        |               |
+        v               v
++---------------------------------------------------------------------+
+|                            Branes Anatomy                           |  Mission
+| data contracts, slots and composition, configs, replay log,         |  framework
+| harness, closed-loop simulator                                      |
++---------------------------------------------------------------------+
+           |                       |                       |
+           v                       v                       v
 +---------------------+ +---------------------+ +---------------------+
 |    Branes Cortex    | |   Branes Synapse    | |    Branes Reflex    |  Platform
 | perception (VIO,    | | tensor graph engine | | stabilization, MPC, |
@@ -36,20 +43,22 @@ The Branes.AI stack has four tiers. This repo sits in the top one:
 +-----------+ +-------------------+ +-------------------+ +-----------+
 ```
 
-- **Mission**: one repo per vehicle and mission (`racing-drone`, `interceptor-drone`, `isr-drone`, `nano-drone`, ...). It owns the mission capability and composes platform components; algorithms do not live there.
+- **Mission**: one repo per vehicle and mission. `racing-drone` and `scout-drone` are the two that stand up the architecture; more follow (`interceptor-drone`, `isr-drone`, `nano-drone`, `counter-uas`). A mission repo owns its task: its world, the slots that see it, its stack and scorer, and its data. Algorithms do not live there.
+- **Mission framework**: [`anatomy`](https://github.com/branes-ai/anatomy), the body plan every mission composes its vehicle with: the data contracts, the slot concepts and their composition, configs, the replay log, the harness, and the closed-loop simulator. It holds no algorithms and no mission.
 - **Platform**: three sister repos, `cortex`, `synapse`, and `reflex`, that provide the functionality and services a mission is built from. None of them sits above the others.
 - **Math**: [MTL5](https://github.com/stillwater-sc/mtl5) provides high-performance linear algebra and [Universal](https://github.com/stillwater-sc/universal) provides computer arithmetic (posits, intervals, mixed precision, hardware-aligned types).
 - **Hardware**: the configurations the stack targets: CPU, CPU + GPU, CPU + KPU, and KPU. Today the stack runs on CPU; GPU and KPU support are planned, and the KPU is a stub until the silicon ships.
 
-Arrows point from a tier to the tier below it that it builds on. They show how the tiers relate, not the dependencies of individual repos: each repo's build declares the libraries it actually uses.
+Arrows point from a tier to the tier below it that it builds on. They show how the tiers relate, not the dependencies of individual repos: each repo's build declares the libraries it actually uses. A mission also uses platform components directly: it composes them into anatomy's slots.
 
-The platform is modeled on the mammalian nervous system. This repo is the whole organism; the sister repos provide its brain, its reflexes, and the synapses that run its learned models:
+The platform is modeled on the mammalian nervous system. This repo is the whole organism; the platform repos provide its brain, its reflexes, and the synapses that run its learned models, and anatomy provides the body plan they are assembled into:
 
 | Repo | Biological analogue | What it provides to the racing drone | Time scale |
 |---|---|---|---|
 | [`cortex`](https://github.com/branes-ai/cortex) | Cerebral cortex | Perception (visual-inertial odometry, gate detection, SLAM), world model, path planning | ~5–100 Hz |
 | [`synapse`](https://github.com/branes-ai/synapse) | The synapses: where signals are transmitted and computed | Execution of learned models (for example gate-detection or policy networks) as static, allocation-free compute graphs | Deterministic |
 | [`reflex`](https://github.com/branes-ai/reflex) | Brainstem, spinal cord, autonomic system | Stabilization, trajectory tracking (PID → MPC → non-linear MPC), fault detection and recovery, safety envelopes | ~100 Hz–8 kHz, hard real-time |
+| [`anatomy`](https://github.com/branes-ai/anatomy) | The body plan | The mission framework: data contracts, slots and composition, configs, the replay log, the harness, and the closed-loop simulator | — |
 | **`racing-drone`** (this repo) | The whole organism | Mission logic, vehicle integration, airframe and sensor configuration, simulation and flight testing | — |
 
 ```text
