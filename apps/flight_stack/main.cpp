@@ -10,6 +10,7 @@
 // time loop, and the FC bridge replace that in Phases 1-4.
 
 #include <branes/racing/config/config.hpp>
+#include <branes/racing/harness/flight.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/msg/time.hpp>
 
@@ -18,7 +19,6 @@
 #include <charconv>
 #include <cstdint>
 #include <cstdio>
-#include <limits>
 #include <string>
 
 namespace racing = branes::racing;
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     }
 
     // Tick times are i · period; keep the last one inside int64 (no signed overflow).
-    if (cycles > 0 && cycles - 1 > std::numeric_limits<std::int64_t>::max() / *period) {
+    if (!racing::harness::ticks_fit(cycles, *period)) {
         return fail("--cycles too large for the control rate (tick time would overflow)");
     }
 
@@ -102,9 +102,7 @@ int main(int argc, char** argv) {
         return fail(built.error());
     }
     auto& stack = *built;
-    for (long long i = 0; i < cycles; ++i) {
-        (void)stack.on_tick(racing::Timestamp{i * *period});
-    }
+    racing::harness::run_ticks(stack, cycles, *period);
     std::printf("flight_stack_%s: course %s, vehicle %s, %lld cycles at %.0f Hz\n",
                 std::string(racing::baseline::name).c_str(),
                 course->name.c_str(),

@@ -13,6 +13,7 @@
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/harness/replay.hpp>
 #include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 
@@ -109,36 +110,9 @@ int main(int argc, char** argv) {
         return fail(writer.error().path + ": " + writer.error().message);
     }
 
-    racing::harness::Runner runner(stack, racing::log::kRacingChannels);
-    std::vector<racing::log::LogRecord> recorded;
-    std::vector<racing::log::LogRecord> produced;
-
-    for (;;) {
-        auto rec = reader->next();
-        if (!rec) {
-            return fail(rec.error().path + ": " + rec.error().message);
-        }
-        if (!rec->has_value()) {
-            break;  // end of log
-        }
-        racing::log::LogRecord& r = **rec;
-        if (racing::log::is_output(r.channel)) {
-            if (verify) {
-                recorded.push_back(std::move(r));
-            }
-            continue;  // the input log's outputs are replaced by ours
-        }
-        writer->write(r.channel, r.t, r.payload);
-        auto outputs = runner.feed(r);
-        if (!outputs) {
-            return fail(outputs.error());
-        }
-        for (auto& o : *outputs) {
-            writer->write(o.channel, o.t, o.payload);
-            if (verify) {
-                produced.push_back(racing::log::LogRecord{o.channel, o.t, std::move(o.payload)});
-            }
-        }
+    const auto kept = racing::harness::replay_log(*reader, stack, racing::log::kRacingChannels, *writer, verify);
+    if (!kept) {
+        return fail(kept.error());
     }
     const auto records = writer->record_count();
     if (auto closed = writer->close(); !closed) {
@@ -146,17 +120,11 @@ int main(int argc, char** argv) {
     }
 
     if (verify) {
-        if (produced.size() != recorded.size()) {
-            return fail("verify: " + std::to_string(produced.size()) + " outputs produced, " +
-                        std::to_string(recorded.size()) + " recorded");
+        const auto verified = racing::harness::verify_outputs(*kept);
+        if (!verified) {
+            return fail(verified.error());
         }
-        for (std::size_t i = 0; i < produced.size(); ++i) {
-            if (!(produced[i] == recorded[i])) {
-                return fail("verify: output " + std::to_string(i) + " (t=" + std::to_string(produced[i].t.ns) +
-                            ") differs from the recording");
-            }
-        }
-        std::printf("replay_%s: verified %zu outputs\n", std::string(racing::baseline::name).c_str(), produced.size());
+        std::printf("replay_%s: verified %zu outputs\n", std::string(racing::baseline::name).c_str(), *verified);
     }
     std::printf("replay_%s: %llu records -> %s%s\n",
                 std::string(racing::baseline::name).c_str(),
