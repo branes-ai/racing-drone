@@ -9,7 +9,7 @@
 | Item | What | State |
 |---|---|---|
 | [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40) | This plan | Open |
-| PR (this document lands with it) | The implementation and the regenerated sweep | Open |
+| [racing-drone#41](https://github.com/branes-ai/racing-drone/pull/41) | The implementation and the regenerated sweep; this document lands with it | Open |
 | [racing-drone#35](https://github.com/branes-ai/racing-drone/issues/35) | Found the defect; measures gate error by position after this lands | Open |
 | [racing-drone#33](https://github.com/branes-ai/racing-drone/pull/33) | The precision sweep whose `posit<16,1>` result this explains | Merged |
 
