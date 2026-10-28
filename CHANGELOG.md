@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/branes-ai/racing-drone/compare/v0.6.1...v0.6.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* **baselines:** checked time base for the controller's dt ([#41](https://github.com/branes-ai/racing-drone/issues/41)) ([6ffaa90](https://github.com/branes-ai/racing-drone/commit/6ffaa9078f27cce46534e0f34569e5726e70d91d))
+
 ## [0.6.1](https://github.com/branes-ai/racing-drone/compare/v0.6.0...v0.6.1) (2026-10-28)
 
 
