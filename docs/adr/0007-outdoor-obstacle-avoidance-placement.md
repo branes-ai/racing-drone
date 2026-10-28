@@ -27,17 +27,21 @@ There is a second question underneath. The composition framework is mission-neut
 
 ## Decision
 
-1. **The algorithms go in the platform repos:**
+1. **The algorithms go in the platform repos, including the offline ones:**
 
    | Piece | Repo |
    |---|---|
-   | Stereo depth, and the learned receding-horizon planner (a `Planner` implementation) | cortex |
+   | Stereo depth, and the learned receding-horizon planner | cortex |
+   | The privileged expert (the sampling-based planner the policy imitates) and the imitation-training pipeline, as offline tooling beside the planner they train | cortex |
    | Running the policy network as a static, allocation-free graph | synapse |
    | A safety filter under the learned planner (the CBF of [ADR 0005](0005-layered-daa.md), applied to obstacles) | reflex |
+   | Simulated depth with stereo noise, as a sensor model of the simulator core | moves with the framework (Decision 4) |
 
-2. **The mission goes in its own mission repo.** This covers outdoor flight through unknown clutter: the privileged expert and its training pipeline, rendered-depth simulation with stereo noise, randomized outdoor scenes, scenarios, and success-rate-against-speed scoring. The mission belongs in an existing mission repo whose profile fits (for example `isr-drone`), or in a new one. That is decided when the work starts.
+   **The planner is not yet a `Planner` slot implementation.** The current slot takes only the course map and the state estimate ([`slots.hpp`](../../sdk/include/branes/racing/slots/slots.hpp)). A depth-driven planner also needs a depth observation and a goal. Putting it behind the slot therefore needs a revised `Planner` contract, decided where the planner enters a mission (Decision 3), under the slot registry of [ADR 0001](0001-baseline-composition-framework.md).
 
-3. **Racing-drone takes the planner only as a comparison baseline, later.** Once the planner exists in cortex, a baseline may put it behind the `Planner` slot and compare it with the waypoint and MPCC planners on an obstacle course. A2RL Season 2 announced "dynamic obstacles and mission-style tasks" ([history](../assessments/autonomous-drone-racing.md) §3.3). Such a baseline adds a depth sensor through the existing sensor interfaces (requirements §2, DAA-09). It is therefore not an A2RL-legal baseline, and it is reported as such.
+2. **The mission goes in its own mission repo,** with only mission content and no algorithms, as the tiers require. That means the randomized outdoor scenes and scenarios, the vehicle and its sensor configuration, the trained weights for that vehicle, and the success-rate-against-speed scoring and acceptance. The mission belongs in an existing mission repo whose profile fits (for example `isr-drone`), or in a new one. That is decided when the work starts.
+
+3. **Racing-drone takes the planner only as a comparison baseline, later.** Once the planner exists in cortex and the `Planner` contract carries a depth observation and a goal (Decision 1), a baseline may put it behind the slot and compare it with the waypoint and MPCC planners on an obstacle course. A2RL announced that Season 2 would feature "a more technically complex track featuring dynamic obstacles and mission-style tasks" [2]. Such a baseline adds a depth sensor through the existing sensor interfaces (requirements §2, DAA-09). It is therefore not an A2RL-legal baseline, and it is reported as such.
 
 4. **The framework is lifted out before a second mission repo is built on it, not copied.**
    - **Until then:** keep mission-neutral code free of racing-only types.
@@ -47,7 +51,8 @@ There is a second question underneath. The composition framework is mission-neut
 
 ## Consequences
 
-- **Racing-drone's scope stays the race.** It doesn't grow outdoor rendering, a privileged expert, or a training pipeline.
+- **Racing-drone's scope stays the race.** It doesn't grow outdoor scenes, a privileged expert, or a training pipeline.
+- **The `Planner` contract will change** before any depth-driven planner is a baseline here. The existing planners (`NullPlanner`, `WaypointPlanner`) must then be adapted to the revised signature.
 - **Each platform piece is reusable.** The planner, the network and the filter serve any mission, including a later racing obstacle-course baseline, behind the same slot.
 - **The cost is coordination.** The outdoor work spans three platform repos and one mission repo, and it needs the framework decision before the mission repo can use slots, harnesses and replay without copying them.
 - **The rule in Decision 4 constrains racing-drone now**, at little cost: racing-specific types stay out of the mission-neutral headers. That boundary is what makes the later lift a move, not a rewrite.
@@ -57,3 +62,4 @@ There is a second question underneath. The composition framework is mission-neut
 ## Sources
 
 1. Loquercio, Kaufmann, Ranftl, Müller, Koltun, Scaramuzza, "Learning high-speed flight in the wild," *Science Robotics* 6(59), abg5810 (2021), doi:10.1126/scirobotics.abg5810. Accepted version: <https://rpg.ifi.uzh.ch/docs/Loquercio21_Science.pdf> (accessed 2026-10-28). Code: <https://github.com/uzh-rpg/agile_autonomy>.
+2. A2RL, "A2RL Drone Racing Returns: Season 2 Elevates Autonomous Flight" (16 Jul 2025). <https://a2rl.io/blog/8/A2RL-Drone-Racing-Returns-Season-2-Elevates-Autonomous-Flight> (accessed 2026-10-28).
