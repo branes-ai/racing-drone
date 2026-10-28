@@ -1,6 +1,6 @@
 # A checked time base for the controller's dt
 
-**Status:** Approved 2026-10-27, in implementation
+**Status:** Approved 2026-10-27, implemented ([racing-drone#41](https://github.com/branes-ai/racing-drone/pull/41))
 **Issue:** [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40), part of the Phase 2 epic [racing-drone#9](https://github.com/branes-ai/racing-drone/issues/9)
 **Related:** [precision sweep plan](../precision-sweep/README.md), [mixed-precision assessment](../../assessments/mixed-precision.md) §9, [B0 plan](../b0/README.md)
 
@@ -8,8 +8,8 @@
 
 | Item | What | State |
 |---|---|---|
-| [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40) | This plan | Open |
-| [racing-drone#41](https://github.com/branes-ai/racing-drone/pull/41) | The implementation and the regenerated sweep; this document lands with it | Open |
+| [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40) | This plan | Closed |
+| [racing-drone#41](https://github.com/branes-ai/racing-drone/pull/41) | The implementation and the regenerated sweep; this document landed with it | Merged |
 | [racing-drone#35](https://github.com/branes-ai/racing-drone/issues/35) | Found the defect; measures gate error by position after this lands | Open |
 | [racing-drone#33](https://github.com/branes-ai/racing-drone/pull/33) | The precision sweep whose `posit<16,1>` result this explains | Merged |
 

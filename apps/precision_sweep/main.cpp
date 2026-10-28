@@ -18,7 +18,10 @@
 //                    seeds where both succeeded
 //   summary.jsonl    one line per type: construction, success, failures,
 //                    percentiles, and the lap-time difference from double
-//   summary.md       the same as a table, with the command line and commit
+//   gate_error.jsonl per built type and gate: passages, true gate error p50
+//                    and p99, the paired excess over double, and the type's
+//                    in-plane resolution at the gate (docs/plan/gate-error-by-gate/)
+//   summary.md       the same as tables, with the command line and commit
 //
 // The files depend only on the arguments (not --jobs, --out-dir, or the wall
 // time), so a rerun is byte-identical; --timing adds each type's wall time.
@@ -96,8 +99,62 @@ struct TypeResult {
     std::string label;
     std::string construction_error;  ///< empty if the stack built
     std::vector<racing::sim::Run> runs;
+    std::vector<double> in_plane_ulp;  ///< per course gate, sim::in_plane_ulp<T>
     double wall_s{0};
 };
+
+/// One gate's statistics in one type. Passages are those of runs without a
+/// run error, as in the summary's gate error; a pair is the same seed, lap and
+/// gate passed in this type and in double.
+struct GateStats {
+    std::int32_t id{0};
+    std::uint64_t passages{0};
+    double err_p50{0}, err_p99{0};
+    std::uint64_t pairs{0};
+    double excess_p50{0};  ///< median of (this type's true error − double's) over the pairs [m]
+    double ulp{0};         ///< in-plane resolution [m]
+};
+
+std::vector<GateStats>
+gate_stats(const TypeResult& t, const TypeResult& reference, const racing::CourseMap<double>& map) {
+    std::vector<GateStats> out;
+    for (std::uint32_t g = 0; g < map.gate_count; ++g) {
+        GateStats s;
+        s.id = map.gates[g].id;
+        s.ulp = t.in_plane_ulp[g];
+        std::vector<double> errors, excess;
+        for (std::size_t i = 0; i < t.runs.size(); ++i) {
+            const racing::sim::Run& r = t.runs[i];
+            if (!r.error.empty()) {
+                continue;
+            }
+            const racing::sim::Run* ref =
+                i < reference.runs.size() && reference.runs[i].error.empty() ? &reference.runs[i] : nullptr;
+            for (const auto& p : r.score.passages) {
+                if (p.gate_id != s.id) {
+                    continue;
+                }
+                errors.push_back(p.true_error_m);
+                if (ref == nullptr) {
+                    continue;
+                }
+                for (const auto& q : ref->score.passages) {
+                    if (q.gate_id == p.gate_id && q.lap == p.lap) {
+                        excess.push_back(p.true_error_m - q.true_error_m);
+                        break;
+                    }
+                }
+            }
+        }
+        s.passages = errors.size();
+        s.err_p50 = racing::sim::percentile(errors, 0.5);
+        s.err_p99 = racing::sim::percentile(errors, 0.99);
+        s.pairs = excess.size();
+        s.excess_p50 = racing::sim::percentile(excess, 0.5);
+        out.push_back(s);
+    }
+    return out;
+}
 
 /// The seed-level and type-level statistics of one TypeResult.
 struct Stats {
@@ -206,6 +263,9 @@ TypeResult sweep_type(const racing::sim::SweepType<T>& type,
     TypeResult out;
     out.slug = type.slug;
     out.label = type.label;
+    for (std::uint32_t g = 0; g < map.gate_count; ++g) {
+        out.in_plane_ulp.push_back(racing::sim::in_plane_ulp<T>(map.gates[g]));
+    }
     const auto start = std::chrono::steady_clock::now();
     if (auto probe = racing::harness::make_stack<StackT>(map, vehicle, baseline); !probe) {
         out.construction_error = probe.error();
@@ -326,8 +386,9 @@ int main(int argc, char** argv) {
         f.open(dir / name, std::ios::binary);
         return static_cast<bool>(f);
     };
-    std::ofstream summary, deltas, table;
-    if (!open("summary.jsonl", summary) || !open("lap_delta.jsonl", deltas) || !open("summary.md", table)) {
+    std::ofstream summary, deltas, gates, table;
+    if (!open("summary.jsonl", summary) || !open("lap_delta.jsonl", deltas) || !open("gate_error.jsonl", gates) ||
+        !open("summary.md", table)) {
         return fail("cannot write to " + *out_dir);
     }
 
@@ -360,6 +421,7 @@ int main(int argc, char** argv) {
           << "| Max speed p50 / max [m/s] | Lap Δ p50 / p95 / max [s] |" << (timing ? " Wall time [s] |" : "") << "\n"
           << "|---|---|---|---|---|---|---|---|" << (timing ? "---|" : "") << "\n";
     std::string notes;
+    std::string by_gate;
     for (const TypeResult& t : results) {
         const bool is_reference = &t == &reference;
         const Stats s = stats_of(t, is_reference ? nullptr : &reference);
@@ -381,6 +443,45 @@ int main(int argc, char** argv) {
                     }
                     deltas << "]}\n";
                 }
+            }
+        }
+
+        if (t.construction_error.empty()) {
+            by_gate += "\n### " + t.label +
+                       "\n\n| Gate | Center [m] | Passages | True error p50 / p99 [m] "
+                       "| Paired excess p50 [m] | In-plane ULP [m] | ¼ in-plane ULP [m] |\n"
+                       "|---|---|---|---|---|---|---|\n";
+            const std::vector<GateStats> per_gate = gate_stats(t, reference, course->map);
+            for (std::uint32_t g = 0; g < course->map.gate_count; ++g) {
+                const GateStats& gs = per_gate[g];
+                const auto& c = course->map.gates[g].center;
+                gates << "{\"type\":\"" << t.slug << "\",\"gate\":" << gs.id << ",\"passages\":" << gs.passages
+                      << ",\"true_error_m\":{\"p50\":" << num(gs.err_p50) << ",\"p99\":" << num(gs.err_p99)
+                      << "},\"pairs\":" << gs.pairs << ",\"paired_excess_m\":{\"p50\":" << num(gs.excess_p50)
+                      << "},\"in_plane_ulp_m\":" << num(gs.ulp) << ",\"quarter_ulp_m\":" << num(gs.ulp / 4) << "}\n";
+                char buf[256];
+                std::snprintf(buf,
+                              sizeof buf,
+                              "| %d | (%g, %g, %g) | %llu | %s / %s | ",
+                              gs.id,
+                              c[0],
+                              c[1],
+                              c[2],
+                              static_cast<unsigned long long>(gs.passages),
+                              cell(gs.err_p50, 3).c_str(),
+                              cell(gs.err_p99, 3).c_str());
+                by_gate += buf;
+                if (is_reference) {
+                    by_gate += "reference";
+                } else if (gs.pairs == 0) {
+                    by_gate += "—";
+                } else {
+                    std::snprintf(
+                        buf, sizeof buf, "%.2e (%llu pairs)", gs.excess_p50, static_cast<unsigned long long>(gs.pairs));
+                    by_gate += buf;
+                }
+                std::snprintf(buf, sizeof buf, " | %.3g | %.3g |\n", gs.ulp, gs.ulp / 4);
+                by_gate += buf;
             }
         }
 
@@ -411,6 +512,13 @@ int main(int argc, char** argv) {
         }
     }
     table << "\n## Failures\n\n" << (notes.empty() ? std::string("None.\n") : notes);
+    table << "\n## Gate error by gate\n\n"
+          << "- Per built type and gate, over the passages of runs without a run error, as in the table above.\n"
+          << "- Paired excess: the median of (this type's true gate error − double's) over the passages of the "
+          << "same seed, lap and gate in both.\n"
+          << "- In-plane ULP: the type's resolution at the gate's center, on the world axes that span the gate's "
+          << "plane (its error is measured in that plane).\n"
+          << by_gate;
     std::printf("precision_sweep_%s: %zu types, seeds %s, files in %s\n",
                 std::string(racing::baseline::name).c_str(),
                 results.size(),

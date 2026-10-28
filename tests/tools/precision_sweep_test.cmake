@@ -6,6 +6,7 @@
 #  2. A rerun with a different --jobs and --out-dir gives byte-identical files
 #     (criterion 3).
 #  3. double.jsonl is sitl_batch_b0-gt-pid's --jsonl for the same seed (criterion 1).
+#  4. gate_error.jsonl is consistent with the runs (below).
 #
 # Inputs: SWEEP, BATCH (executables), SOURCE_DIR, WORK_DIR.
 
@@ -57,7 +58,46 @@ foreach(slug IN LISTS slugs)
     endif()
 endforeach()
 
-foreach(name summary.jsonl lap_delta.jsonl summary.md)
+# 4. gate_error.jsonl (docs/plan/gate-error-by-gate/): 11 lines per built type;
+#    each type's per-gate passages add up to its run's passages; double's
+#    paired excess is exactly 0 wherever it has pairs.
+file(STRINGS ${WORK_DIR}/a/gate_error.jsonl gate_lines)
+foreach(slug IN LISTS slugs)
+    file(READ ${WORK_DIR}/a/${slug}.jsonl run_line)
+    if(run_line STREQUAL "")
+        continue()  # the stack didn't build: no gate lines
+    endif()
+    string(JSON passages ERROR_VARIABLE no_score LENGTH "${run_line}" score gate_error_true_m)
+    if(no_score)
+        set(passages 0)  # a run error: no passages
+    endif()
+    set(lines_for 0)
+    set(sum 0)
+    foreach(line IN LISTS gate_lines)
+        string(JSON type GET "${line}" type)
+        if(NOT type STREQUAL slug)
+            continue()
+        endif()
+        math(EXPR lines_for "${lines_for} + 1")
+        string(JSON n GET "${line}" passages)
+        math(EXPR sum "${sum} + ${n}")
+        string(JSON pairs GET "${line}" pairs)
+        if(slug STREQUAL "double" AND pairs GREATER 0)
+            string(JSON excess GET "${line}" paired_excess_m p50)
+            if(NOT excess EQUAL 0)
+                message(FATAL_ERROR "double's paired excess is ${excess}, not 0: ${line}")
+            endif()
+        endif()
+    endforeach()
+    if(NOT lines_for EQUAL 11)
+        message(FATAL_ERROR "gate_error.jsonl has ${lines_for} lines for ${slug}, expected 11")
+    endif()
+    if(NOT sum EQUAL passages)
+        message(FATAL_ERROR "${slug}: per-gate passages add up to ${sum}, the run has ${passages}")
+    endif()
+endforeach()
+
+foreach(name summary.jsonl lap_delta.jsonl gate_error.jsonl summary.md)
     same(${WORK_DIR}/a/${name} ${WORK_DIR}/b/${name} "rerun")
 endforeach()
 foreach(slug IN LISTS slugs)
