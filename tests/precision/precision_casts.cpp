@@ -16,6 +16,8 @@
 #include <branes/racing/sim/sweep_types.hpp>
 #include <branes/racing/util/splitmix64.hpp>
 
+#include "precision_fixtures.hpp"
+
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -27,29 +29,9 @@
 #include <vector>
 
 using namespace branes::racing;
+using precision_fixtures::neighbors;
 
 namespace {
-
-/// The two representable neighbors of t, as doubles.
-template <typename T>
-std::pair<double, double> neighbors(T t) {
-    if (t == T(0)) {
-        // ±0 sits between the smallest positive and negative values; a cfloat's
-        // encoding decrement from +0 doesn't land on −denorm_min.
-        const double d = double(std::numeric_limits<T>::denorm_min());
-        return {-d, d};
-    }
-    if constexpr (std::is_floating_point_v<T>) {
-        return {double(std::nextafter(t, -std::numeric_limits<T>::infinity())),
-                double(std::nextafter(t, std::numeric_limits<T>::infinity()))};
-    } else {
-        T below = t;
-        T above = t;
-        --below;  // the adjacent encodings, which Universal orders by value
-        ++above;
-        return {double(below), double(above)};
-    }
-}
 
 template <typename T>
 inline constexpr bool is_posit = std::is_same_v<T, sim::posit32> || std::is_same_v<T, sim::posit16>;

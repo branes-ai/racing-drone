@@ -1,7 +1,8 @@
 // Baseline B0's controller (baselines/glue/cascaded_pid.hpp): built from the
 // vehicle file with the speed cap, it holds on the first tick and on dt ≤ 0,
 // commands m·g and zero rates at equilibrium, and keeps the thrust within the
-// cascade's limits.
+// cascade's limits. Its dt accuracy is ε_max from the velocity gains
+// (docs/plan/time-base/), and a dt its TimeBase rejects is held and counted.
 
 #include <branes/racing/glue/cascaded_pid.hpp>
 #include <branes/racing/slots/slots.hpp>
@@ -11,12 +12,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <limits>
 #include <map>
 #include <string>
 
 using namespace branes::racing;
 using branes::racing::glue::CascadedPid;
 using Catch::Matchers::WithinAbs;
+using Catch::Matchers::WithinRel;
 
 static_assert(Controller<CascadedPid<double>, double>);
 static_assert(ContextBuilt<CascadedPid<double>>);
@@ -131,4 +134,39 @@ TEST_CASE("cascaded pid: the thrust stays within the cascade limits for any setp
             REQUIRE(u.thrust <= cfg.max_thrust);
         }
     }
+}
+
+TEST_CASE("cascaded pid: the dt accuracy is eps_max from the velocity gains", "[b0][controller]") {
+    const auto v = sim_fixtures::rp1();
+    const auto c = make(v, {{"control_rate_hz", "250"}});
+    CHECK(c.time_base().nominal_ns() == 4'000'000);
+    // cascade_config_from: k_v = (1/τ)/14 and k_i = k_v²/10, so r = 0.1 and
+    // ε_max = k_v·T_s·(1 + r²)/r. Both sides take a handful of roundings
+    // (≤ 6 each, ½ ε apiece), so they agree to 8 ε.
+    const double kv = (1.0 / v.rotor.time_constant) / 14.0;
+    const double r = 0.1;
+    const double expected = kv * 0.004 * (1.0 + r * r) / r;
+    CHECK_THAT(c.time_base().rel_tol(), WithinRel(expected, 8 * std::numeric_limits<double>::epsilon()));
+
+    auto pd = c.position_loop().config();
+    pd.velocity[1].kd = 0.1;
+    const auto rejected = CascadedPid<double>::dt_tolerance(pd, 0.004);
+    REQUIRE_FALSE(rejected);
+    CHECK(rejected.error().find("PI velocity loops") != std::string::npos);
+}
+
+TEST_CASE("cascaded pid: a dt longer than two periods is held and counted", "[b0][controller]") {
+    const auto v = sim_fixtures::rp1();
+    auto c = make(v);  // the default 100 Hz: 10 ms period, 20 ms longest interval
+    REQUIRE(c.time_base().max_ns() == 20'000'000);
+    (void)c.step(state(0, {3, 4, 0.1}), hold_at({3, 4, 2}), none);
+    const ThrustRates<double> first = c.step(state(10'000'000, {3, 4, 0.1}), hold_at({3, 4, 2}), none);
+    CHECK(c.timing_faults() == 0);
+    const ThrustRates<double> late = c.step(state(40'000'000, {3, 4, 0.1}), hold_at({9, 9, 9}), none);
+    CHECK(c.timing_faults() == 1);
+    CHECK(late.thrust == first.thrust);  // held, re-stamped
+    CHECK(late.body_rates == first.body_rates);
+    CHECK(late.t == Timestamp{40'000'000});
+    (void)c.step(state(50'000'000, {3, 4, 0.1}), hold_at({3, 4, 2}), none);
+    CHECK(c.timing_faults() == 1);  // back on the period
 }
