@@ -146,7 +146,7 @@ Each hypothesis comes with a prediction stated before any measurement. [#30](htt
   Prediction: this B0 passes P1.
   - *Basis:* §2–§4. The failures predicted in H2–H4 come from accumulation and range, not stateless arithmetic.
   - bfloat16 is the 16-bit format here because its range covers every intermediate value. A binary16 variant would also need every small constant kept in 32 bits (H3).
-  - Testing it needs precision chosen within and across slots, which is the follow-up to #30 (§6).
+  - Testing it needs precision chosen within and across slots, which is [#36](https://github.com/branes-ai/racing-drone/issues/36) (§6).
 
 The hypotheses can fail in informative ways. If `float` fails H1, the stack has an unidentified conditioning or accumulation problem, and it would hurt binary32 flight hardware too. A failure confined to `cfloat<32,8>` or `posit<32,2>` points at that format, and needs its own analysis. If H2–H4 *pass*, the mechanisms in §2 matter less in closed loop than this analysis predicts, because feedback corrects the error. That is worth knowing on its own.
 
@@ -203,7 +203,7 @@ These are properties that tests in sibling repos already check. They aren't new 
 Why H2 and H4 were wrong, as far as it is known:
 - **The predicted accumulation isn't in B0's stack.** §2.2's position examples integrate velocity into position in T. In B0, the simulator does that integration in `double`. The ground-truth estimator then hands the stack the true state each tick, cast to T: one rounding of at most ½ ULP, not an accumulated stall.
 - **What B0 does accumulate is fed back.** The stack's accumulators are the controllers' integrators. Their lost increments (§2.2) leave errors that the proportional terms correct, the closed-loop outcome §5 named as informative.
-- **Open: why `posit<16,1>` flies faster than `double`** and above the velocity cap. The cause isn't known yet (§10).
+- **Open: why `posit<16,1>` flies faster than `double`** and above the velocity cap. The cause isn't known yet (§10, [#35](https://github.com/branes-ai/racing-drone/issues/35)).
 
 What this does and doesn't show:
 - It shows that B0, a stack without a filter or optimizer, flies P1 in bfloat16 and `posit<16,1>`, the two 16-bit formats tested whose range holds its parameters.
@@ -211,6 +211,6 @@ What this does and doesn't show:
 
 ## 10. Next steps
 
-1. Find why `posit<16,1>` flies B0 faster than `double` and above the velocity cap (§9), and measure H4's distance prediction with gate error split by position.
-2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5. To be filed now that #30 has landed.
-3. B1's EKF and MPC in binary32, `posit<32,2>` and the 16-bit formats, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.2–§2.3 apply in earnest, and the sweep tool runs B1 once it has a baseline file.
+1. Find why `posit<16,1>` flies B0 faster than `double` and above the velocity cap (§9), and measure H4's distance prediction with gate error split by position ([#35](https://github.com/branes-ai/racing-drone/issues/35)).
+2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5 ([#36](https://github.com/branes-ai/racing-drone/issues/36)).
+3. B1's EKF and MPC in binary32, `posit<32,2>` and the 16-bit formats, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.2–§2.3 apply in earnest, and the sweep tool runs B1 once it has a baseline file ([#37](https://github.com/branes-ai/racing-drone/issues/37)).

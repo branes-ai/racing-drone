@@ -8,8 +8,8 @@
 
 | Item | What | State |
 |---|---|---|
-| [racing-drone#30](https://github.com/branes-ai/racing-drone/issues/30) | This plan | Open |
-| [racing-drone#33](https://github.com/branes-ai/racing-drone/pull/33) | The implementation and results; this document landed with it | Open |
+| [racing-drone#30](https://github.com/branes-ai/racing-drone/issues/30) | This plan | Closed |
+| [racing-drone#33](https://github.com/branes-ai/racing-drone/pull/33) | The implementation and results; this document landed with it | Merged |
 | [racing-drone#31](https://github.com/branes-ai/racing-drone/pull/31) | The assessment that derives H1–H5 | Merged |
 | [racing-drone#17](https://github.com/branes-ai/racing-drone/issues/17) | B0 and gate P1, which the sweep reuses | Closed |
 
