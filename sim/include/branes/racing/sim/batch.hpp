@@ -29,7 +29,7 @@ namespace branes::racing::sim {
 struct Run {
     std::uint64_t seed{0};
     Score score;
-    std::string error;  ///< set if the run could not be set up or fed
+    std::string error;  ///< set if the run could not be set up or fed, or its controller held ticks on a rejected dt
 };
 
 /// One closed-loop run of StackT, scored. Mirrors apps/sitl/main.cpp without the log.
@@ -87,6 +87,14 @@ template <class StackT>
             break;
         }
     }
+    // A controller that counts ticks held on a dt its TimeBase rejected
+    // (CascadedPid, docs/plan/time-base/) fails the run, so the hold shows.
+    if constexpr (requires { stack->controller().timing_faults(); }) {
+        if (const auto n = stack->controller().timing_faults(); n != 0) {
+            out.error = "the controller held " + std::to_string(n) + " ticks whose dt its TimeBase rejected";
+            return out;
+        }
+    }
     out.score = scorer.score();
     return out;
 }
@@ -105,7 +113,8 @@ template <class StackT>
 }
 
 /// A run's JSON line, without the newline: {"seed":…,"score":{…}}, or
-/// {"seed":…,"run_error":"…"} for a run that could not be set up or fed.
+/// {"seed":…,"run_error":"…"} for a run that could not be set up or fed, or
+/// whose controller held ticks on a rejected dt.
 [[nodiscard]] inline std::string to_json(const Run& r) {
     std::string out = "{\"seed\":" + std::to_string(r.seed);
     if (!r.error.empty()) {
