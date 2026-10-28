@@ -11,9 +11,10 @@
 /// randomization stream, and the start pose is jittered. The draws are
 /// returned so the harness can log them.
 
-#include <branes/racing/config/config.hpp>
+#include <branes/racing/config/scenario.hpp>
+#include <branes/racing/config/vehicle.hpp>
 #include <branes/racing/glue/reflex_params.hpp>
-#include <branes/racing/msg/course.hpp>
+#include <branes/racing/msg/region.hpp>
 #include <branes/racing/result.hpp>
 #include <branes/racing/util/splitmix64.hpp>
 #include <branes/reflex/model/quadrotor.hpp>

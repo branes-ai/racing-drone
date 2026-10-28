@@ -31,6 +31,7 @@
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/sim/batch.hpp>
+#include <branes/racing/sim/gate_resolution.hpp>
 #include <branes/racing/sim/score.hpp>
 #include <branes/racing/sim/sweep_types.hpp>
 

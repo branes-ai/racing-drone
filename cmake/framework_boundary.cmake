@@ -51,12 +51,22 @@ set(RACING_NEUTRAL_FILES
     sdk/include/branes/racing/harness/files.hpp
     sdk/include/branes/racing/harness/runner.hpp
     sdk/include/branes/racing/harness/synthetic.hpp
-    # Simulator models
+    # Simulator: the closed loop, its models, and the batch statistics
+    sim/include/branes/racing/sim/basic_simulator.hpp
+    sim/include/branes/racing/sim/camera_model.hpp
+    sim/include/branes/racing/sim/closed_loop.hpp
     sim/include/branes/racing/sim/fc.hpp
     sim/include/branes/racing/sim/imu.hpp
+    sim/include/branes/racing/sim/sweep_types.hpp
+    sim/include/branes/racing/sim/vehicle.hpp
     # Reflex glue
     baselines/glue/include/branes/racing/glue/cascaded_pid.hpp
     baselines/glue/include/branes/racing/glue/reflex_params.hpp
+    # Build: the composition generator, warnings, test registration, dependencies
+    cmake/compile_all.cmake
+    cmake/composition.cmake
+    cmake/deps.cmake
+    cmake/warnings.cmake
     # Tests of the neutral pieces, driven by a mission that is not racing
     tests/sim/neutral_mission.cpp
 )

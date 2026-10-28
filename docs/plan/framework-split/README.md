@@ -1,6 +1,6 @@
 # Plan: split the framework's mixed files in place (ADR 0008, step 1)
 
-Issue: #58. Status: in progress. PRs 1a (#59) and 1b done; 1c to come.
+Issue: #58. Status: in progress. PRs 1a (#59), 1b (#60) and 1c done; 1d (the harness programs) to come.
 
 ## Goal
 
@@ -73,7 +73,7 @@ Each PR updates the manifest and the tests that move with its files.
 
 ## Results
 
-### PR 1a
+### PR 1a (#59)
 
 **What changed:**
 - **Contracts:**
@@ -106,7 +106,7 @@ Each PR updates the manifest and the tests that move with its files.
 - **A seam the audit missed.** `LogHeader`'s `course_hash` and `course_yaml` were racing names in a neutral type. They are now `world_hash` and `world_yaml`. The on-disk fields and their order are unchanged, and `log_dump` still writes `course_hash:` and `course.yaml`.
 - **The YAML helpers.** The audit didn't list them separately. They are neutral, but private to the loaders. In step 2, a racing course loader outside anatomy will need them, so anatomy will have to export them or racing will keep a copy. That choice belongs to step 2.
 
-### PR 1b
+### PR 1b (#60)
 
 **What changed:**
 - **Slots:** `slots.hpp` keeps racing's three task-facing concepts (`Estimator`, `GateDetector`, `Planner`). The four neutral ones move to `slots/neutral.hpp`, and their nulls to `slots/neutral_nulls.hpp`. `scripted.hpp` now includes only the neutral concepts.
@@ -137,4 +137,40 @@ Each PR updates the manifest and the tests that move with its files.
 **Departures:**
 - **Pass-through list, not a decoding hook.** The plan said mission channels would be decoded "through a mission hook". Racing's only mission channel is recorded but never consumed, so the `Runner` takes a list of pass-through channels instead. A mission channel the stack does consume (for example scout-drone's depth images) will need a decoding hook. Following ADR 0008, that is added when scout-drone needs it (step 3), not speculatively.
 - **`MissionWorld`.** The plan didn't name this concept. It came from the audit's finding that `CascadedPid` reads the start pose from the course: making the start pose part of every world keeps the PID glue neutral without a separate context field.
+
+### PR 1c
+
+PR 1c of the plan is split in two. **1c** covers the simulator, the batch runner, the sweep types and the baseline generator. **1d** covers the harness programs (`apps/`), so each PR stays reviewable.
+
+**What changed:**
+- **Simulator:**
+  - `sim/basic_simulator.hpp` (neutral) holds `BasicSimulator<Oracle>`: the reflex plant, the simulated FC, the IMU, faults, camera timing, truth and `sim_config`, as before.
+  - The mission supplies the start pose and an `OracleSensor`: at each camera frame, it turns the true state into the log event to emit, or none. `NoOracle` emits none.
+  - Racing's `simulator.hpp` defines `GateOracle` (`project_gates` onto `oracle_gates`) and a `Simulator` that derives from `BasicSimulator<GateOracle>`, with the same `create(vehicle, course, scenario, control_hz, options)` as before. Its check for racing's scenario parameters moved there.
+- **Camera model:** `sim/camera_model.hpp` (neutral) holds the rotation helpers, the pixel projection and `to_camera`, moved out of the gate projector. The simulator uses them, and another mission's oracle will need them too.
+- **Batch:**
+  - `sim/closed_loop.hpp` (neutral) holds the concept `RunScorer`, `BasicRun<ScoreT>` and `run_closed_loop()`. The loop is the one from `run_one`, including the timing-fault check, generic over the simulator's oracle, the stack and the scorer.
+  - It also holds the JSON line, `percentile` and `failure_reason`.
+  - Racing's `batch.hpp` keeps `Run` (= `BasicRun<Score>`) and `run_one()`.
+- **Sweep types:** the type list and `ulp_at` stay in the neutral `sweep_types.hpp`, and `in_plane_ulp(gate)` moves to the racing `gate_resolution.hpp`.
+- **Simulator vehicle helpers:** `sim/vehicle.hpp` includes the neutral configs and `msg/region.hpp`, and is now neutral.
+- **Baseline generator:**
+  - `cmake/composition.cmake` (neutral) holds `composition_define_slots`, `composition_register_impl` and `composition_generate`: parse, check and hash a baseline's composition against a named registry, and configure the mission's header template.
+  - Racing's `slot_registry.cmake` defines its seven slots on the `racing` registry. `baselines.cmake` calls `composition_generate` and adds racing's harness targets.
+  - The template's variables are now `@BASELINE_NAME@`, `@BASELINE_HASH@`, `@BASELINE_INCLUDES@` and `@BASELINE_TYPES@`.
+- **Boundary:** the manifest lists 50 files, adding the 7 neutral simulator headers and 4 neutral CMake modules. The boundary test only checks C++ includes, so for the CMake files it checks that they exist.
+- **New tests:** in `tests/sim/neutral_mission.cpp`, with neutral headers only:
+  - `BasicSimulator<NoOracle>` runs from another mission's start pose and emits only framework channels;
+  - `run_closed_loop` runs that mission's stack and scorer, and stops when its scorer is complete.
+
+**Acceptance:**
+1. **Tests:** 212 of 212 pass on `gcc-debug` and on `clang-debug` (210 before, plus the 2 new).
+2. **Byte-identity:** all 39 output files are identical to main's before the split. The generated baseline headers (`build/*/generated/`) are byte-identical to those generated before the change.
+3. **Boundary:** `boundary.neutral_includes` passes over 50 files, and `boundary.detects_violation` passes.
+4. **Interface:** no command line, YAML key, channel id, log field, or `Simulator::create` signature changed. clang-format 18 finds nothing in the 12 changed C++ files.
+
+**Departures:**
+- **1c split in two.** The harness programs are their own PR, 1d.
+- **The camera model moved.** The audit counted it as part of the racing gate projector, but it is neutral camera geometry that any mission's oracle needs.
+- **Order of checks in `Simulator::create`.** Racing's scenario-parameter check now runs before `BasicSimulator`'s rate and duration checks. A scenario with several faults may therefore report a different first error. Valid scenarios are unaffected.
 
