@@ -193,12 +193,17 @@ These are properties that tests in sibling repos already check. They aren't new 
 
 ## 9. Results: the uniform-T sweep of B0
 
-[#30](https://github.com/branes-ai/racing-drone/issues/30) ran B0 on gate P1 in each type, with the simulator, FC, scorer and log in `double` ([plan](../plan/precision-sweep/README.md)). Every number is in the generated table, [`data/precision-sweep-b0.md`](data/precision-sweep-b0.md), with the command line and commit that reproduce it; the per-type summaries and per-seed lap differences are beside it. This section gives the verdicts and doesn't copy the numbers.
+[#30](https://github.com/branes-ai/racing-drone/issues/30) ran B0 on gate P1 in each type, with the simulator, FC, scorer and log in `double` ([plan](../plan/precision-sweep/README.md)). Every number is in the generated table, [`data/precision-sweep-b0.md`](data/precision-sweep-b0.md), with the command line and commit that reproduce it; the per-type summaries, per-seed lap differences and per-gate errors are beside it. This section gives the verdicts and doesn't copy the numbers.
 
 - **H1 holds.** `float`, `cfloat<32,8>` and `posit<32,2>` construct and pass P1. Their lap-time, gate-error and speed percentiles equal `double`'s at the table's precision, and the Lap Δ column bounds the per-seed differences.
 - **H2 is refuted.** bfloat16 constructs and passes P1. Its precision shows, but stays inside the gate: slower laps, a larger median gate error and a lower top speed than `double`.
 - **H3 holds.** binary16 fails construction, and the reason names `rotor.thrust_coefficient` as subnormal (the table's Failures section), as predicted.
-- **H4 is refuted on P1.** `posit<16,1>` constructs and passes P1, with lap times, gate errors and top speed close to `double`'s and under the controller's velocity cap (`max_speed_m_s` in `baselines/b0-gt-pid.yaml`). Its second prediction, gate errors growing with distance from the origin, isn't measured: the table doesn't split gate error by position ([#35](https://github.com/branes-ai/racing-drone/issues/35)).
+- **H4 is refuted on P1.** `posit<16,1>` constructs and passes P1, with lap times, gate errors and top speed close to `double`'s and under the controller's velocity cap (`max_speed_m_s` in `baselines/b0-gt-pid.yaml`). Its second prediction, gate errors growing with distance from the origin, is refuted too (below).
+
+**H4's distance prediction is refuted** ([#35](https://github.com/branes-ai/racing-drone/issues/35), [plan](../plan/gate-error-by-gate/README.md)). A gate's error lies in its plane, so only a large coordinate *in that plane* coarsens it. On a2rl-2025 that is gate 6 alone: it faces y at x = 72 m, where `posit<16,1>` resolves 0.125 m. Gates 3–5 and 7–8, though far from the origin, face ±x, so their in-plane coordinates are y and z, which are small. The criterion, fixed before the run, re-keys H4's "x > 32 m" to that in-plane coordinate, the mechanism H4 names. This is a refinement of H4, not its original wording:
+- *Criterion:* H4's distance half holds iff `posit<16,1>`'s gate 6 has a larger median paired excess true gate error over `double` (same seed, lap and gate) than every other gate, and that excess is at least ¼ of its in-plane ULP. It is refuted otherwise.
+- *Result:* refuted. In the table's "Gate error by gate" section, gate 6's paired excess is negative, the lowest of the eleven gates rather than the highest. Its in-plane resolution doesn't show in its error.
+- *What the table shows instead, cause not established ([#44](https://github.com/branes-ai/racing-drone/issues/44)):* `posit<16,1>`'s paired excess rises from near zero at the start of each straight to its largest at the straight's end. That holds on the outbound leg (gates 1–5, flown along +x) and the return leg (gates 7–10, along −x) alike. So it follows the distance flown along a leg, not the distance from the origin. At the end of each leg it is above the ¼-ULP mark of those gates' in-plane resolution.
 
 Why H2 and H4 were wrong, as far as it is known:
 - **The predicted accumulation isn't in B0's stack.** §2.2's position examples integrate velocity into position in T. In B0, the simulator does that integration in `double`. The ground-truth estimator then hands the stack the true state each tick, cast to T: one rounding of at most ½ ULP, not an accumulated stall.
@@ -211,6 +216,6 @@ What this does and doesn't show:
 
 ## 10. Next steps
 
-1. Measure H4's distance prediction with gate error split by position ([#35](https://github.com/branes-ai/racing-drone/issues/35)). Why `posit<16,1>` first flew B0 faster than `double` is found and fixed (§9, [#40](https://github.com/branes-ai/racing-drone/issues/40)).
+1. Find why `posit<16,1>`'s gate error over `double` grows along each straight (§9, [#44](https://github.com/branes-ai/racing-drone/issues/44)). Why it first flew B0 faster than `double` is found and fixed ([#40](https://github.com/branes-ai/racing-drone/issues/40)), and H4's distance prediction is measured and refuted ([#35](https://github.com/branes-ai/racing-drone/issues/35)).
 2. Per-slot scalar types in the composition and the baseline file, the cross-type slot contracts they need (§6), and H5 ([#36](https://github.com/branes-ai/racing-drone/issues/36)).
 3. B1's EKF and MPC in binary32, `posit<32,2>` and the 16-bit formats, with the covariance form chosen for the precision (Joseph or square-root). That is where §2.2–§2.3 apply in earnest, and the sweep tool runs B1 once it has a baseline file ([#37](https://github.com/branes-ai/racing-drone/issues/37)).
