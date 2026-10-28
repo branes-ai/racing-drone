@@ -118,3 +118,16 @@ if(RACING_NIGHTLY_TESTS)
             --scenario ${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml --seeds 500 --min-success 0.99)
     set_tests_properties(gate.p1.full PROPERTIES LABELS "gate;nightly" TIMEOUT 3600)
 endif()
+
+# ── Compile-fail checks (docs/plan/time-base/) ─────────────────────────────
+# A TimeBase whose conversion type is narrower than the scalar type must not
+# compile. The target is outside `all` and is an object library on the header
+# path only, so building it compiles that one file and nothing else; the test
+# builds it and expects the static_assert's message.
+add_library(time_base_narrow_wide OBJECT EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/time_base_narrow_wide.cpp)
+target_include_directories(time_base_narrow_wide PRIVATE ${PROJECT_SOURCE_DIR}/sdk/include)
+target_compile_features(time_base_narrow_wide PRIVATE cxx_std_20)
+add_test(NAME compile_fail.time_base.narrow_wide
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target time_base_narrow_wide --config $<CONFIG>)
+set_tests_properties(compile_fail.time_base.narrow_wide PROPERTIES
+    PASS_REGULAR_EXPRESSION "Wide has fewer significand digits than T")

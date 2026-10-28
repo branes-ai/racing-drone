@@ -273,4 +273,8 @@ struct BaselineConfig {
 /// A numeric parameter, or nullopt if absent or not a number.
 [[nodiscard]] std::optional<double> numeric_parameter(const BaselineConfig& b, std::string_view key);
 
+/// The control rate a baseline runs at when it gives no `control_rate_hz` [Hz]:
+/// the apps tick the stack at it, and a slot that needs the period reads it.
+inline constexpr double kDefaultControlRateHz = 100.0;
+
 }  // namespace branes::racing::config

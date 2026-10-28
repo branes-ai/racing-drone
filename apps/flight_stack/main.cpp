@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
     if (!baseline) {
         return fail(baseline.error());
     }
-    const double control_hz = racing::config::numeric_parameter(*baseline, "control_rate_hz").value_or(100.0);
+    const double control_hz =
+        racing::config::numeric_parameter(*baseline, "control_rate_hz").value_or(racing::config::kDefaultControlRateHz);
     const auto period = racing::checked_period_ns(control_hz);
     if (!period) {
         return fail("parameter control_rate_hz must be in [" + std::to_string(racing::kMinRateHz) + ", " +
