@@ -14,6 +14,7 @@
 #include <branes/racing/log/log.hpp>
 #include <branes/racing/msg/codec.hpp>
 #include <branes/racing/sim/simulator.hpp>
+#include <branes/racing/sim/sitl_loop.hpp>
 
 #include "racing_baseline.hpp"
 
@@ -100,29 +101,9 @@ int main(int argc, char** argv) {
         return fail(writer.error().path + ": " + writer.error().message);
     }
 
-    racing::harness::Runner runner(stack, racing::log::kRacingChannels);
-    std::uint64_t ticks = 0;
-    while (auto ev = sim->next()) {
-        writer->write(ev->channel, ev->t, ev->payload);
-        auto outputs = runner.feed(racing::log::LogRecord{ev->channel, ev->t, std::move(ev->payload)});
-        if (!outputs) {
-            return fail(outputs.error());
-        }
-        for (const auto& o : *outputs) {
-            writer->write(o.channel, o.t, o.payload);
-            if (o.channel == racing::log::Channel::command) {
-                // The command the stack sent, back to the simulated FC.
-                // decode(encode(u)) == u: the codec writes every double exactly.
-                const auto u = racing::codec::decode_command(o.payload);
-                if (!u) {
-                    return fail("the stack produced a command that does not decode");
-                }
-                sim->command(*u);
-            }
-        }
-        if (ev->channel == racing::log::Channel::tick) {
-            ++ticks;
-        }
+    const auto ticks = racing::sim::run_sitl(*sim, stack, racing::log::kRacingChannels, *writer);
+    if (!ticks) {
+        return fail(ticks.error());
     }
     const auto records = writer->record_count();
     if (auto closed = writer->close(); !closed) {
@@ -131,7 +112,7 @@ int main(int argc, char** argv) {
     std::printf("sitl_%s: %s, %llu ticks, %llu records -> %s\n",
                 std::string(racing::baseline::name).c_str(),
                 scenario->name.c_str(),
-                static_cast<unsigned long long>(ticks),
+                static_cast<unsigned long long>(*ticks),
                 static_cast<unsigned long long>(records),
                 out_path->c_str());
     return 0;

@@ -6,10 +6,12 @@
 
 #include <branes/racing/result.hpp>
 
+#include <charconv>
 #include <map>
 #include <optional>
 #include <set>
 #include <string>
+#include <system_error>
 
 namespace branes::racing::harness {
 
@@ -68,5 +70,17 @@ private:
     std::map<std::string, std::string> values_;
     std::set<std::string> flags_;
 };
+
+/// The whole of `s` as a number of type N (std::from_chars), or nullopt if it
+/// is not one: "10x" and an empty string are rejected.
+template <typename N>
+[[nodiscard]] std::optional<N> parse_number(const std::string& s) {
+    N v{};
+    const auto [end, ec] = std::from_chars(s.data(), s.data() + s.size(), v);
+    if (ec != std::errc{} || end != s.data() + s.size()) {
+        return std::nullopt;
+    }
+    return v;
+}
 
 }  // namespace branes::racing::harness

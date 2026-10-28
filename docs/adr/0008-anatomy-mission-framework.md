@@ -73,4 +73,4 @@ A framework generalized from one mission bakes in that mission's assumptions. On
 - **Anatomy's version is a dependency of every mission.** A contract change in anatomy ships through its releases, like reflex's.
 - **ADR 0001's slot registry is split.** The registry mechanism moves to anatomy; the list of slots becomes per mission.
 
-**Current state:** proposed. Step 5.1 has not started.
+**Current state:** proposed. Step 5.1, the split in place, is done ([plan](../plan/framework-split/README.md); #59, #60, #62 and PR 1d): `cmake/framework_boundary.cmake` lists the neutral files, and a ctest keeps them free of racing headers. Steps 5.2 and 5.3 have not started.

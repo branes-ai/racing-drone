@@ -18,14 +18,13 @@
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/harness/parallel.hpp>
 #include <branes/racing/sim/batch.hpp>
 #include <branes/racing/sim/score.hpp>
 
 #include "racing_baseline.hpp"
 
 #include <algorithm>
-#include <atomic>
-#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -45,16 +44,6 @@ int fail(const std::string& message) {
     return 1;
 }
 
-template <typename N>
-std::optional<N> number(const std::string& s) {
-    N v{};
-    const auto [end, ec] = std::from_chars(s.data(), s.data() + s.size(), v);
-    if (ec != std::errc{} || end != s.data() + s.size()) {
-        return std::nullopt;
-    }
-    return v;
-}
-
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -71,13 +60,13 @@ int main(int argc, char** argv) {
         return fail("usage: --scenario <yaml> --seeds <n> [--first-seed <s>] [--min-success <f>] [--jobs <j>] "
                     "[--jsonl <out>]");
     }
-    const auto seeds = number<std::uint64_t>(*seeds_arg);
+    const auto seeds = racing::harness::parse_number<std::uint64_t>(*seeds_arg);
     if (!seeds || *seeds == 0 || *seeds > 1'000'000) {
         return fail("--seeds must be an integer in [1, 1000000]");
     }
     double min_success = 1.0;
     if (const auto m = args->value("min-success")) {
-        const auto v = number<double>(*m);
+        const auto v = racing::harness::parse_number<double>(*m);
         if (!v || !(*v >= 0 && *v <= 1)) {
             return fail("--min-success must be a fraction in [0, 1]");
         }
@@ -85,7 +74,7 @@ int main(int argc, char** argv) {
     }
     unsigned jobs = std::max(1u, std::thread::hardware_concurrency());
     if (const auto j = args->value("jobs")) {
-        const auto v = number<unsigned>(*j);
+        const auto v = racing::harness::parse_number<unsigned>(*j);
         if (!v || *v == 0 || *v > 1024) {
             return fail("--jobs must be an integer in [1, 1024]");
         }
@@ -105,7 +94,7 @@ int main(int argc, char** argv) {
     }
     std::uint64_t first = scenario->seed;
     if (const auto f = args->value("first-seed")) {
-        const auto v = number<std::uint64_t>(*f);
+        const auto v = racing::harness::parse_number<std::uint64_t>(*f);
         if (!v) {
             return fail("--first-seed must be a non-negative integer");
         }
@@ -124,19 +113,10 @@ int main(int argc, char** argv) {
     }
 
     std::vector<racing::sim::Run> runs(static_cast<std::size_t>(*seeds));
-    std::atomic<std::uint64_t> next{0};
-    const auto worker = [&] {
-        for (std::uint64_t i = next++; i < *seeds; i = next++) {
-            runs[i] = racing::sim::run_one<racing::baseline::Composition<double>>(
-                *baseline, *vehicle, course->map, *scenario, control_hz, first + i);
-        }
-    };
-    {
-        std::vector<std::jthread> pool;
-        for (unsigned k = 0; k < std::min<std::uint64_t>(jobs, *seeds); ++k) {
-            pool.emplace_back(worker);
-        }
-    }
+    racing::harness::for_each_index(*seeds, jobs, [&](std::uint64_t i) {
+        runs[i] = racing::sim::run_one<racing::baseline::Composition<double>>(
+            *baseline, *vehicle, course->map, *scenario, control_hz, first + i);
+    });
 
     std::ofstream jsonl;
     if (const auto path = args->value("jsonl")) {
