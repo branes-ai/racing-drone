@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.4](https://github.com/branes-ai/racing-drone/compare/v0.8.3...v0.8.4) (2026-10-28)
+
+
+### Code Refactoring
+
+* **apps:** move the harness programs' neutral logic into the framework ([#64](https://github.com/branes-ai/racing-drone/issues/64)) ([9b9a525](https://github.com/branes-ai/racing-drone/commit/9b9a525ef91796cd99de83f74828a05371b5a57e))
+* **sim:** split the simulator, batch runner, sweep types and generator in place ([#62](https://github.com/branes-ai/racing-drone/issues/62)) ([09721c8](https://github.com/branes-ai/racing-drone/commit/09721c8af454b7de295d2a95df3679bf70f08081))
+
 ## [0.8.3](https://github.com/branes-ai/racing-drone/compare/v0.8.2...v0.8.3) (2026-10-28)
 
 
