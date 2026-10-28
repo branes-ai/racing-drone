@@ -53,7 +53,8 @@ int main(int argc, char** argv) {
     if (!baseline) {
         return fail(baseline.error());
     }
-    const double control_hz = racing::config::numeric_parameter(*baseline, "control_rate_hz").value_or(100.0);
+    const double control_hz =
+        racing::config::numeric_parameter(*baseline, "control_rate_hz").value_or(racing::config::kDefaultControlRateHz);
 
     auto scenario = racing::config::load_scenario(*scenario_path);
     if (!scenario) {
