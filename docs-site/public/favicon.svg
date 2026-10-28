@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Racing Drone">
+  <rect width="320" height="320" rx="64" fill="#0f1a1f"/>
+  <rect x="70" y="70" width="180" height="180" rx="18" fill="none" stroke="#21c7b0" stroke-width="28"/>
+  <circle cx="160" cy="160" r="26" fill="#9af0e2"/>
+</svg>
