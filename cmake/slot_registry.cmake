@@ -1,26 +1,21 @@
-# cmake/slot_registry.cmake — the slot implementations a baseline can name.
+# cmake/slot_registry.cmake — racing's slots, and the implementations a racing baseline can name.
 #
-# A baseline's `composition:` block maps each slot to an implementation name.
-# racing_register_impl() records, for that name, the slot it fills, the header
-# that declares it, and its C++ class template (templated on the scalar type).
-# Platform components (cortex, reflex, synapse) register here as they land.
+# Racing-only (docs/assessments/framework-boundary.md); the registry mechanism
+# is mission-neutral (cmake/composition.cmake). A baseline's `composition:`
+# block maps each slot to an implementation name. racing_register_impl()
+# records, for that name, the slot it fills, the header that declares it, and
+# its C++ class template (templated on the scalar type). Platform components
+# (cortex, reflex, synapse) register here as they land.
 include_guard(GLOBAL)
+include(${CMAKE_CURRENT_LIST_DIR}/composition.cmake)
 
 # The seven slots (docs/adr/0001-baseline-composition-framework.md), in the
 # order the generated Stack<> takes them.
 set(RACING_SLOTS estimator gate_detector planner controller safety_filter daa_tracker fc_bridge)
+composition_define_slots(racing ${RACING_SLOTS})
 
 function(racing_register_impl impl)
-    cmake_parse_arguments(RI "" "SLOT;HEADER;TYPE" "" ${ARGN})
-    if(NOT RI_SLOT OR NOT RI_HEADER OR NOT RI_TYPE)
-        message(FATAL_ERROR "racing_register_impl(${impl}): SLOT, HEADER and TYPE are required")
-    endif()
-    if(NOT RI_SLOT IN_LIST RACING_SLOTS)
-        message(FATAL_ERROR "racing_register_impl(${impl}): unknown slot '${RI_SLOT}'")
-    endif()
-    set_property(GLOBAL PROPERTY RACING_IMPL_${impl}_SLOT   ${RI_SLOT})
-    set_property(GLOBAL PROPERTY RACING_IMPL_${impl}_HEADER ${RI_HEADER})
-    set_property(GLOBAL PROPERTY RACING_IMPL_${impl}_TYPE   ${RI_TYPE})
+    composition_register_impl(racing ${impl} ${ARGN})
 endfunction()
 
 # Null implementations: stateless stubs for the `null` baseline (Phase 0).
