@@ -1,6 +1,10 @@
 #pragma once
 /// @file stack.hpp
-/// @brief Stack<T, ...>: one baseline's slot composition, driven event by event.
+/// @brief Stack<T, ...>: one racing baseline's slot composition, driven event by event.
+///
+/// Racing-only (docs/assessments/framework-boundary.md): it wires racing's
+/// seven slots. What a harness needs from any stack (RunnableStack) and what a
+/// tick produces (TickOutput) are mission-neutral, in tick.hpp.
 ///
 /// The harnesses (SITL, replay, flight) feed the stack the same three events —
 /// an IMU sample, a camera frame, a control tick — so a log of the events
@@ -27,7 +31,9 @@
 /// Intruder detections have no producing slot yet; on_frame() hands the DAA
 /// tracker an empty set until the DroneNet detector lands (Phase 6).
 
+#include <branes/racing/compose/tick.hpp>
 #include <branes/racing/msg/course.hpp>
+#include <branes/racing/msg/intruders.hpp>
 #include <branes/racing/msg/truth.hpp>
 #include <branes/racing/result.hpp>
 #include <branes/racing/slots/context.hpp>
@@ -39,16 +45,6 @@
 #include <utility>
 
 namespace branes::racing {
-
-/// What one control tick produces.
-template <typename T>
-struct TickOutput {
-    StateEstimate<T> state;
-    Reference<T> reference;  ///< the planner's output, the controller's input
-    ThrustRates<T> command;
-
-    friend constexpr bool operator==(const TickOutput&, const TickOutput&) = default;
-};
 
 template <typename T, class Est, class Det, class Plan, class Ctl, class Safe, class Daa, class Fc>
     requires Estimator<Est, T> && GateDetector<Det, T> && Planner<Plan, T> && Controller<Ctl, T> &&

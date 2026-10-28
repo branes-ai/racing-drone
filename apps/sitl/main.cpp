@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
         return fail(writer.error().path + ": " + writer.error().message);
     }
 
-    racing::harness::Runner runner(stack);
+    racing::harness::Runner runner(stack, racing::log::kRacingChannels);
     std::uint64_t ticks = 0;
     while (auto ev = sim->next()) {
         writer->write(ev->channel, ev->t, ev->payload);

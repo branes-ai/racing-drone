@@ -143,7 +143,7 @@ TEST_CASE("Runner rejects a tick earlier than the previous one", "[stack]") {
     const auto course = config::load_course(src / "courses/a2rl-2025.yaml");
     REQUIRE(course);
     NullStack<double> stack(course->map);
-    harness::Runner runner(stack);
+    harness::Runner runner(stack, log::kRacingChannels);
     REQUIRE(runner.feed(log::LogRecord{log::Channel::tick, Timestamp{100}, {}}));
     REQUIRE(runner.feed(log::LogRecord{log::Channel::tick, Timestamp{100}, {}}));  // equal is fine
     const auto back = runner.feed(log::LogRecord{log::Channel::tick, Timestamp{50}, {}});
@@ -155,7 +155,7 @@ TEST_CASE("Runner: each tick yields state, reference, and command, in that order
     const auto course = config::load_course(src / "courses/a2rl-2025.yaml");
     REQUIRE(course);
     NullStack<double> stack(course->map);
-    harness::Runner runner(stack);
+    harness::Runner runner(stack, log::kRacingChannels);
     const Timestamp t{4'000'000};
     const auto out = runner.feed(log::LogRecord{log::Channel::tick, t, {}});
     REQUIRE(out);

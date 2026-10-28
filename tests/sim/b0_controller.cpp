@@ -5,6 +5,7 @@
 // (docs/plan/time-base/), and a dt its TimeBase rejects is held and counted.
 
 #include <branes/racing/glue/cascaded_pid.hpp>
+#include <branes/racing/slots/context.hpp>
 #include <branes/racing/slots/slots.hpp>
 
 #include "sim_fixtures.hpp"
@@ -22,7 +23,7 @@ using Catch::Matchers::WithinAbs;
 using Catch::Matchers::WithinRel;
 
 static_assert(Controller<CascadedPid<double>, double>);
-static_assert(ContextBuilt<CascadedPid<double>>);
+static_assert(ContextBuilt<CascadedPid<double>, SlotContext>);
 
 namespace {
 

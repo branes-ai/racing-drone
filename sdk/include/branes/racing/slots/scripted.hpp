@@ -11,7 +11,9 @@
 ///   [0.5, 1) s   9.4 N, yaw rate 0.3 rad/s   (coast up while yawing)
 ///   ≥ 1 s        9.0 N, zero rates           (settle down)
 
-#include <branes/racing/slots/slots.hpp>
+#include <branes/racing/slots/neutral.hpp>
+
+#include <cstdint>
 
 namespace branes::racing {
 

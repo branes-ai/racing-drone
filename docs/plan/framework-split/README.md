@@ -1,6 +1,6 @@
 # Plan: split the framework's mixed files in place (ADR 0008, step 1)
 
-Issue: #58. Status: in progress. PR 1a done; 1b and 1c to come.
+Issue: #58. Status: in progress. PRs 1a (#59) and 1b done; 1c to come.
 
 ## Goal
 
@@ -105,4 +105,36 @@ Each PR updates the manifest and the tests that move with its files.
 **Departures:**
 - **A seam the audit missed.** `LogHeader`'s `course_hash` and `course_yaml` were racing names in a neutral type. They are now `world_hash` and `world_yaml`. The on-disk fields and their order are unchanged, and `log_dump` still writes `course_hash:` and `course.yaml`.
 - **The YAML helpers.** The audit didn't list them separately. They are neutral, but private to the loaders. In step 2, a racing course loader outside anatomy will need them, so anatomy will have to export them or racing will keep a copy. That choice belongs to step 2.
+
+### PR 1b
+
+**What changed:**
+- **Slots:** `slots.hpp` keeps racing's three task-facing concepts (`Estimator`, `GateDetector`, `Planner`). The four neutral ones move to `slots/neutral.hpp`, and their nulls to `slots/neutral_nulls.hpp`. `scripted.hpp` now includes only the neutral concepts.
+- **Slot context:**
+  - `slots/slot_context.hpp` (neutral) defines:
+    - `BasicSlotContext<World>` (vehicle, baseline, `world`);
+    - the concept `MissionWorld`: a world carries the vehicle's start pose;
+    - `ContextBuilt<S, Ctx>`, `make_slot`, `TruthConsumer` and `parameter_in`.
+  - Racing's `SlotContext` (`slots/context.hpp`) is `BasicSlotContext<CourseMap<double>>`. Its `course` member is now `world`.
+- **Ground truth:** `GroundTruthCore` (neutral, with the model and invariants) is the estimate. Racing's `GroundTruthEstimator` derives from it and adds only the gate-observation frame input.
+- **PID glue:** `CascadedPid::from_context` is a template over any `MissionWorld`, and reads only the vehicle, the baseline and the start pose.
+- **Composition:** `compose/tick.hpp` (neutral) holds `TickOutput` and the concept `RunnableStack`, which states what a harness needs from any stack. `Stack` and `make_stack` stay racing.
+- **Harness:**
+  - `harness.hpp` splits into neutral `args.hpp`, `files.hpp` (the baseline check, over the mission's slot list), `runner.hpp` and `synthetic.hpp`, plus racing's `harness.hpp` (its `check_baseline` overload and `make_stack`).
+  - `Runner` is generic over `RunnableStack` and takes the mission's pass-through channels: its new invariant I2 says they hold no framework channel.
+- **Boundary:** the manifest lists 40 neutral files, 11 of them new: the 10 neutral headers above and the PID glue. It also lists the new test `tests/sim/neutral_mission.cpp`. That test includes only neutral headers, and drives a made-up non-racing mission:
+  - its world is a goal and a start pose, with no course;
+  - its stack is built from neutral slots;
+  - its own channel passes through the `Runner`, and racing's channel 5 is rejected;
+  - `CascadedPid` builds from its slot context.
+
+**Acceptance:**
+1. **Tests:** 210 of 210 pass on `gcc-debug` and on `clang-debug` (208 before, plus the 2 neutral-mission tests).
+2. **Byte-identity:** all 39 output files are identical to main's before the split (`tools/compare_outputs.sh`, `gcc-release`).
+3. **Boundary:** `boundary.neutral_includes` passes over 40 files, and `boundary.detects_violation` passes.
+4. **Interface:** no command line, YAML key, channel id or log field changed. clang-format 18 finds nothing in the 24 changed C++ files.
+
+**Departures:**
+- **Pass-through list, not a decoding hook.** The plan said mission channels would be decoded "through a mission hook". Racing's only mission channel is recorded but never consumed, so the `Runner` takes a list of pass-through channels instead. A mission channel the stack does consume (for example scout-drone's depth images) will need a decoding hook. Following ADR 0008, that is added when scout-drone needs it (step 3), not speculatively.
+- **`MissionWorld`.** The plan didn't name this concept. It came from the audit's finding that `CascadedPid` reads the start pose from the course: making the start pose part of every world keeps the PID glue neutral without a separate context field.
 
