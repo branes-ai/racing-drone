@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/branes-ai/racing-drone/compare/v0.6.0...v0.6.1) (2026-10-28)
+
+
+### Documentation
+
+* **plan:** mark the precision-sweep plan implemented ([#38](https://github.com/branes-ai/racing-drone/issues/38)) ([786aedc](https://github.com/branes-ai/racing-drone/commit/786aedc00baf7404f5d3d547a76211e3a5d2f795))
+
 ## [0.6.0](https://github.com/branes-ai/racing-drone/compare/v0.5.2...v0.6.0) (2026-10-27)
 
 
