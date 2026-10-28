@@ -32,11 +32,12 @@ The context for why this repo uses drone racing to push autonomy forward: what t
 
 ## Result
 
-- The document follows the six sections above, with 52 numbered sources; every number cited in the text is in the list, and every source is cited.
+- The document follows the six sections above, with 51 numbered sources; every number cited in the text is in the list, and every source is cited.
 - No fact in it contradicts `state-of-the-art.md` or `mission-requirements.md`, so neither needed a correction. The survey now links to it for background. (The requirements' 76 × 18 × 5.4 m is MonoRace's track volume; the hall is 100 × 30 m. Both are right.)
 
 ## Departures
 
 - **Facts left out rather than marked.** The research turned up claims that could not be confirmed from a primary or official source: the IROS 2018 runner-up, IROS 2019's rules and the winner's approach, the NeurIPS 2019 Game of Drones winners, the two other human pilots MonoRace beat in 2025, and Swift's exact race times. The document leaves them out, except where it says so (the IROS 2019 approach).
 - **Conflicting sources are shown, not resolved.** AlphaPilot's times differ between MAVLab, UZH, Lockheed Martin and the press. The A2RL 2026 "benchmark lap time" of 12.032 s is slower than the laps one team reports for itself. Both values are given, each with its source.
+- **Some facts rest on secondary sources**, which the evidence rule does not allow on its own. The date of A2RL's first car race comes from Wikipedia. Team FlyBy's lap times come from the team's own pages. One of AlphaPilot's conflicting times comes from HeroX, the challenge's host platform. Each is attributed in the text, and none is the only source for a result the document relies on. The press-only claim that AlphaPilot's human-beating bonus went unwon was replaced with Lockheed Martin's own account of that race.
 - **The A2RL drone rulebook is still not public.** The rules come from organizer press material and team reports, as the document says, and the open action in the requirements stays open.
