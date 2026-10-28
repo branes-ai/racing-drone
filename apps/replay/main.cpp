@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
         return fail(writer.error().path + ": " + writer.error().message);
     }
 
-    racing::harness::Runner runner(stack);
+    racing::harness::Runner runner(stack, racing::log::kRacingChannels);
     std::vector<racing::log::LogRecord> recorded;
     std::vector<racing::log::LogRecord> produced;
 
