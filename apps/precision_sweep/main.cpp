@@ -30,6 +30,7 @@
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/harness/parallel.hpp>
 #include <branes/racing/sim/batch.hpp>
 #include <branes/racing/sim/gate_resolution.hpp>
 #include <branes/racing/sim/score.hpp>
@@ -38,7 +39,6 @@
 #include "racing_baseline.hpp"
 
 #include <algorithm>
-#include <atomic>
 #include <charconv>
 #include <chrono>
 #include <cmath>
@@ -62,16 +62,6 @@ namespace {
 int fail(const std::string& message) {
     std::fprintf(stderr, "precision_sweep_%s: %s\n", std::string(racing::baseline::name).c_str(), message.c_str());
     return 1;
-}
-
-template <typename N>
-std::optional<N> number(const std::string& s) {
-    N v{};
-    const auto [end, ec] = std::from_chars(s.data(), s.data() + s.size(), v);
-    if (ec != std::errc{} || end != s.data() + s.size()) {
-        return std::nullopt;
-    }
-    return v;
 }
 
 /// A JSON number in shortest round-trip form; null if not finite.
@@ -273,18 +263,9 @@ TypeResult sweep_type(const racing::sim::SweepType<T>& type,
         return out;
     }
     out.runs.resize(static_cast<std::size_t>(seeds));
-    std::atomic<std::uint64_t> next{0};
-    const auto worker = [&] {
-        for (std::uint64_t i = next++; i < seeds; i = next++) {
-            out.runs[i] = racing::sim::run_one<StackT>(baseline, vehicle, map, scenario, control_hz, first + i);
-        }
-    };
-    {
-        std::vector<std::jthread> pool;
-        for (unsigned k = 0; k < std::min<std::uint64_t>(jobs, seeds); ++k) {
-            pool.emplace_back(worker);
-        }
-    }
+    racing::harness::for_each_index(seeds, jobs, [&](std::uint64_t i) {
+        out.runs[i] = racing::sim::run_one<StackT>(baseline, vehicle, map, scenario, control_hz, first + i);
+    });
     out.wall_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     return out;
 }
@@ -307,13 +288,13 @@ int main(int argc, char** argv) {
         return fail("usage: --scenario <yaml> --seeds <n> --out-dir <dir> [--first-seed <s>] [--jobs <j>] "
                     "[--min-success <f>] [--commit <text>] [--timing]");
     }
-    const auto seeds = number<std::uint64_t>(*seeds_arg);
+    const auto seeds = racing::harness::parse_number<std::uint64_t>(*seeds_arg);
     if (!seeds || *seeds == 0 || *seeds > 1'000'000) {
         return fail("--seeds must be an integer in [1, 1000000]");
     }
     unsigned jobs = std::max(1u, std::thread::hardware_concurrency());
     if (const auto j = args->value("jobs")) {
-        const auto v = number<unsigned>(*j);
+        const auto v = racing::harness::parse_number<unsigned>(*j);
         if (!v || *v == 0 || *v > 1024) {
             return fail("--jobs must be an integer in [1, 1024]");
         }
@@ -321,7 +302,7 @@ int main(int argc, char** argv) {
     }
     double min_success = 0.99;
     if (const auto m = args->value("min-success")) {
-        const auto v = number<double>(*m);
+        const auto v = racing::harness::parse_number<double>(*m);
         if (!v || !(*v >= 0 && *v <= 1)) {
             return fail("--min-success must be a fraction in [0, 1]");
         }
@@ -342,7 +323,7 @@ int main(int argc, char** argv) {
     }
     std::uint64_t first = scenario->seed;
     if (const auto f = args->value("first-seed")) {
-        const auto v = number<std::uint64_t>(*f);
+        const auto v = racing::harness::parse_number<std::uint64_t>(*f);
         if (!v) {
             return fail("--first-seed must be a non-negative integer");
         }

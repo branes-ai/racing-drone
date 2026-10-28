@@ -1,6 +1,6 @@
 # Plan: split the framework's mixed files in place (ADR 0008, step 1)
 
-Issue: #58. Status: in progress. PRs 1a (#59), 1b (#60) and 1c done; 1d (the harness programs) to come.
+Issue: #58. Status: implemented. PRs 1a (#59), 1b (#60), 1c (#62) and 1d.
 
 ## Goal
 
@@ -138,7 +138,7 @@ Each PR updates the manifest and the tests that move with its files.
 - **Pass-through list, not a decoding hook.** The plan said mission channels would be decoded "through a mission hook". Racing's only mission channel is recorded but never consumed, so the `Runner` takes a list of pass-through channels instead. A mission channel the stack does consume (for example scout-drone's depth images) will need a decoding hook. Following ADR 0008, that is added when scout-drone needs it (step 3), not speculatively.
 - **`MissionWorld`.** The plan didn't name this concept. It came from the audit's finding that `CascadedPid` reads the start pose from the course: making the start pose part of every world keeps the PID glue neutral without a separate context field.
 
-### PR 1c
+### PR 1c (#62)
 
 PR 1c of the plan is split in two. **1c** covers the simulator, the batch runner, the sweep types and the baseline generator. **1d** covers the harness programs (`apps/`), so each PR stays reviewable.
 
@@ -173,4 +173,41 @@ PR 1c of the plan is split in two. **1c** covers the simulator, the batch runner
 - **1c split in two.** The harness programs are their own PR, 1d.
 - **The camera model moved.** The audit counted it as part of the racing gate projector, but it is neutral camera geometry that any mission's oracle needs.
 - **Order of checks in `Simulator::create`.** Racing's scenario-parameter check now runs before `BasicSimulator`'s rate and duration checks. A scenario with several faults may therefore report a different first error. Valid scenarios are unaffected.
+
+### PR 1d
+
+**What changed:** the harness programs keep their racing parts, and their mission-neutral logic moves into neutral library functions:
+- **`sim/sitl_loop.hpp`:** `run_sitl()`, the SITL closed loop that writes the log (log every event, feed it, log every output, send each command back). `apps/sitl` calls it.
+- **`harness/replay.hpp`:**
+  - `replay_log()`: replay a log's inputs through the stack into a new log, keeping the outputs for verification.
+  - `verify_outputs()`: compare them record for record.
+  - `apps/replay` closes the new log between the two calls, as before, so errors come out in the same order.
+- **`harness/parallel.hpp`:** `for_each_index()`, the batch runners' thread pool, used by `sitl_batch` and `precision_sweep`.
+- **`harness/args.hpp`:** gains `parse_number<N>()`, which both batch runners had duplicated.
+- **`harness/flight.hpp`:** `ticks_fit()` (the int64 bound on tick times) and `run_ticks()`, used by `apps/flight_stack`.
+- **`log/dump.hpp`:**
+  - the CSV formats of the framework's channels, and their formatting helpers;
+  - `ChannelFormat`: a mission channel's file, header row and row function;
+  - `dump_records()`: the dump loop;
+  - `write_text()`.
+
+  `apps/log_dump` keeps racing's `oracle_gates` format and the header files it names after the course (`course.yaml`, `course_hash:`).
+
+`sitl_batch`'s summary (laps, gate errors, speeds, failures) and `precision_sweep` stay racing: they are about racing's score.
+
+The manifest lists 56 files, adding the 5 new neutral headers above and the new test `tests/sdk/neutral_harness.cpp` (neutral headers only). That test covers verification messages, the tick bound, the pool, number parsing, and a dump with another mission's channel.
+
+**Acceptance:**
+1. **Tests:** 217 of 217 pass on `gcc-debug` and on `clang-debug` (212 before, plus 5 new).
+2. **Byte-identity:** all 39 output files are identical to main's before the split. These are every output of `sitl`, `replay --verify`, `score_log`, `log_dump`, `sitl_batch` and `precision_sweep`. `flight_stack`, which the script doesn't run, gives the same output and exit code as before for `null` and `b0-gt-pid` at 10 cycles, 0 cycles, and a cycle count that would overflow.
+3. **Boundary:** `boundary.neutral_includes` passes over 56 files, and `boundary.detects_violation` passes.
+4. **Interface:** no command line, YAML key, channel id or log field changed. clang-format 18 finds nothing in the 13 changed C++ files.
+
+## Step 1 result
+
+Every file of the framework is now mission-neutral or racing-only. `cmake/framework_boundary.cmake` lists the 56 neutral files, and the ctest `boundary.neutral_includes` keeps them free of racing headers.
+
+Across PRs 1a–1d, every harness output stayed byte-identical to main's before the split, and the tests grew from 201 to 217.
+
+Step 2 of ADR 0008 is next: move the listed files to `anatomy` (namespace `branes::anatomy`), and have racing-drone consume them, with `tools/compare_outputs.sh` checking byte-identity again.
 

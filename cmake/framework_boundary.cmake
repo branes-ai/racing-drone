@@ -28,6 +28,7 @@ set(RACING_NEUTRAL_FILES
     sdk/include/branes/racing/msg/time.hpp
     sdk/include/branes/racing/msg/truth.hpp
     # The log
+    sdk/include/branes/racing/log/dump.hpp
     sdk/include/branes/racing/log/log.hpp
     sdk/src/log/log.cpp
     # Configs: vehicle, scenario, baseline
@@ -49,6 +50,9 @@ set(RACING_NEUTRAL_FILES
     sdk/include/branes/racing/compose/tick.hpp
     sdk/include/branes/racing/harness/args.hpp
     sdk/include/branes/racing/harness/files.hpp
+    sdk/include/branes/racing/harness/flight.hpp
+    sdk/include/branes/racing/harness/parallel.hpp
+    sdk/include/branes/racing/harness/replay.hpp
     sdk/include/branes/racing/harness/runner.hpp
     sdk/include/branes/racing/harness/synthetic.hpp
     # Simulator: the closed loop, its models, and the batch statistics
@@ -57,6 +61,7 @@ set(RACING_NEUTRAL_FILES
     sim/include/branes/racing/sim/closed_loop.hpp
     sim/include/branes/racing/sim/fc.hpp
     sim/include/branes/racing/sim/imu.hpp
+    sim/include/branes/racing/sim/sitl_loop.hpp
     sim/include/branes/racing/sim/sweep_types.hpp
     sim/include/branes/racing/sim/vehicle.hpp
     # Reflex glue
@@ -68,5 +73,6 @@ set(RACING_NEUTRAL_FILES
     cmake/deps.cmake
     cmake/warnings.cmake
     # Tests of the neutral pieces, driven by a mission that is not racing
+    tests/sdk/neutral_harness.cpp
     tests/sim/neutral_mission.cpp
 )

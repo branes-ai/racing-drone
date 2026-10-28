@@ -3,6 +3,8 @@
 **Date:** 2026-10-28
 **Purpose:** The audit behind [ADR 0008](../adr/0008-anatomy-mission-framework.md). For every header, source and build file of the composition framework, it records whether it is mission-neutral, racing-only, or mixed, and what a mixed file needs before its neutral part can move to `anatomy`.
 
+**The split is done** ([plan](../plan/framework-split/README.md)). The list of neutral files is now `cmake/framework_boundary.cmake`, which a ctest validates: each listed file exists and includes no racing-only header. (Adding a newly neutral file to the list is still a manual step.) This audit is the record of the starting point.
+
 The audit was made at commit 54ce20d by reading each file's includes and the racing types it uses. The racing types are `Gate`, `CourseMap`, `GateObservation(s)`, the oracle gate projector, the scorer, and the `gate_detector` slot.
 
 ## Summary
