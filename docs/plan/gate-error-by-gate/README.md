@@ -9,7 +9,7 @@
 | Item | What | State |
 |---|---|---|
 | [racing-drone#35](https://github.com/branes-ai/racing-drone/issues/35) | This plan | Open |
-| PR (this document lands with it) | The per-gate statistics, the regenerated sweep, and H4's verdict | Open |
+| [racing-drone#43](https://github.com/branes-ai/racing-drone/pull/43) | The per-gate statistics, the regenerated sweep, and H4's verdict; this document lands with it | Open |
 | [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40) | The controller's dt defect #35 found, fixed first | Closed |
 
 ## Problem
