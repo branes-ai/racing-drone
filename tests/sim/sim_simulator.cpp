@@ -7,6 +7,7 @@
 //    and settles the body rates, and the command timeout cuts the rotors;
 //  - every fault type and the randomization act as specified.
 
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/sim/simulator.hpp>
 
 #include "sim_fixtures.hpp"
@@ -73,7 +74,7 @@ TEST_CASE("simulator: events come out in time order, in the documented order at 
     const std::map<log::Channel, int> rank = {{log::Channel::sim_config, 0},
                                               {log::Channel::imu, 1},
                                               {log::Channel::camera, 2},
-                                              {log::Channel::oracle_gates, 3},
+                                              {log::oracle_gates, 3},
                                               {log::Channel::truth, 4},
                                               {log::Channel::tick, 5}};
     REQUIRE(events.front().channel == log::Channel::sim_config);
@@ -91,7 +92,7 @@ TEST_CASE("simulator: events come out in time order, in the documented order at 
     CHECK(count[log::Channel::truth] == 300);  // 1 kHz for 0.3 s
     CHECK(count[log::Channel::tick] == 30);    // 100 Hz
     CHECK(count[log::Channel::camera] == 28);  // 90 Hz (11 111 111 ns): k = 0 … 27, the last at 299.99997 ms
-    CHECK(count[log::Channel::oracle_gates] == count[log::Channel::camera]);
+    CHECK(count[log::oracle_gates] == count[log::Channel::camera]);
     CHECK(count[log::Channel::imu] == 299);  // 1 kHz, the last one still in flight (1 ms latency)
 }
 

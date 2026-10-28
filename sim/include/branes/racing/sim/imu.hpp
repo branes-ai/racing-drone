@@ -31,7 +31,7 @@
 ///   I3: every delivered axis has |value| ≤ range, and its saturation bit is
 ///       set iff the unclipped value was beyond the range     — (per sample)
 
-#include <branes/racing/config/config.hpp>
+#include <branes/racing/config/vehicle.hpp>
 #include <branes/racing/msg/sensors.hpp>
 #include <branes/racing/util/splitmix64.hpp>
 

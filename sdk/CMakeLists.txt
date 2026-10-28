@@ -7,7 +7,10 @@
 # except the load-time configs and the log, which are double.
 
 add_library(branes_racing STATIC
-    src/config/config.cpp
+    src/config/baseline.cpp
+    src/config/course.cpp
+    src/config/scenario.cpp
+    src/config/vehicle.cpp
     src/log/log.cpp
     src/util/sha256.cpp
 )

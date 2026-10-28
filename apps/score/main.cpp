@@ -11,6 +11,7 @@
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 #include <branes/racing/msg/codec.hpp>
 #include <branes/racing/sim/score.hpp>
@@ -53,11 +54,11 @@ int main(int argc, char** argv) {
         }
         speed_limit = v;
     }
-    auto reader = racing::log::LogReader::open(*in_path);
+    auto reader = racing::log::LogReader::open(*in_path, racing::log::kRacingChannels);
     if (!reader) {
         return fail(reader.error().path + ": " + reader.error().message);
     }
-    auto course = racing::config::parse_course(reader->header().course_yaml, "course (from " + *in_path + ")");
+    auto course = racing::config::parse_course(reader->header().world_yaml, "course (from " + *in_path + ")");
     if (!course) {
         return fail(course.error().to_string());
     }

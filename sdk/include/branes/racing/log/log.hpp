@@ -11,8 +11,9 @@
 ///   records      repeated until end of file:
 ///                  channel u16, payload_size u32, t i64 [ns], payload
 ///
-/// The header embeds the course and vehicle files, so a log replays on its own
-/// (docs/adr/0001-baseline-composition-framework.md, harness inputs).
+/// The header embeds the world (for racing, the course) and vehicle files, so a
+/// log replays on its own (docs/adr/0001-baseline-composition-framework.md,
+/// harness inputs).
 /// Phase 0 writes synchronously, off the hot path; the per-channel ring
 /// buffers and recorder thread of ADR 0006 replace the write path in Phase 1+.
 
@@ -34,16 +35,20 @@ namespace branes::racing::log {
 inline constexpr std::uint32_t kLogVersion = 2;  ///< 2: the reference channel
 
 /// Record channels. Inputs (< 16) are what the harness feeds the stack;
-/// outputs (≥ 16) are what the stack produced. Sim channels (4–6) are inputs
-/// the SITL harness records for scoring and for SITL-only slots; the stack
-/// does not consume them yet, and replay copies them through.
+/// outputs (≥ 16) are what the stack produced. Sim channels are inputs the
+/// SITL harness records for scoring and for SITL-only slots; the stack does not
+/// consume them yet, and replay copies them through.
+///
+/// The enumerators are the framework's channels, the same for every mission.
+/// A mission adds its own channels at ids no enumerator uses (racing: 5,
+/// oracle_gates; branes/racing/log/channels.hpp), and names them to the
+/// LogReader. The ids never change meaning, so existing logs read unchanged.
 enum class Channel : std::uint16_t {
     imu = 1,
     camera = 2,
     tick = 3,
-    truth = 4,         ///< TruthState (SITL)
-    oracle_gates = 5,  ///< GateObservations projected from the truth (SITL)
-    sim_config = 6,    ///< the run's drawn randomization, as YAML text (SITL)
+    truth = 4,       ///< TruthState (SITL)
+    sim_config = 6,  ///< the run's drawn randomization, as YAML text (SITL)
     state = 16,
     command = 17,
     reference = 18,  ///< the planner's Reference, the controller's input
@@ -53,24 +58,33 @@ enum class Channel : std::uint16_t {
     return static_cast<std::uint16_t>(c) >= 16;
 }
 
-[[nodiscard]] constexpr bool is_sim(Channel c) noexcept {
-    const auto v = static_cast<std::uint16_t>(c);
-    return v >= 4 && v <= 6;
+/// True if `c` is one of the framework's channels (an enumerator of Channel).
+[[nodiscard]] constexpr bool is_framework(std::uint16_t c) noexcept {
+    return (c >= 1 && c <= 4) || c == 6 || (c >= 16 && c <= 18);
 }
 
-[[nodiscard]] constexpr bool is_known(std::uint16_t c) noexcept {
-    return (c >= 1 && c <= 6) || (c >= 16 && c <= 18);
+/// True if `c` is a framework channel or one of `mission`'s.
+[[nodiscard]] constexpr bool is_known(std::uint16_t c, std::span<const Channel> mission) noexcept {
+    if (is_framework(c)) {
+        return true;
+    }
+    for (const Channel m : mission) {
+        if (static_cast<std::uint16_t>(m) == c) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /// Run provenance (ADR 0001): what produced the log, and from which inputs.
 struct LogHeader {
     std::string baseline_name;
     std::string composition_hash;
-    std::string course_hash;
+    std::string world_hash;  ///< of the world file (racing: the course)
     std::string vehicle_hash;
     std::string scenario_hash{"none"};  ///< "none" when no scenario file was used (flight)
     bool reference{true};               ///< false for what-if replays with overridden inputs
-    std::string course_yaml;            ///< the course file, verbatim
+    std::string world_yaml;             ///< the world file (racing: the course), verbatim
     std::string vehicle_yaml;           ///< the vehicle file, verbatim
 
     friend bool operator==(const LogHeader&, const LogHeader&) = default;
@@ -158,28 +172,36 @@ private:
 
 /// Reads a log sequentially.
 ///
-/// Model: in_ [owned] — the file; header_ — the decoded header.
-/// Invariants: I1 between calls, the read position is on a record boundary (or at the end).
+/// Model: in_ [owned] — the file; header_ — the decoded header; mission_ — the
+/// mission's channels.
+/// Invariants:
+///   I1: between calls, the read position is on a record boundary (or at the end)
+///   I2: mission_ holds no framework channel and no id twice
 class LogReader {
 public:
-    /// Open `path` and validate the magic, version, and header.
-    [[nodiscard]] static result<LogReader, LogError> open(const std::filesystem::path& path);
+    /// Open `path` and validate the magic, version, and header. `mission` names
+    /// the mission's channels (racing: log::kRacingChannels); a record on any
+    /// other channel that is not a framework channel is an error.
+    /// Pre-checked (an error, not UB): `mission` satisfies I2.
+    [[nodiscard]] static result<LogReader, LogError> open(const std::filesystem::path& path,
+                                                          std::span<const Channel> mission);
 
     [[nodiscard]] const LogHeader& header() const noexcept {
         return header_;
     }
 
     /// The next record; nullopt at a clean end of file; an error for a truncated
-    /// record or an unknown channel. Preserves I1.
+    /// record or an unknown channel. Preserves I1 and I2.
     [[nodiscard]] result<std::optional<LogRecord>, LogError> next();
 
 private:
-    LogReader(std::ifstream in, std::filesystem::path path, LogHeader header) noexcept
-        : in_(std::move(in)), path_(std::move(path)), header_(std::move(header)) {}
+    LogReader(std::ifstream in, std::filesystem::path path, LogHeader header, std::vector<Channel> mission) noexcept
+        : in_(std::move(in)), path_(std::move(path)), header_(std::move(header)), mission_(std::move(mission)) {}
 
     std::ifstream in_;
     std::filesystem::path path_;
     LogHeader header_;
+    std::vector<Channel> mission_;
 };
 
 }  // namespace branes::racing::log
