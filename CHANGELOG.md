@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/branes-ai/racing-drone/compare/v0.6.2...v0.7.0) (2026-10-28)
+
+
+### Features
+
+* **sim:** gate error by gate in the precision sweep, and h4's distance verdict ([#43](https://github.com/branes-ai/racing-drone/issues/43)) ([b4b5f27](https://github.com/branes-ai/racing-drone/commit/b4b5f27d7f691813ee69584e91e759d7ce300ad4))
+
 ## [0.6.2](https://github.com/branes-ai/racing-drone/compare/v0.6.1...v0.6.2) (2026-10-28)
 
 
