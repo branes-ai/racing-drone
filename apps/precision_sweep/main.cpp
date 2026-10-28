@@ -350,7 +350,7 @@ int main(int argc, char** argv) {
     if (first > UINT64_MAX - (*seeds - 1)) {
         return fail("--first-seed + --seeds overflows the seed range");
     }
-    auto course = racing::config::load_course(scenario->course_path);
+    auto course = racing::config::load_course(scenario->world_path);
     if (!course) {
         return fail(course.error().to_string());
     }

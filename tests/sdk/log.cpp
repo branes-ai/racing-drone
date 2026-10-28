@@ -1,10 +1,12 @@
 // Unit tests for the replay log (log/log.hpp): records round-trip, identical
 // writes give identical files, and damaged files are reported, not misread.
 
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -26,9 +28,9 @@ LogHeader sample_header() {
     LogHeader h;
     h.baseline_name = "null";
     h.composition_hash = "abc";
-    h.course_hash = "c";
+    h.world_hash = "c";
     h.vehicle_hash = "v";
-    h.course_yaml = "name: course\n";
+    h.world_yaml = "name: course\n";
     h.vehicle_yaml = "name: vehicle\n";
     return h;
 }
@@ -66,7 +68,7 @@ TEST_CASE("log: header and records round-trip", "[log]") {
     {
         // Scoped: the reader closes its file before cleanup() (Windows cannot
         // remove an open file).
-        auto r = LogReader::open(p);
+        auto r = LogReader::open(p, kRacingChannels);
         REQUIRE(r);
         REQUIRE(r->header() == sample_header());
         for (;;) {
@@ -110,14 +112,14 @@ TEST_CASE("log: a moved-from writer no longer owns the file", "[log]") {
 }
 
 TEST_CASE("log: bad magic, truncation, and missing files are errors", "[log]") {
-    CHECK_FALSE(LogReader::open(temp_file("does_not_exist")));
+    CHECK_FALSE(LogReader::open(temp_file("does_not_exist"), kRacingChannels));
 
     const auto bad = temp_file("bad_magic");
     {
         std::ofstream out(bad, std::ios::binary);
         out << "NOTALOG.................";
     }
-    const auto r = LogReader::open(bad);
+    const auto r = LogReader::open(bad, kRacingChannels);
     REQUIRE_FALSE(r);
     CHECK(r.error().message == "not a racing log (bad magic)");
     cleanup(bad);
@@ -127,7 +129,7 @@ TEST_CASE("log: bad magic, truncation, and missing files are errors", "[log]") {
     const auto size = std::filesystem::file_size(cut);
     std::filesystem::resize_file(cut, size - 2);  // cut into the last payload
     {
-        auto reader = LogReader::open(cut);  // scoped: closed before cleanup()
+        auto reader = LogReader::open(cut, kRacingChannels);  // scoped: closed before cleanup()
         REQUIRE(reader);
         REQUIRE(*reader->next());  // records 1 and 2 are intact
         REQUIRE(*reader->next());
@@ -148,10 +150,47 @@ TEST_CASE("log: a version-1 log (before the reference channel) is rejected", "[l
         f.write(v1, 4);
     }
     {
-        const auto r = LogReader::open(p);  // scoped: closed before cleanup()
+        const auto r = LogReader::open(p, kRacingChannels);  // scoped: closed before cleanup()
         REQUIRE_FALSE(r);
         CHECK(r.error().message == "unsupported log version 1");
     }
     REQUIRE(kLogVersion == 2u);
+    cleanup(p);
+}
+
+TEST_CASE("log: a mission channel reads only when the mission names it", "[log]") {
+    const auto p = temp_file("mission_channel");
+    {
+        auto w = LogWriter::open(p, sample_header());
+        REQUIRE(w);
+        w->write(oracle_gates, Timestamp{10}, {});
+        REQUIRE(w->close());
+    }
+    {
+        auto r = LogReader::open(p, kRacingChannels);  // scoped: closed before cleanup()
+        REQUIRE(r);
+        const auto rec = r->next();
+        REQUIRE(rec);
+        REQUIRE(rec->has_value());
+        CHECK((*rec)->channel == oracle_gates);
+    }
+    {
+        auto r = LogReader::open(p, {});  // no mission channels: 5 is unknown
+        REQUIRE(r);
+        const auto rec = r->next();
+        REQUIRE_FALSE(rec);
+        CHECK(rec.error().message == "unknown channel 5");
+    }
+    cleanup(p);
+}
+
+TEST_CASE("log: mission channels must not reuse a framework id or repeat (I2)", "[log]") {
+    const auto p = temp_file("mission_i2");
+    write_sample(p);
+    const std::array<Channel, 1> framework = {Channel::imu};
+    const std::array<Channel, 2> twice = {oracle_gates, oracle_gates};
+    CHECK_FALSE(LogReader::open(p, framework));
+    CHECK_FALSE(LogReader::open(p, twice));
+    CHECK(LogReader::open(p, kRacingChannels));
     cleanup(p);
 }

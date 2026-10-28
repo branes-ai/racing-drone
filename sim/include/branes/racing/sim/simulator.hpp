@@ -43,9 +43,11 @@
 
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 #include <branes/racing/msg/codec.hpp>
 #include <branes/racing/msg/course.hpp>
+#include <branes/racing/msg/gate_codec.hpp>
 #include <branes/racing/msg/truth.hpp>
 #include <branes/racing/result.hpp>
 #include <branes/racing/sim/fc.hpp>
@@ -97,6 +99,10 @@ public:
         }
         if (!(scenario.duration_s > 0 && scenario.duration_s <= kMaxDurationS)) {
             return std::string("duration must be in (0, " + std::to_string(kMaxDurationS) + "] s");
+        }
+        if (!config::follows_racing_schema(scenario)) {
+            return std::string(
+                "the scenario has no racing sim parameters (set world_sim, see config::kRacingScenario)");
         }
         for (std::size_t i = 0; i < scenario.faults.size(); ++i) {
             if (!config::fault_event_valid(scenario.faults[i])) {
@@ -164,7 +170,7 @@ public:
                 return SimEvent{log::Channel::camera, Timestamp{t}, codec::encode(frame_at(t))};
             }
             if (oracle_ && oracle_->first.ns == t) {
-                SimEvent e{log::Channel::oracle_gates, Timestamp{t}, codec::encode(oracle_->second)};
+                SimEvent e{log::oracle_gates, Timestamp{t}, codec::encode(oracle_->second)};
                 oracle_.reset();
                 return e;
             }
@@ -261,7 +267,7 @@ private:
               const SimOptions& options)
         : model_(p), fc_(p, scenario.sim), imu_(vehicle.imu, stream_seed(scenario.seed, kImuStream)), map_(course),
           cam_(vehicle.camera), draws_(d), camera_rng_(stream_seed(scenario.seed, kCameraStream)),
-          corner_sigma_(scenario.sim.oracle_corner_sigma_px), test_pattern_(scenario.sim.test_pattern_frames),
+          corner_sigma_(config::oracle_corner_sigma_px(scenario)), test_pattern_(scenario.sim.test_pattern_frames),
           phys_ns_(phys_ns), imu_ns_(imu_ns), frame_ns_(frame_ns), tick_ns_(tick_ns),
           dt_(static_cast<double>(phys_ns) * 1e-9), end_(static_cast<std::int64_t>(scenario.duration_s * 1e9)) {
         for (const config::FaultEvent& f : scenario.faults) {

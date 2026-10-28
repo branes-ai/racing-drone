@@ -6,6 +6,7 @@
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/msg/daa.hpp>
 #include <branes/racing/msg/estimate.hpp>
+#include <branes/racing/msg/intruders.hpp>
 #include <branes/racing/msg/perception.hpp>
 #include <branes/racing/msg/sensors.hpp>
 

@@ -1,11 +1,12 @@
 #pragma once
 /// @file course.hpp
-/// @brief CourseMap and Geofence: the course as the slots see it.
+/// @brief CourseMap: the course as the slots see it.
 ///
 /// Loaded from courses/<name>.yaml by config::load_course (load-time, double)
 /// and converted to the stack's scalar type with cast<T>().
 
 #include <branes/racing/msg/geometry.hpp>
+#include <branes/racing/msg/region.hpp>
 
 #include <array>
 #include <cstdint>
@@ -26,34 +27,6 @@ struct Gate {
     T inner_height{0};  ///< [m]
 
     friend constexpr bool operator==(const Gate&, const Gate&) = default;
-};
-
-/// Axis-aligned flight volume in the course frame.
-template <typename T>
-struct Geofence {
-    Vec3<T> min{};
-    Vec3<T> max{};
-
-    friend constexpr bool operator==(const Geofence&, const Geofence&) = default;
-};
-
-template <typename T>
-[[nodiscard]] constexpr bool contains(const Geofence<T>& f, const Vec3<T>& p) noexcept {
-    for (std::size_t i = 0; i < 3; ++i) {
-        if (!(p[i] >= f.min[i] && p[i] <= f.max[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/// Start pose on the pad.
-template <typename T>
-struct StartPose {
-    Vec3<T> position{};
-    T yaw{0};  ///< [rad]
-
-    friend constexpr bool operator==(const StartPose&, const StartPose&) = default;
 };
 
 /// The course.

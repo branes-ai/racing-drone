@@ -3,6 +3,7 @@
 // are rejected rather than half-decoded.
 
 #include <branes/racing/msg/codec.hpp>
+#include <branes/racing/msg/gate_codec.hpp>
 #include <branes/racing/util/bytes.hpp>
 
 #include <catch2/catch_test_macros.hpp>

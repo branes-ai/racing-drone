@@ -48,6 +48,7 @@ inline racing::config::ScenarioConfig scenario(double duration_s, std::uint64_t 
     s.name = "test";
     s.duration_s = duration_s;
     s.seed = seed;
+    s.world_sim = racing::config::default_world_sim(racing::config::kRacingScenario);
     return s;
 }
 

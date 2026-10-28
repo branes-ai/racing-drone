@@ -18,6 +18,7 @@
 
 #include <branes/racing/compose/stack.hpp>
 #include <branes/racing/config/config.hpp>
+#include <branes/racing/log/channels.hpp>
 #include <branes/racing/log/log.hpp>
 #include <branes/racing/msg/codec.hpp>
 #include <branes/racing/msg/time.hpp>
@@ -178,6 +179,9 @@ public:
     [[nodiscard]] result<std::vector<Output>, std::string> feed(const log::LogRecord& rec) {
         assert(!log::is_output(rec.channel));  // Pre
         std::vector<Output> out;
+        if (rec.channel == log::oracle_gates) {
+            return out;  // a racing sim channel: recorded, not consumed by the stack
+        }
         switch (rec.channel) {
         case log::Channel::imu: {
             const auto s = codec::decode_imu(rec.payload);
@@ -230,7 +234,6 @@ public:
             stack_.on_truth(xt);
             break;
         }
-        case log::Channel::oracle_gates:
         case log::Channel::sim_config:
             break;  // sim channels: recorded, not consumed by the stack
         default:

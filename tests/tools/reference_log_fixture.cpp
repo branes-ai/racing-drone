@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     racing::log::LogHeader header;
     header.baseline_name = "fixture";
     header.composition_hash = "none";
-    header.course_hash = "none";
+    header.world_hash = "none";
     header.vehicle_hash = "none";
     auto writer = racing::log::LogWriter::open(argv[1], header);
     if (!writer) {

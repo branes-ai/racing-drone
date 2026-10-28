@@ -35,7 +35,7 @@
 ///   I2: cmd_, if any, passes valid(ThrustRates)
 ///   I3: every rotor command in out_ is in [0, ω_max]
 
-#include <branes/racing/config/config.hpp>
+#include <branes/racing/config/scenario.hpp>
 #include <branes/racing/msg/control.hpp>
 #include <branes/racing/msg/time.hpp>
 #include <branes/reflex/control/cascade.hpp>
