@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#40
+---
 # A checked time base for the controller's dt
 
-**Status:** Approved 2026-10-27, implemented ([racing-drone#41](https://github.com/branes-ai/racing-drone/pull/41))
+**Approved:** 2026-10-27; implemented in [racing-drone#41](https://github.com/branes-ai/racing-drone/pull/41)
 **Issue:** [racing-drone#40](https://github.com/branes-ai/racing-drone/issues/40), part of the Phase 2 epic [racing-drone#9](https://github.com/branes-ai/racing-drone/issues/9)
 **Related:** [precision sweep plan](../precision-sweep/README.md), [mixed-precision assessment](../../assessments/mixed-precision.md) §9, [B0 plan](../b0/README.md)
 

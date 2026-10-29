@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#25
+---
 # Planner reference in the log
 
-**Status:** Approved 2026-10-26, implemented ([racing-drone#26](https://github.com/branes-ai/racing-drone/pull/26))
+**Approved:** 2026-10-26; implemented in [racing-drone#26](https://github.com/branes-ai/racing-drone/pull/26)
 **Issue:** [racing-drone#25](https://github.com/branes-ai/racing-drone/issues/25), part of the Phase 1 epic [racing-drone#8](https://github.com/branes-ai/racing-drone/issues/8)
 **Related:** [test plan](../test-plan.md) §9, [architecture](../../arch/framework-architecture.md), [B0 plan](../b0/README.md), [ADR 0006](../../adr/0006-hot-path-in-process-zenoh-off-path.md)
 

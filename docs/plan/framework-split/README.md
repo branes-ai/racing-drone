@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#58
+---
 # Plan: split the framework's mixed files in place (ADR 0008, step 1)
 
-Issue: #58. Status: implemented. PRs 1a (#59), 1b (#60), 1c (#62) and 1d.
+Issue: #58. Implemented in PRs 1a (#59), 1b (#60), 1c (#62) and 1d (#64).
 
 ## Goal
 

@@ -12,3 +12,5 @@ These documents are published at <https://branes-ai.github.io/racing-drone/>. Th
 | [guides/](guides/visual-studio.md) | [Working through the stack in Visual Studio](guides/visual-studio.md): one closed loop, its log, many seeds, the precision sweep, and the tests |
 | [adr/](adr/README.md) | Architecture decision records |
 | sessions/ | Dated session records (`YYYY-MM-DD-slug.md`) |
+
+The plans and the decisions are published on the [architecture site](https://branes-ai.github.io/architecture/racing-drone/), alongside every other repo's plans and decisions and their status, rather than here.

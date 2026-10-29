@@ -1,6 +1,8 @@
+---
+status: in-progress
+---
 # Racing drone implementation plan
 
-**Status:** Draft
 **Date:** 2026-10-23
 **Related:** [requirements](../requirements/mission-requirements.md), [architecture](../arch/framework-architecture.md), [test plan](test-plan.md)
 

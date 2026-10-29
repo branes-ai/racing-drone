@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#65
+---
 # Plan: racing-drone consumes anatomy (ADR 0008, step 2)
 
-Issue: #65. Status: implemented in this PR (2c). Anatomy's side: branes-ai/anatomy#1 (2a, the skeleton) and #3 (2b, the move), released as anatomy v0.1.0.
+Issue: #65. Implemented in 2c (#66). Anatomy's side: branes-ai/anatomy#1 (2a, the skeleton) and #3 (2b, the move), released as anatomy v0.1.0.
 
 **Since anatomy v0.3.0** ([anatomy#10](https://github.com/branes-ai/anatomy/issues/10)), the mobility headers are their own library, `branes::anatomy_mobility`, with a fifth bridge, `anatomy_mobility.hpp`. `branes::anatomy_sim` is now `branes::anatomy_mobility_sim`. This plan records the v0.1.0 state.
 
