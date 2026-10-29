@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.7](https://github.com/branes-ai/racing-drone/compare/v0.8.6...v0.8.7) (2026-10-29)
+
+
+### Build System
+
+* **deps:** pin anatomy v0.2.0, and name the stack's profile ([#70](https://github.com/branes-ai/racing-drone/issues/70)) ([b341ed4](https://github.com/branes-ai/racing-drone/commit/b341ed4f26ecacddf2e76aeafc842b3f5bda6454))
+
 ## [0.8.6](https://github.com/branes-ai/racing-drone/compare/v0.8.5...v0.8.6) (2026-10-28)
 
 
