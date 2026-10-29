@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.9](https://github.com/branes-ai/racing-drone/compare/v0.8.8...v0.8.9) (2026-10-29)
+
+
+### Documentation
+
+* publish the plans and adrs on the architecture site ([#74](https://github.com/branes-ai/racing-drone/issues/74)) ([a48eb9a](https://github.com/branes-ai/racing-drone/commit/a48eb9a7c7a92797fc348b6a8483e578af668519))
+
 ## [0.8.8](https://github.com/branes-ai/racing-drone/compare/v0.8.7...v0.8.8) (2026-10-29)
 
 
