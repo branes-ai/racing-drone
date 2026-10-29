@@ -49,6 +49,7 @@ template <typename T, class Est, class Det, class Plan, class Ctl, class Safe, c
 class Stack {
 public:
     using scalar_type = T;
+    using profile = MobilityProfile;  ///< a roaming vehicle's stack (anatomy compose/tick.hpp)
 
     /// Pre: valid(map). Post: I1, I2 (no tick yet).
     explicit Stack(const CourseMap<T>& map,

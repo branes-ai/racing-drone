@@ -11,6 +11,7 @@
 /// using-directive.
 
 #include <branes/anatomy/anatomy.hpp>
+#include <branes/anatomy/compose/profile.hpp>
 #include <branes/anatomy/compose/tick.hpp>
 #include <branes/anatomy/config/baseline.hpp>
 #include <branes/anatomy/config/error.hpp>
@@ -56,6 +57,7 @@ using anatomy::CameraFrameRecord;
 using anatomy::CommandKind;
 using anatomy::Conflict;
 using anatomy::ConflictSet;
+using anatomy::ConsumesTruth;
 using anatomy::ContextBuilt;
 using anatomy::Controller;
 using anatomy::DaaTracker;
@@ -77,6 +79,7 @@ using anatomy::image_bytes;
 using anatomy::imu_saturation_mask;
 using anatomy::IntruderDetection;
 using anatomy::IntruderDetections;
+using anatomy::is_profile_input;
 using anatomy::is_unit;
 using anatomy::kErrorStateDim;
 using anatomy::kLibraryName;
@@ -89,6 +92,8 @@ using anatomy::kMinRateHz;
 using anatomy::make_slot;
 using anatomy::make_time_base;
 using anatomy::MissionWorld;
+using anatomy::MobileStack;
+using anatomy::MobilityProfile;
 using anatomy::norm_squared;
 using anatomy::NullController;
 using anatomy::NullDaaTracker;
@@ -96,6 +101,7 @@ using anatomy::NullFcBridge;
 using anatomy::NullSafetyFilter;
 using anatomy::ok;
 using anatomy::ok_t;
+using anatomy::Output;
 using anatomy::parameter_in;
 using anatomy::period_ns;
 using anatomy::PixelFormat;
@@ -111,6 +117,7 @@ using anatomy::sha256_file_hex;
 using anatomy::sha256_hex;
 using anatomy::Sha256Digest;
 using anatomy::SplitMix64;
+using anatomy::StackProfile;
 using anatomy::StartPose;
 using anatomy::StateEstimate;
 using anatomy::ThrustRates;
@@ -187,6 +194,15 @@ using anatomy::config::VehicleConfig;
 using anatomy::config::WorldSimParam;
 
 }  // namespace branes::racing::config
+
+namespace branes::racing::detail {
+
+using anatomy::detail::distinct;
+using anatomy::detail::is_harness_channel;
+using anatomy::detail::valid_inputs;
+using anatomy::detail::valid_outputs;
+
+}  // namespace branes::racing::detail
 
 namespace branes::racing::harness {
 
