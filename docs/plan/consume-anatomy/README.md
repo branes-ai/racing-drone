@@ -2,6 +2,8 @@
 
 Issue: #65. Status: implemented in this PR (2c). Anatomy's side: branes-ai/anatomy#1 (2a, the skeleton) and #3 (2b, the move), released as anatomy v0.1.0.
 
+**Since anatomy v0.3.0** ([anatomy#10](https://github.com/branes-ai/anatomy/issues/10)), the mobility headers are their own library, `branes::anatomy_mobility`, with a fifth bridge, `anatomy_mobility.hpp`. `branes::anatomy_sim` is now `branes::anatomy_mobility_sim`. This plan records the v0.1.0 state.
+
 ## Goal
 
 Step 2 of [ADR 0008](../../adr/0008-anatomy-mission-framework.md): the framework's neutral half moved to [anatomy](https://github.com/branes-ai/anatomy). racing-drone now fetches it and keeps only its racing part:

@@ -98,7 +98,7 @@ endif()
 FetchContent_Declare(
     anatomy
     GIT_REPOSITORY https://github.com/branes-ai/anatomy.git
-    GIT_TAG        09563abb14e3437f4bd0ba799240f7afc9e7d205  # v0.2.0
+    GIT_TAG        67adfb1dfd715cb7e74981546d76906fe455539d  # v0.3.0
     SYSTEM
 )
 FetchContent_MakeAvailable(anatomy)

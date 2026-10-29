@@ -5,7 +5,7 @@
 /// Racing-only (docs/assessments/framework-boundary.md); the mission-neutral
 /// codecs and their helpers are in codec.hpp.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/msg/perception.hpp>
 
 #include <cmath>

@@ -3,7 +3,7 @@
 // rejects one violation per invariant. The framework's contracts are tested in
 // anatomy.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/msg/perception.hpp>
 

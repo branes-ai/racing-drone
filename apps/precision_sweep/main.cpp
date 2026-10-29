@@ -28,7 +28,7 @@
 // --min-success (default 0.99, gate P1) only marks the table's P1 column.
 // Exits 0 once every type has a result; nonzero on usage or setup errors.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/anatomy_sweep.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>

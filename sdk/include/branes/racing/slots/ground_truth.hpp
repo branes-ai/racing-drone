@@ -7,7 +7,7 @@
 /// estimate itself is GroundTruthCore (ground_truth_core.hpp), and this adds
 /// the gate observations racing's Estimator slot takes, which it ignores.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/msg/perception.hpp>
 #include <branes/racing/slots/slots.hpp>
 

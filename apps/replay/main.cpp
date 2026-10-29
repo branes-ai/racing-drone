@@ -11,7 +11,7 @@
 // also checks that the outputs equal the ones recorded in the input log, record
 // for record; it requires the log to have been recorded by this same baseline.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
 #include <branes/racing/log/channels.hpp>

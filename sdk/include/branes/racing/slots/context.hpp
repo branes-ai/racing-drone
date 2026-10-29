@@ -6,7 +6,7 @@
 /// (BasicSlotContext, make_slot, ContextBuilt, TruthConsumer, parameter_in) is
 /// mission-neutral, in slot_context.hpp; racing's world is the course.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/msg/course.hpp>
 
 namespace branes::racing {

@@ -22,7 +22,7 @@
 /// Not modeled: occlusion by other gates, rolling shutter (the projection is
 /// at the frame's mid-exposure pose), motion blur.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/anatomy_sim.hpp>
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/msg/perception.hpp>

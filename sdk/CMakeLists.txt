@@ -15,6 +15,6 @@ target_include_directories(branes_racing PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_compile_features(branes_racing PUBLIC cxx_std_20)
 # yaml-cpp stays an implementation detail of the loaders.
-target_link_libraries(branes_racing PUBLIC branes::anatomy PRIVATE yaml-cpp::yaml-cpp)
+target_link_libraries(branes_racing PUBLIC branes::anatomy branes::anatomy_mobility PRIVATE yaml-cpp::yaml-cpp)
 racing_set_warnings(branes_racing)
 set_target_properties(branes_racing PROPERTIES FOLDER "SDK")

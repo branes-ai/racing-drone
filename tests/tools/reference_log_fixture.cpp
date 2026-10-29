@@ -3,7 +3,7 @@
 // record). B0's planner always emits one sample, so a SITL log cannot show the
 // difference.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 
 #include <cstdint>
 #include <cstdio>

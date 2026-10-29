@@ -9,7 +9,7 @@
 // baseline's control rate against its FcBridge and exits. Drivers, the real-
 // time loop, and the FC bridge replace that in Phases 1-4.
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/config/config.hpp>
 #include <branes/racing/harness/harness.hpp>
 

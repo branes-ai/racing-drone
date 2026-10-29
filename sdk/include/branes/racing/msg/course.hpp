@@ -5,7 +5,7 @@
 /// Loaded from courses/<name>.yaml by config::load_course (load-time, double)
 /// and converted to the stack's scalar type with cast<T>().
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 
 #include <array>
 #include <cstdint>
