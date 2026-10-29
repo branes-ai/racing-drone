@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#50
+---
 # Plan: a history of autonomous drone racing
 
-Issue: #50. Status: implemented (this PR).
+Issue: #50. Implemented in #51.
 
 ## Goal
 

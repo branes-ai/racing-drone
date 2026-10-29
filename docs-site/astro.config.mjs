@@ -73,6 +73,11 @@ export default defineConfig({
       },
       sidebar: [
         ...docsSidebar,
+        // The plans and ADRs are published on the architecture site.
+        {
+          label: 'Plans and decisions',
+          items: [{ label: 'On the architecture site', link: 'https://branes-ai.github.io/architecture/racing-drone/' }],
+        },
         {
           label: 'API Reference',
           items: [

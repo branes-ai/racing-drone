@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#48
+---
 # Plan: publish ./docs as a GitHub Pages site
 
-Issue: #48. Status: implemented in #49.
+Issue: #48. Implemented in #49.
 
 ## Goal
 
