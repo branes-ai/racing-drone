@@ -8,10 +8,11 @@ Racing code names its types as branes::racing::X, so each bridge header brings
 every namespace-scope name of one anatomy library into the matching
 branes::racing namespace by an explicit using-declaration:
 
-    sdk/include/branes/racing/anatomy.hpp        branes::anatomy (core)
-    sdk/include/branes/racing/anatomy_glue.hpp   branes::anatomy_glue
-    sdk/include/branes/racing/anatomy_sim.hpp    branes::anatomy_sim
-    sdk/include/branes/racing/anatomy_sweep.hpp  the precision-sweep types
+    sdk/include/branes/racing/anatomy.hpp           branes::anatomy (core)
+    sdk/include/branes/racing/anatomy_mobility.hpp  branes::anatomy_mobility
+    sdk/include/branes/racing/anatomy_glue.hpp      branes::anatomy_glue
+    sdk/include/branes/racing/anatomy_sim.hpp       branes::anatomy_mobility_sim
+    sdk/include/branes/racing/anatomy_sweep.hpp     the precision-sweep types
 
 The names come from Clang's AST of anatomy's headers, at the anatomy commit the
 build fetched, so the lists are complete and exact. Rerun it after bumping the
@@ -35,10 +36,12 @@ KINDS = {
 }
 
 BRIDGES = {
-    "core": ("anatomy.hpp", "branes::anatomy (the contracts, slots, composition, configs, log, harness)", []),
-    "glue": ("anatomy_glue.hpp", "branes::anatomy_glue (the reflex adapters)", ["branes/racing/anatomy.hpp"]),
-    "sim": ("anatomy_sim.hpp", "branes::anatomy_sim (the closed-loop simulator)", ["branes/racing/anatomy_glue.hpp"]),
-    "sweep": ("anatomy_sweep.hpp", "the precision-sweep types of branes::anatomy_sim (needs Universal)", []),
+    "core": ("anatomy.hpp", "branes::anatomy (the core: time, geometry, camera, profile, slots, baseline, log, harness)", []),
+    "mobility": ("anatomy_mobility.hpp", "branes::anatomy_mobility (a roaming vehicle's contracts, configs and slots)",
+                 ["branes/racing/anatomy.hpp"]),
+    "glue": ("anatomy_glue.hpp", "branes::anatomy_glue (the reflex adapters)", ["branes/racing/anatomy_mobility.hpp"]),
+    "sim": ("anatomy_sim.hpp", "branes::anatomy_mobility_sim (the closed-loop simulator)", ["branes/racing/anatomy_glue.hpp"]),
+    "sweep": ("anatomy_sweep.hpp", "the precision-sweep types of branes::anatomy_mobility_sim (needs Universal)", []),
 }
 
 
@@ -46,6 +49,8 @@ def library_of(path):
     path = os.path.realpath(path)
     if "/sdk/include/" in path:
         return "core"
+    if "/mobility/include/" in path:
+        return "mobility"
     if "/glue/include/" in path:
         return "glue"
     if path.endswith("/sim/sweep_types.hpp"):
@@ -79,7 +84,7 @@ def main():
 
     deps = os.path.join(args.build, "_deps")
     anatomy = os.path.join(deps, "anatomy-src")
-    roots = [os.path.join(anatomy, p, "include") for p in ("sdk", "glue", "sim")]
+    roots = [os.path.join(anatomy, p, "include") for p in ("sdk", "mobility", "glue", "sim")]
     headers = []
     for root in roots:
         found = []

@@ -29,7 +29,7 @@ racing_register_impl(NullDaaTracker   SLOT daa_tracker   HEADER ${_null} TYPE br
 racing_register_impl(NullFcBridge     SLOT fc_bridge     HEADER ${_null} TYPE branes::racing::NullFcBridge)
 
 # Test fixtures: open-loop components for the SITL gates (not racing components).
-racing_register_impl(ScriptedHopController SLOT controller HEADER branes/anatomy/slots/scripted.hpp
+racing_register_impl(ScriptedHopController SLOT controller HEADER branes/anatomy/mobility/slots/scripted.hpp
                      TYPE branes::anatomy::ScriptedHopController)
 
 # Baseline B0 (docs/plan/b0/): the SITL ground-truth estimator, the waypoint

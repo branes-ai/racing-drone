@@ -12,7 +12,7 @@
 
 #include <branes/anatomy/glue/cascaded_pid.hpp>
 #include <branes/anatomy/glue/reflex_params.hpp>
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 
 namespace branes::racing::glue {
 
