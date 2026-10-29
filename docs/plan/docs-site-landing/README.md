@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#52
+---
 # Plan: a landing page and Getting Started, like cortex's and reflex's
 
-Issue: #52. Status: in progress.
+Issue: #52. Implemented in #53.
 
 ## Goal
 

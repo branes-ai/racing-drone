@@ -1,6 +1,10 @@
+---
+status: complete
+issue: branes-ai/racing-drone#16
+---
 # SITL harness on the reflex dynamics
 
-**Status:** Approved 2026-10-26, implemented ([racing-drone#18](https://github.com/branes-ai/racing-drone/pull/18))
+**Approved:** 2026-10-26; implemented in [racing-drone#18](https://github.com/branes-ai/racing-drone/pull/18)
 **Issue:** [racing-drone#16](https://github.com/branes-ai/racing-drone/issues/16), part of the Phase 1 epic [racing-drone#8](https://github.com/branes-ai/racing-drone/issues/8)
 **Related:** [implementation plan](../implementation-plan.md) Phase 1, [test plan](../test-plan.md) §2–§6, [architecture](../../arch/framework-architecture.md), [ADR 0001](../../adr/0001-baseline-composition-framework.md)
 
