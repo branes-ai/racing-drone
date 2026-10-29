@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.8](https://github.com/branes-ai/racing-drone/compare/v0.8.7...v0.8.8) (2026-10-29)
+
+
+### Build System
+
+* **deps:** pin anatomy v0.3.0, and link its mobility library ([#72](https://github.com/branes-ai/racing-drone/issues/72)) ([ef0457e](https://github.com/branes-ai/racing-drone/commit/ef0457e2a648755edfd8f018ef59feb3fb515d64))
+
 ## [0.8.7](https://github.com/branes-ai/racing-drone/compare/v0.8.6...v0.8.7) (2026-10-29)
 
 
