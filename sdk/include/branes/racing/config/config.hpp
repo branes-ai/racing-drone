@@ -11,7 +11,7 @@
 /// Configs are load-time data and are stored in double. Components that run in
 /// another scalar type convert what they need (e.g. cast<T>(CourseMap)).
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/config/course.hpp>
 
 #include <array>

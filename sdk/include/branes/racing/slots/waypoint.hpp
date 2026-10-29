@@ -43,7 +43,7 @@
 ///   I2: segment_ never decreases                  — constrains segment_
 ///   I3: the parameters satisfy params_valid()     — constrains p_
 
-#include <branes/racing/anatomy.hpp>
+#include <branes/racing/anatomy_mobility.hpp>
 #include <branes/racing/msg/course.hpp>
 #include <branes/racing/slots/context.hpp>
 
