@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.10](https://github.com/branes-ai/racing-drone/compare/v0.8.9...v0.8.10) (2026-10-29)
+
+
+### Bug Fixes
+
+* **docs-site:** close fences, check github anchors, keep intraword underscores ([#77](https://github.com/branes-ai/racing-drone/issues/77)) ([fc7389f](https://github.com/branes-ai/racing-drone/commit/fc7389fad92896f7755fbbf3c89fa97fd855068b))
+
 ## [0.8.9](https://github.com/branes-ai/racing-drone/compare/v0.8.8...v0.8.9) (2026-10-29)
 
 
