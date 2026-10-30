@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/branes-ai/racing-drone/compare/v0.8.10...v0.9.0) (2026-10-30)
+
+
+### Features
+
+* **docs-site:** build the site with docs-kit v0.1.0 ([#79](https://github.com/branes-ai/racing-drone/issues/79)) ([3ce1200](https://github.com/branes-ai/racing-drone/commit/3ce12001e41dd362c69d73939dfcc4a13350ff64))
+
 ## [0.8.10](https://github.com/branes-ai/racing-drone/compare/v0.8.9...v0.8.10) (2026-10-29)
 
 
