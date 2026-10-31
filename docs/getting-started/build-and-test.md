@@ -20,16 +20,17 @@ $B/sitl_b0-gt-pid --scenario scenarios/b0-determinism.yaml --out run.brlog    # 
 $B/score_log --log run.brlog --speed-limit 5                                    # score the run: laps, gate errors, failures
 $B/replay_b0-gt-pid --log run.brlog --out replay.brlog --verify                 # reproduce the outputs record for record
 $B/log_dump --log run.brlog --out-dir run                                       # every channel as CSV, for plotting
+$B/trace_export --log run.brlog --scenario scenarios/b0-determinism.yaml --out run.json  # a replay for the docs site's player
 $B/sitl_batch_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --min-success 1   # many seeds, as the gates run
 $B/precision_sweep_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --out-dir sweep  # the stack in float, posits, bfloat16, ...
 $B/flight_stack_b0-gt-pid --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
 ```
 
-Run `sitl_<name>` first: `replay_<name>`, `score_log`, and `log_dump` read the log it writes.
+Run `sitl_<name>` first: `replay_<name>`, `score_log`, `log_dump`, and `trace_export` read the log it writes.
 
 ## Visual Studio
 
-With the `msvc` preset, the harnesses are under `Baselines/<name>` in the solution, and `score_log` and `log_dump` are under `Tools`. Each starts in the source root with debugger arguments filled in (the table in the [README](../../README.md#building-and-testing)). [Working through the stack in Visual Studio](../guides/visual-studio.md) walks through one closed loop, its log, many seeds, the precision sweep, and the tests.
+With the `msvc` preset, the harnesses are under `Baselines/<name>` in the solution, and `score_log`, `log_dump`, and `trace_export` are under `Tools`. Each starts in the source root with debugger arguments filled in (the table in the [README](../../README.md#building-and-testing)). [Working through the stack in Visual Studio](../guides/visual-studio.md) walks through one closed loop, its log, many seeds, the precision sweep, and the tests.
 
 ## The docs site
 
