@@ -93,6 +93,15 @@ add_test(NAME tools.log_dump
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tools_log_dump
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/log_dump_test.cmake)
 
+# trace_export writes a B0 log as a reflex-trace/1 replay (apps/trace_export/main.cpp).
+add_test(NAME tools.trace_export
+    COMMAND ${CMAKE_COMMAND}
+        -DSITL=$<TARGET_FILE:sitl_b0-gt-pid>
+        -DEXPORT=$<TARGET_FILE:trace_export>
+        -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tools_trace_export
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/trace_export_test.cmake)
+
 # The precision sweep on one seed (docs/plan/precision-sweep/): every type has
 # a result, a rerun is byte-identical, and double matches sitl_batch.
 add_test(NAME sweep.b0.smoke

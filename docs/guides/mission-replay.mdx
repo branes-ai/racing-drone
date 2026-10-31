@@ -1,0 +1,107 @@
+---
+title: Watching a Race Replay
+description: One SITL run of baseline B0, two laps of the A2RL 2025 course, played in reflex's trace player, and how to export and play your own runs.
+---
+
+import TracePlayer from '@branes-ai/trace-player/TracePlayer.astro';
+import nominal from '@site/traces/b0-nominal.json';
+
+A SITL run writes a log of everything the stack saw and did. `trace_export`
+turns the log into a replay in `reflex-trace/1`, the trace format of
+[reflex](https://github.com/branes-ai/reflex), and this page plays it in
+reflex's trace player, the same player reflex's own pages use. The player
+runs nothing: it shows the logged truth sample by sample, with its provenance
+underneath.
+
+## Baseline B0, two laps
+
+Baseline B0 (`b0-gt-pid`) flies a waypoint path through the gate centres
+with the reflex position and attitude cascade, on perfect state. The run is
+`scenarios/b0-nominal.yaml` at its own seed, 1700, on the
+[A2RL 2025 course](../../courses/a2rl-2025.yaml). Its scoreboard row:
+two laps complete, in 34.7 s and 34.0 s, at up to 4.5 m/s against the
+scenario's 5 m/s limit.
+
+<TracePlayer
+  trace={nominal}
+  title="How does B0 fly two laps of the A2RL 2025 course?"
+  description="70.75 s of the SITL run of baseline B0 on scenarios/b0-nominal.yaml (seed 1700), sampled every 0.05 s from the 1 kHz truth. The vehicle takes off at 0.03 s and passes the course's 11 gates twice, in order; each passage is an event, from gate 1 of lap 1 at 2.9 s to gate 11 of lap 2 at 68.8 s, and the replay ends 2 s after it. The first panel plots the true position with the planner's reference dashed; the second the true velocity; the third the four rotor thrusts at the cursor. There are no pass criteria in the trace: the run's scoreboard row is above."
+  plots={[
+    { channel: 'position', title: 'Position', labels: ['x', 'y', 'z'], setpoint: true, setpointLabel: 'reference' },
+    { channel: 'velocity', title: 'Velocity', labels: ['x', 'y', 'z'] },
+    { kind: 'bars', channel: 'rotor_thrusts', title: 'Rotor thrusts', labels: ['0', '1', '2', '3'], label: 'Thrust' },
+  ]}
+  thrustScale={0.05}
+  repo="https://github.com/branes-ai/racing-drone"
+  provenanceNote="a recorded SITL run (tools/gen_replay.sh)"
+/>
+
+What to look for:
+
+- **The reference leads the vehicle.** The dashed line is the planner's
+  reference, a point on the waypoint path through the gate centres. On the
+  straights it runs 0.39 m ahead on average, a little more than the
+  planner's 0.3 m lookahead. In the turns it runs 0.50 m ahead, where the
+  path turns faster than the cascade follows.
+- **The two laps look alike.** Lap 1 is timed from takeoff, at rest, and lap
+  2 from the end of lap 1, at speed, so lap 2 is 0.7 s faster. Otherwise
+  the path and the gate passages repeat.
+- **The thrusts.** On the straights the four rotors stay within 0.02 N of
+  each other, near a quarter of the vehicle's weight. In the turns they
+  differ by about 1 N, as the cascade tilts the vehicle.
+
+The view shows the vehicle, its trail, and its thrust; it does not draw the
+course. The events step through the gate passages, and the overview camera
+shows the whole path.
+
+## Export a run
+
+Build the tools and record a run, then export it:
+
+```sh
+cmake --preset gcc-release && cmake --build --preset gcc-release
+build/gcc-release/apps/sitl_b0-gt-pid --scenario scenarios/b0-nominal.yaml --out run.brlog
+build/gcc-release/apps/trace_export --log run.brlog --scenario scenarios/b0-nominal.yaml --out replay.json
+```
+
+- `--scenario` is the file the log was recorded from. It must hash to the
+  log's `scenario_hash`, so the trace's provenance names the run's real
+  inputs. A what-if replay, whose inputs were overridden, is refused.
+- The trace samples the 1 kHz truth at `--rate`, 20 Hz by default. The rate's
+  period must be a multiple of the physics step.
+- The channels are the true `position`, `velocity`, `attitude`, `body_rates`,
+  and `rotor_speeds`; `rotor_thrusts`, k_f·ω² with the vehicle's thrust
+  coefficient; and `position_setpoint`, the planner's latest reference.
+- The events are takeoff and every gate passage, from the same scorer as
+  `score_log`. A run that completes the course ends 2 s after its last
+  passage; any other run is kept to the end of its log.
+
+`sim/replay_trace.hpp` documents the format's rules that the export keeps.
+
+## Play it on a page
+
+The player is the npm package `@branes-ai/trace-player`, which reflex
+publishes with each release; `docs-site/package.json` pins it. In an `.mdx`
+page under `docs/`, import the player and the trace, and give the player a
+title that asks one question, a text description of what happens, and the
+panels to plot:
+
+```mdx
+import TracePlayer from '@branes-ai/trace-player/TracePlayer.astro';
+import nominal from '@site/traces/b0-nominal.json';
+
+<TracePlayer trace={nominal} title="…?" description="…"
+  plots={[{ channel: 'position', title: 'Position', labels: ['x', 'y', 'z'], setpoint: true, setpointLabel: 'reference' }]}
+  repo="https://github.com/branes-ai/racing-drone" provenanceNote="a recorded SITL run" />
+```
+
+`repo` points the footer's links at this repository, and `provenanceNote`
+says how the trace is kept; both default to reflex's. The site's build
+validates the trace and fails on an invalid one. The package's README lists
+the player's options.
+
+This page's replay is recorded by `tools/gen_replay.sh`, which runs the SITL
+and the export and stamps the trace with the commit of the tree. Rerun it
+when a change to the stack changes the run, and commit the trace with the
+change. Unlike reflex's traces, CI does not regenerate it. It is a record of
+one run at one commit, and the provenance under the player names that commit.
