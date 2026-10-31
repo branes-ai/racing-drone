@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/branes-ai/racing-drone/compare/v0.9.0...v0.9.1) (2026-10-31)
+
+
+### Continuous Integration
+
+* give each run on main a concurrency group of its own ([#81](https://github.com/branes-ai/racing-drone/issues/81)) ([40f7f27](https://github.com/branes-ai/racing-drone/commit/40f7f2741905fb6a57d693b8bc656c607cde1a6d))
+* lint the PR title as well as its commits ([#82](https://github.com/branes-ai/racing-drone/issues/82)) ([ca43f3b](https://github.com/branes-ai/racing-drone/commit/ca43f3b05c7a2dd1d1315fec244c59bdf95c0f72))
+
 ## [0.9.0](https://github.com/branes-ai/racing-drone/compare/v0.8.10...v0.9.0) (2026-10-30)
 
 
