@@ -28,3 +28,14 @@ set_target_properties(log_dump PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     VS_DEBUGGER_COMMAND_ARGUMENTS
         "--log \"${CMAKE_BINARY_DIR}/b0-gt-pid.brlog\" --out-dir \"${CMAKE_BINARY_DIR}/b0-gt-pid-dump\"")
+
+# trace_export: a SITL log as a reflex-trace/1 replay, for the docs site's
+# trace player (sim/replay_trace.hpp, tools/gen_replay.sh).
+add_executable(trace_export ${CMAKE_CURRENT_SOURCE_DIR}/trace_export/main.cpp)
+target_link_libraries(trace_export PRIVATE branes::racing branes::racing_sim)
+racing_set_warnings(trace_export)
+set_target_properties(trace_export PROPERTIES
+    FOLDER "Tools"
+    VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    VS_DEBUGGER_COMMAND_ARGUMENTS
+        "--log \"${CMAKE_BINARY_DIR}/b0-gt-pid.brlog\" --scenario scenarios/b0-determinism.yaml --out \"${CMAKE_BINARY_DIR}/b0-gt-pid.json\"")

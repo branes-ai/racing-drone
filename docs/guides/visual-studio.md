@@ -18,7 +18,7 @@ start build\msvc\branes_racing.sln
 
 In Solution Explorer:
 - the harnesses are under `Baselines/<name>`: `sitl_`, `sitl_batch_`, `replay_`, `flight_stack_`, and for B0 `precision_sweep_`;
-- `score_log` and `log_dump` are under `Tools`;
+- `score_log`, `log_dump`, and `trace_export` are under `Tools`;
 - the tests are under `Tests/<layer>`.
 
 ## 1. One closed loop: `sitl_b0-gt-pid`
