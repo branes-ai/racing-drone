@@ -14,7 +14,7 @@
     "preview": "docs-kit preview"
   },
   "dependencies": {
-    "@branes-ai/docs-kit": "github:branes-ai/docs-kit#v0.4.1",
+    "@branes-ai/docs-kit": "github:branes-ai/docs-kit#v0.6.0",
     "@branes-ai/trace-player": "https://github.com/branes-ai/reflex/releases/download/v0.9.1/branes-ai-trace-player-0.9.1.tgz"
   }
 }
