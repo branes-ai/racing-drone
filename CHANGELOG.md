@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.1](https://github.com/branes-ai/racing-drone/compare/v0.10.0...v0.10.1) (2026-11-01)
+
+
+### Build System
+
+* docs-kit v0.6.0 for the docs site ([#91](https://github.com/branes-ai/racing-drone/issues/91)) ([e9102d8](https://github.com/branes-ai/racing-drone/commit/e9102d8d3f3f5601589a1155a8b6ae91bfec5c20))
+
+
+### Documentation
+
+* **adr:** allow published facts under the data rule ([#92](https://github.com/branes-ai/racing-drone/issues/92)) ([a2d7392](https://github.com/branes-ai/racing-drone/commit/a2d7392ad85271a4f519b1e663fda375481cbbe0))
+* hero page update ([514af55](https://github.com/branes-ai/racing-drone/commit/514af55be4ce08b9af7d26fea5096614c8ccb818))
+
 ## [0.10.0](https://github.com/branes-ai/racing-drone/compare/v0.9.2...v0.10.0) (2026-11-01)
 
 
