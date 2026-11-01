@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/branes-ai/racing-drone/compare/v0.9.2...v0.10.0) (2026-11-01)
+
+
+### Features
+
+* **tools:** race replays of SITL runs in reflex's trace player ([#87](https://github.com/branes-ai/racing-drone/issues/87)) ([05fea45](https://github.com/branes-ai/racing-drone/commit/05fea458f07041124eb806e4ec38644cc5a0764b))
+
+
+### Documentation
+
+* record the license policy as ADRs 0009 and 0010 ([#89](https://github.com/branes-ai/racing-drone/issues/89)) ([4b181b5](https://github.com/branes-ai/racing-drone/commit/4b181b5f300f58edc5b93e3ac33d2e367c65f1ab))
+
 ## [0.9.2](https://github.com/branes-ai/racing-drone/compare/v0.9.1...v0.9.2) (2026-10-31)
 
 
