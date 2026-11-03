@@ -37,6 +37,12 @@ FetchContent_Declare(
     SYSTEM
 )
 FetchContent_MakeAvailable(yaml-cpp)
+# yaml-cpp builds its own sources at /W3 on MSVC, which warns C4267 (size_t to
+# int) in its float formatting (fptostring.cpp, contrib/dragonbox.h), on digit
+# counts and exponents that can't overflow. SYSTEM covers only its headers.
+if(MSVC)
+    target_compile_options(yaml-cpp PRIVATE /wd4267)
+endif()
 
 # ── catchorg/Catch2 v3 — testing framework ──────────────────────────
 if(RACING_BUILD_TESTS AND BUILD_TESTING)
