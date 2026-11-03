@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/branes-ai/racing-drone/compare/v0.10.1...v0.10.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **build:** fetch a moved pin in an existing build tree ([#93](https://github.com/branes-ai/racing-drone/issues/93)) ([cebd7ee](https://github.com/branes-ai/racing-drone/commit/cebd7ee0bd9c933c9864e6d16c5322862af89a84))
+
 ## [0.10.1](https://github.com/branes-ai/racing-drone/compare/v0.10.0...v0.10.1) (2026-11-01)
 
 
