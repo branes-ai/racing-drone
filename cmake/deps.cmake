@@ -67,7 +67,7 @@ endif()
 FetchContent_Declare(
     reflex
     GIT_REPOSITORY https://github.com/branes-ai/reflex.git
-    GIT_TAG        33ad1bbea37cfe05f22286c2525d7a751da2b482  # main after reflex#33
+    GIT_TAG        8818265c4e8b37afdebf3abca851e21913c817d3  # main after reflex#81 (v0.10.0)
     SYSTEM
 )
 FetchContent_MakeAvailable(reflex)
@@ -109,7 +109,7 @@ endif()
 FetchContent_Declare(
     anatomy
     GIT_REPOSITORY https://github.com/branes-ai/anatomy.git
-    GIT_TAG        67adfb1dfd715cb7e74981546d76906fe455539d  # v0.3.0
+    GIT_TAG        3442234fa72118ba78a52a2fb8d37b0ece9b3ef7  # v0.9.2
     SYSTEM
 )
 FetchContent_MakeAvailable(anatomy)
