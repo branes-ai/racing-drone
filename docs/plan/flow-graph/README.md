@@ -4,7 +4,7 @@ issue: branes-ai/racing-drone#98
 ---
 # Plan: B0 as a graph (anatomy ADR 0004, step 3)
 
-Issue: #98. Anatomy's side: the graph builder, the CPU stack and `log_compare`, released in anatomy v0.8.0 and v0.9.0 ([anatomy's plan](https://github.com/branes-ai/anatomy/blob/main/docs/plan/flow-graph/README.md)). scout-drone did the same for `s0-gt-pid` in step 2 ([scout-drone#25](https://github.com/branes-ai/scout-drone/pull/25)).
+Issue: #98. Implemented in #99. Anatomy's side: the graph builder, the CPU stack and `log_compare`, released in anatomy v0.8.0 and v0.9.0 ([anatomy's plan](https://github.com/branes-ai/anatomy/blob/main/docs/plan/flow-graph/README.md)). scout-drone did the same for `s0-gt-pid` in step 2 ([scout-drone#25](https://github.com/branes-ai/scout-drone/pull/25)).
 
 ## Goal
 
@@ -89,4 +89,4 @@ Each input fires one region. A region's firings run in the order the graph write
 
 | Part | What | PR | State |
 |---|---|---|---|
-| 3a | The graph, its builds and its gates, for `null`, `scripted-hop` and `b0-gt-pid` | — | in progress |
+| 3a | The graph, its builds and its gates, for `null`, `scripted-hop` and `b0-gt-pid` | #99 | complete |
