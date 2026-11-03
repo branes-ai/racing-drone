@@ -13,6 +13,9 @@
 #include <branes/anatomy/mobility/compose/tick.hpp>
 #include <branes/anatomy/mobility/config/scenario.hpp>
 #include <branes/anatomy/mobility/config/vehicle.hpp>
+#include <branes/anatomy/mobility/flow/bindings.hpp>
+#include <branes/anatomy/mobility/flow/domains.hpp>
+#include <branes/anatomy/mobility/flow/signatures.hpp>
 #include <branes/anatomy/mobility/harness/synthetic.hpp>
 #include <branes/anatomy/mobility/log/dump.hpp>
 #include <branes/anatomy/mobility/msg/codec.hpp>
@@ -58,6 +61,7 @@ using anatomy::kMaxConflicts;
 using anatomy::kMaxDetections;
 using anatomy::kMaxReferenceSamples;
 using anatomy::MissionWorld;
+using anatomy::MobileProfile;
 using anatomy::MobileStack;
 using anatomy::MobilityProfile;
 using anatomy::NullController;
@@ -126,6 +130,29 @@ using anatomy::config::VehicleConfig;
 using anatomy::config::WorldSimParam;
 
 }  // namespace branes::racing::config
+
+namespace branes::racing::detail {
+
+using anatomy::detail::EncodeFn;
+using anatomy::detail::takes_all;
+
+}  // namespace branes::racing::detail
+
+namespace branes::racing::flow {
+
+using anatomy::flow::controller_signature;
+using anatomy::flow::ControllerBinding;
+using anatomy::flow::daa_tracker_signature;
+using anatomy::flow::DaaTrackerBinding;
+using anatomy::flow::fc_bridge_signature;
+using anatomy::flow::FcBridgeBinding;
+using anatomy::flow::quat;
+using anatomy::flow::safety_filter_signature;
+using anatomy::flow::SafetyFilterBinding;
+using anatomy::flow::timestamp;
+using anatomy::flow::vec3;
+
+}  // namespace branes::racing::flow
 
 namespace branes::racing::harness {
 

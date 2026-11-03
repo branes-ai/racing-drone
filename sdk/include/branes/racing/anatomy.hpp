@@ -15,12 +15,17 @@
 #include <branes/anatomy/compose/profile.hpp>
 #include <branes/anatomy/config/baseline.hpp>
 #include <branes/anatomy/config/error.hpp>
+#include <branes/anatomy/flow/builder.hpp>
+#include <branes/anatomy/flow/domain.hpp>
+#include <branes/anatomy/flow/graph.hpp>
+#include <branes/anatomy/flow/signature.hpp>
 #include <branes/anatomy/harness/args.hpp>
 #include <branes/anatomy/harness/files.hpp>
 #include <branes/anatomy/harness/flight.hpp>
 #include <branes/anatomy/harness/parallel.hpp>
 #include <branes/anatomy/harness/replay.hpp>
 #include <branes/anatomy/harness/runner.hpp>
+#include <branes/anatomy/log/compare.hpp>
 #include <branes/anatomy/log/log.hpp>
 #include <branes/anatomy/msg/camera.hpp>
 #include <branes/anatomy/msg/camera_codec.hpp>
@@ -69,6 +74,7 @@ using anatomy::sha256_hex;
 using anatomy::Sha256Digest;
 using anatomy::SplitMix64;
 using anatomy::StackProfile;
+using anatomy::stream_seed;
 using anatomy::TimeBase;
 using anatomy::Timestamp;
 using anatomy::to_hex;
@@ -117,6 +123,169 @@ using anatomy::detail::valid_outputs;
 
 }  // namespace branes::racing::detail
 
+namespace branes::racing::flow {
+
+using anatomy::flow::at;
+using anatomy::flow::baseline_class;
+using anatomy::flow::binding;
+using anatomy::flow::body;
+using anatomy::flow::body_handler;
+using anatomy::flow::bounded;
+using anatomy::flow::builder;
+using anatomy::flow::canonical;
+using anatomy::flow::check_baseline;
+using anatomy::flow::Composite;
+using anatomy::flow::composite;
+using anatomy::flow::constant;
+using anatomy::flow::constant_port;
+using anatomy::flow::data_t;
+using anatomy::flow::dim;
+using anatomy::flow::direction;
+using anatomy::flow::direction_v;
+using anatomy::flow::domain;
+using anatomy::flow::domain_of;
+using anatomy::flow::domain_of_t;
+using anatomy::flow::element_traits;
+using anatomy::flow::field;
+using anatomy::flow::field_t;
+using anatomy::flow::fire;
+using anatomy::flow::Firing;
+using anatomy::flow::fixed_string;
+using anatomy::flow::Graph;
+using anatomy::flow::graph_hash;
+using anatomy::flow::handler;
+using anatomy::flow::handler_t;
+using anatomy::flow::handlers;
+using anatomy::flow::held;
+using anatomy::flow::hold;
+using anatomy::flow::index_space;
+using anatomy::flow::input;
+using anatomy::flow::input_options;
+using anatomy::flow::input_port;
+using anatomy::flow::ins;
+using anatomy::flow::Instance;
+using anatomy::flow::instance;
+using anatomy::flow::is_bounded_v;
+using anatomy::flow::is_data_v;
+using anatomy::flow::is_domain_v;
+using anatomy::flow::is_element_v;
+using anatomy::flow::is_extent_v;
+using anatomy::flow::is_field_v;
+using anatomy::flow::is_port_data_v;
+using anatomy::flow::is_port_v;
+using anatomy::flow::is_record_v;
+using anatomy::flow::is_registered_v;
+using anatomy::flow::is_signature_v;
+using anatomy::flow::is_state_v;
+using anatomy::flow::matrix;
+using anatomy::flow::max_elements_v;
+using anatomy::flow::message_t;
+using anatomy::flow::no_index_space;
+using anatomy::flow::node;
+using anatomy::flow::on;
+using anatomy::flow::Output;
+using anatomy::flow::output;
+using anatomy::flow::output_port;
+using anatomy::flow::outs;
+using anatomy::flow::port;
+using anatomy::flow::port_t;
+using anatomy::flow::ports;
+using anatomy::flow::project;
+using anatomy::flow::rank_v;
+using anatomy::flow::rate_rule;
+using anatomy::flow::record;
+using anatomy::flow::Ref;
+using anatomy::flow::Region;
+using anatomy::flow::registered;
+using anatomy::flow::scalar;
+using anatomy::flow::scope;
+using anatomy::flow::signature;
+using anatomy::flow::signature_of;
+using anatomy::flow::signature_of_t;
+using anatomy::flow::stack;
+using anatomy::flow::stack_builder;
+using anatomy::flow::state;
+using anatomy::flow::state_role;
+using anatomy::flow::states;
+using anatomy::flow::stored_elements_v;
+using anatomy::flow::structure;
+using anatomy::flow::takes_time;
+using anatomy::flow::time_of;
+using anatomy::flow::value;
+using anatomy::flow::vector;
+
+}  // namespace branes::racing::flow
+
+namespace branes::racing::flow::detail {
+
+using anatomy::flow::detail::access_fn;
+using anatomy::flow::detail::any_bounded;
+using anatomy::flow::detail::body_type;
+using anatomy::flow::detail::build_operator;
+using anatomy::flow::detail::callable;
+using anatomy::flow::detail::checked_binding;
+using anatomy::flow::detail::checked_signature;
+using anatomy::flow::detail::concat;
+using anatomy::flow::detail::data_of;
+using anatomy::flow::detail::describes;
+using anatomy::flow::detail::distinct_nonempty;
+using anatomy::flow::detail::domain_tag;
+using anatomy::flow::detail::edges_match;
+using anatomy::flow::detail::extent_product;
+using anatomy::flow::detail::extent_tag;
+using anatomy::flow::detail::factories_of;
+using anatomy::flow::detail::factory_of;
+using anatomy::flow::detail::field_tag;
+using anatomy::flow::detail::find_field;
+using anatomy::flow::detail::find_handler;
+using anatomy::flow::detail::find_port;
+using anatomy::flow::detail::fire;
+using anatomy::flow::detail::handler_info;
+using anatomy::flow::detail::handler_tag;
+using anatomy::flow::detail::handlers_fit;
+using anatomy::flow::detail::handlers_of;
+using anatomy::flow::detail::has_domain;
+using anatomy::flow::detail::has_member_signature;
+using anatomy::flow::detail::index_of;
+using anatomy::flow::detail::index_space_tag;
+using anatomy::flow::detail::info_of;
+using anatomy::flow::detail::is_index_space;
+using anatomy::flow::detail::is_ins;
+using anatomy::flow::detail::is_operator_name;
+using anatomy::flow::detail::is_outs;
+using anatomy::flow::detail::is_ports;
+using anatomy::flow::detail::is_states;
+using anatomy::flow::detail::messages_match;
+using anatomy::flow::detail::new_slot;
+using anatomy::flow::detail::no_slot;
+using anatomy::flow::detail::port_directions;
+using anatomy::flow::detail::port_tag;
+using anatomy::flow::detail::port_value_t;
+using anatomy::flow::detail::port_values;
+using anatomy::flow::detail::ports_of;
+using anatomy::flow::detail::record_tag;
+using anatomy::flow::detail::registered_tag;
+using anatomy::flow::detail::require_domain;
+using anatomy::flow::detail::runs;
+using anatomy::flow::detail::same_message_v;
+using anatomy::flow::detail::signature_tag;
+using anatomy::flow::detail::slot_factory;
+using anatomy::flow::detail::source;
+using anatomy::flow::detail::source_like;
+using anatomy::flow::detail::source_of;
+using anatomy::flow::detail::source_type;
+using anatomy::flow::detail::source_type_t;
+using anatomy::flow::detail::sources_of;
+using anatomy::flow::detail::square;
+using anatomy::flow::detail::state_tag;
+using anatomy::flow::detail::thunk_fn;
+using anatomy::flow::detail::thunk_of;
+using anatomy::flow::detail::thunks_of;
+using anatomy::flow::detail::time_fn_of;
+using anatomy::flow::detail::values_of;
+
+}  // namespace branes::racing::flow::detail
+
 namespace branes::racing::harness {
 
 using anatomy::harness::Args;
@@ -138,10 +307,14 @@ using anatomy::harness::verify_outputs;
 namespace branes::racing::log {
 
 using anatomy::log::Channel;
+using anatomy::log::compare;
+using anatomy::log::Comparison;
 using anatomy::log::is_framework;
 using anatomy::log::is_known;
 using anatomy::log::is_output;
+using anatomy::log::kHeaderFields;
 using anatomy::log::kLogVersion;
+using anatomy::log::kMaxPayload;
 using anatomy::log::LogError;
 using anatomy::log::LogHeader;
 using anatomy::log::LogReader;
