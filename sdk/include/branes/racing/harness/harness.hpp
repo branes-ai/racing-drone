@@ -5,7 +5,8 @@
 /// Racing-only (docs/assessments/framework-boundary.md). The mission-neutral
 /// pieces are included from args.hpp, files.hpp, runner.hpp and synthetic.hpp;
 /// this header adds:
-///  - check_baseline() over racing's slot list (config::kSlotNames);
+///  - check_baseline() over racing's slot list (config::kSlotNames), and
+///    check_graph_baseline() for a graph build;
 ///  - make_stack(): a racing baseline's Stack, its slots built from the configs.
 ///
 /// The log is double. A stack in another scalar type T (the precision sweep,
@@ -21,6 +22,7 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace branes::racing::harness {
 
@@ -28,6 +30,24 @@ namespace branes::racing::harness {
 [[nodiscard]] inline result<config::BaselineConfig, std::string>
 check_baseline(const std::filesystem::path& dir, std::string_view name, std::string_view compiled_hash) {
     return check_baseline(dir, name, compiled_hash, config::kSlotNames);
+}
+
+/// Load `<dir>/<name>.yaml` for a graph build: the file must name the binary's
+/// baseline. A graph build doesn't read the `composition:` block, so its hash
+/// isn't checked; the graph's stack checks `class:` and `graph:` against the
+/// graph it builds (anatomy flow::check_baseline, G8).
+[[nodiscard]] inline result<config::BaselineConfig, std::string> check_graph_baseline(const std::filesystem::path& dir,
+                                                                                      std::string_view name) {
+    const auto path = dir / (std::string(name) + ".yaml");
+    auto b = config::load_baseline(path);
+    if (!b) {
+        return b.error().to_string();
+    }
+    if (b->name != name) {
+        return std::string(path.string() + ": baseline name '" + b->name + "' does not match the binary ('" +
+                           std::string(name) + "')");
+    }
+    return std::move(b).value();
 }
 
 // ── stack construction ──────────────────────────────────────────────

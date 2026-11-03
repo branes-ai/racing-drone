@@ -48,8 +48,7 @@ int main(int argc, char** argv) {
     }
     const bool verify = args->has("verify");
 
-    auto baseline = racing::harness::check_baseline(
-        RACING_BASELINES_DIR, racing::baseline::name, racing::baseline::composition_hash);
+    auto baseline = racing::baseline::check_baseline(RACING_BASELINES_DIR);
     if (!baseline) {
         return fail(baseline.error());
     }
@@ -59,14 +58,12 @@ int main(int argc, char** argv) {
         return fail(reader.error().path + ": " + reader.error().message);
     }
     const racing::log::LogHeader& in_header = reader->header();
-    if (verify && (in_header.baseline_name != racing::baseline::name ||
-                   in_header.composition_hash != racing::baseline::composition_hash)) {
+    if (verify && in_header.baseline_name != racing::baseline::name) {
         return fail("--verify needs a log recorded by this baseline (log: " + in_header.baseline_name + ")");
     }
 
     racing::log::LogHeader header = in_header;
     header.baseline_name = std::string(racing::baseline::name);
-    header.composition_hash = std::string(racing::baseline::composition_hash);
     if (const auto c = args->value("course")) {
         const auto f = racing::harness::read_with_hash(*c);
         if (!f) {
@@ -103,6 +100,12 @@ int main(int argc, char** argv) {
         return fail(built.error());
     }
     auto& stack = *built;
+    // The hash is the stack's: a graph's is known once it is built.
+    header.composition_hash = racing::baseline::hash(stack);
+    if (verify && in_header.composition_hash != header.composition_hash) {
+        return fail("--verify needs a log recorded by this baseline (log: " + in_header.baseline_name +
+                    ", composition_hash " + in_header.composition_hash + ")");
+    }
 
     auto writer = racing::log::LogWriter::open(*out_path, header);
     if (!writer) {

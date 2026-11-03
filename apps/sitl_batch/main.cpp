@@ -81,8 +81,7 @@ int main(int argc, char** argv) {
         jobs = *v;
     }
 
-    auto baseline = racing::harness::check_baseline(
-        RACING_BASELINES_DIR, racing::baseline::name, racing::baseline::composition_hash);
+    auto baseline = racing::baseline::check_baseline(RACING_BASELINES_DIR);
     if (!baseline) {
         return fail(baseline.error());
     }
