@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.3](https://github.com/branes-ai/racing-drone/compare/v0.10.2...v0.10.3) (2026-11-03)
+
+
+### Build System
+
+* **deps:** pin anatomy v0.9.2, and the reflex it pins ([#97](https://github.com/branes-ai/racing-drone/issues/97)) ([8714883](https://github.com/branes-ai/racing-drone/commit/8714883bef7fc6218990fa9f852f40fc779a8c58))
+* silence yaml-cpp's c4267 warnings on msvc ([#95](https://github.com/branes-ai/racing-drone/issues/95)) ([a5d4e54](https://github.com/branes-ai/racing-drone/commit/a5d4e54f2b7cad47691fecdfb519ae587be4eb31))
+
 ## [0.10.2](https://github.com/branes-ai/racing-drone/compare/v0.10.1...v0.10.2) (2026-11-03)
 
 
