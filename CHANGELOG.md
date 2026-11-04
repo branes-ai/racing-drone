@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/branes-ai/racing-drone/compare/v0.11.0...v0.12.0) (2026-11-04)
+
+
+### Features
+
+* **sitl:** print the graph a graph build runs ([#101](https://github.com/branes-ai/racing-drone/issues/101)) ([d47218b](https://github.com/branes-ai/racing-drone/commit/d47218bcc3c7b2083c0c148483e8f70c12de89a6))
+
 ## [0.11.0](https://github.com/branes-ai/racing-drone/compare/v0.10.3...v0.11.0) (2026-11-04)
 
 
