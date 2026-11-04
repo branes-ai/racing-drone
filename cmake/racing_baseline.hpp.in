@@ -6,6 +6,8 @@
 #include <branes/racing/harness/harness.hpp>
 
 #include <filesystem>
+#include <optional>
+#include <ostream>
 #include <string>
 #include <string_view>
 
@@ -34,6 +36,12 @@ using Composition = Stack<T,
 template <typename T>
 [[nodiscard]] std::string hash(const Composition<T>&) {
     return std::string(composition_hash);
+}
+
+/// --print-graph: a slot build has no graph to print.
+template <typename T>
+[[nodiscard]] std::optional<std::string> print_graph(const Composition<T>&, std::string_view, std::ostream&) {
+    return "a slot build has no graph: --print-graph is sitl_" + std::string(name) + "_graph's";
 }
 
 }  // namespace branes::racing::baseline
