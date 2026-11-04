@@ -114,6 +114,25 @@ add_executable(reference_log_fixture ${CMAKE_CURRENT_SOURCE_DIR}/tools/reference
 target_link_libraries(reference_log_fixture PRIVATE branes::racing)
 racing_set_warnings(reference_log_fixture)
 set_target_properties(reference_log_fixture PROPERTIES FOLDER "Tests/tools")
+# --print-graph (anatomy docs/guides/reading-a-graph.md): a graph build
+# prints the graph it runs, as text or as a flowchart, and exits without
+# flying; a slot build, a form other than the two, and --out with it are
+# refused.
+set(print_graph_args --scenario ${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml --print-graph)
+add_test(NAME tools.print_graph.text COMMAND sitl_b0-gt-pid_graph ${print_graph_args} text)
+add_test(NAME tools.print_graph.mermaid COMMAND sitl_b0-gt-pid_graph ${print_graph_args} mermaid)
+add_test(NAME tools.print_graph.slot COMMAND sitl_b0-gt-pid ${print_graph_args} text)
+add_test(NAME tools.print_graph.form COMMAND sitl_b0-gt-pid_graph ${print_graph_args} dot)
+add_test(NAME tools.print_graph.out
+    COMMAND sitl_b0-gt-pid_graph ${print_graph_args} text --out ${CMAKE_CURRENT_BINARY_DIR}/print_graph.brlog)
+set_tests_properties(tools.print_graph.text PROPERTIES
+    PASS_REGULAR_EXPRESSION "^flow-graph 1\nmission racing\nclass scoreboard\n")
+set_tests_properties(tools.print_graph.mermaid PROPERTIES
+    PASS_REGULAR_EXPRESSION "^flowchart LR\n    %% flow-graph racing, scoreboard, SITL-only\n")
+set_tests_properties(tools.print_graph.slot PROPERTIES PASS_REGULAR_EXPRESSION "a slot build has no graph")
+set_tests_properties(tools.print_graph.form PROPERTIES PASS_REGULAR_EXPRESSION "takes text or mermaid, not 'dot'")
+set_tests_properties(tools.print_graph.out PROPERTIES PASS_REGULAR_EXPRESSION "usage: ")
+
 add_test(NAME tools.log_dump
     COMMAND ${CMAKE_COMMAND}
         -DSITL=$<TARGET_FILE:sitl_b0-gt-pid>

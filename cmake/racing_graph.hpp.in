@@ -6,12 +6,15 @@
 /// The harnesses' view of a baseline is the slot build's (racing_baseline.hpp.in):
 /// its name, its stack, the check of its file, and the hash its log records.
 
+#include <branes/anatomy/harness/graph.hpp>
 #include <branes/racing/flow/graph.hpp>
 #include <branes/racing/harness/harness.hpp>
 
 @FLOW_INCLUDES@
 
 #include <filesystem>
+#include <optional>
+#include <ostream>
 #include <string>
 #include <string_view>
 
@@ -43,6 +46,14 @@ using Composition = graph::Stack<T, Graph<T>>;
 template <typename T>
 [[nodiscard]] std::string hash(const Composition<T>& stack) {
     return stack.hash();
+}
+
+/// --print-graph: write the graph the stack runs, the one its hash is of, in
+/// the form named (anatomy harness/graph.hpp).
+template <typename T>
+[[nodiscard]] std::optional<std::string>
+print_graph(const Composition<T>& stack, std::string_view form, std::ostream& out) {
+    return anatomy::harness::print_graph(stack.stack().graph(), form, out);
 }
 
 }  // namespace branes::racing::baseline

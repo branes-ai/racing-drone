@@ -1,6 +1,11 @@
 // sitl_<baseline>: run a baseline against a simulated vehicle and write the log.
 //
 //   sitl_<baseline> --scenario <scenario.yaml> --out <run.brlog>
+//   sitl_<baseline>_graph --scenario <scenario.yaml> --print-graph text|mermaid
+//
+// --print-graph builds the stack, prints the graph it runs and exits without
+// flying: `text` is the canonical form its hash is of, `mermaid` a flowchart
+// (anatomy docs/guides/reading-a-graph.md). A slot build has no graph.
 //
 // The scenario names the course and vehicle (ADR 0001); --course and --vehicle
 // are rejected, so there is one source of truth. The vehicle flies on the
@@ -18,6 +23,7 @@
 #include "racing_baseline.hpp"
 
 #include <cstdio>
+#include <iostream>
 #include <string>
 
 namespace racing = branes::racing;
@@ -39,13 +45,15 @@ int main(int argc, char** argv) {
     if (args->has("course") || args->has("vehicle")) {
         return fail("--course / --vehicle are not accepted: the scenario names them");
     }
-    if (auto bad = args->only({"scenario", "out"})) {
+    if (auto bad = args->only({"scenario", "out", "print-graph"})) {
         return fail(*bad);
     }
     const auto scenario_path = args->value("scenario");
     const auto out_path = args->value("out");
-    if (!scenario_path || !out_path) {
-        return fail("usage: --scenario <scenario.yaml> --out <run.brlog>");
+    const auto graph_form = args->value("print-graph");
+    if (!scenario_path || out_path.has_value() == graph_form.has_value()) {
+        return fail("usage: --scenario <scenario.yaml> --out <run.brlog>, or --scenario <scenario.yaml> "
+                    "--print-graph text|mermaid");
     }
 
     auto baseline = racing::baseline::check_baseline(RACING_BASELINES_DIR);
@@ -85,6 +93,12 @@ int main(int argc, char** argv) {
         return fail(built.error());
     }
     auto& stack = *built;
+    if (graph_form) {
+        if (const auto e = racing::baseline::print_graph(stack, *graph_form, std::cout)) {
+            return fail(*e);
+        }
+        return 0;
+    }
 
     racing::log::LogHeader header;
     header.baseline_name = std::string(racing::baseline::name);

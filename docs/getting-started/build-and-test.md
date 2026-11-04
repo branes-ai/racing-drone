@@ -24,9 +24,12 @@ $B/trace_export --log run.brlog --scenario scenarios/b0-determinism.yaml --out r
 $B/sitl_batch_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --min-success 1   # many seeds, as the gates run
 $B/precision_sweep_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --out-dir sweep  # the stack in float, posits, bfloat16, ...
 $B/flight_stack_b0-gt-pid --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
+$B/sitl_b0-gt-pid_graph --scenario scenarios/b0-nominal.yaml --print-graph mermaid   # the graph the stack runs, as a flowchart
 ```
 
 Run `sitl_<name>` first: `replay_<name>`, `score_log`, `log_dump`, and `trace_export` read the log it writes.
+
+A baseline's graph build, `sitl_<name>_graph`, prints the graph its stack runs instead of flying: `--print-graph text` gives the canonical form the log's `composition_hash` is the hash of, and `--print-graph mermaid` a flowchart that GitHub renders in a ` ```mermaid ` block. anatomy's [reading a graph](https://github.com/branes-ai/anatomy/blob/main/docs/guides/reading-a-graph.md) explains the chart. The slot build, `sitl_<name>`, has no graph and refuses the option.
 
 ## Visual Studio
 
