@@ -1,0 +1,36 @@
+# Baseline b0-shaped-pid (anatomy docs/plan/flow-testing, T5): B0 with a
+# controller of two operators, SetpointShaper, which scales the reference's
+# feed-forward, then CascadedPid. Its graph's controller is a body of the two
+# (flow/shaped_pid.hpp); its slot build wires them by hand (ShapedPid), and
+# is the oracle of the graph build. It differs from b0-gt-pid in the
+# controller's body only, so their traces first differ inside it (P8). A test
+# baseline: it has no phase gate. SITL only, as B0 is.
+name: b0-shaped-pid
+composition:
+  estimator: GroundTruthEstimator
+  gate_detector: NullGateDetector
+  planner: WaypointPlanner
+  controller: ShapedPid
+  safety_filter: NullSafetyFilter
+  daa_tracker: NullDaaTracker
+  fc_bridge: NullFcBridge
+class: scoreboard
+graph:
+  estimator: GroundTruthEstimator
+  gate_detector: NullGateDetector
+  planner: WaypointPlanner
+  controller: ShapedPid
+  safety_filter: NullSafetyFilter
+  daa_tracker: NullDaaTracker
+  fc_bridge: NullFcBridge
+parameters:
+  control_rate_hz: 250     # position and attitude loops; SimFc runs the rate loop at 1 kHz
+  cruise_speed_m_s: 4.0    # WaypointPlanner
+  corner_speed_m_s: 2.5
+  lookahead_m: 0.3
+  switch_radius_m: 1.0
+  gate_approach_m: 2.0
+  corner_radius_m: 1.5
+  corner_angle_deg: 60
+  max_speed_m_s: 4.5       # CascadedPid: velocity-setpoint cap, under the 5 m/s gate limit
+  feedforward_gain: 0.8    # SetpointShaper: the velocity and acceleration feed-forward's scale

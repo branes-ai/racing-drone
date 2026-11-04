@@ -6,11 +6,16 @@
 # scenario the Visual Studio debugger runs by default. B0 also gets
 # precision_sweep_b0-gt-pid (docs/plan/precision-sweep/). With GRAPH, a baseline
 # also builds as a graph (docs/plan/flow-graph/): replay_<name>_graph,
-# sitl_<name>_graph and sitl_batch_<name>_graph.
+# sitl_<name>_graph and sitl_batch_<name>_graph. b0-shaped-pid's controller is
+# a body of two operators, and b0-shaped-research is a research graph of the
+# same operators; the slot build of each wires them by hand, as its graph's
+# oracle (anatomy docs/plan/flow-testing, T5).
 
 racing_add_baseline(null GRAPH DEBUG_SCENARIO scenarios/null-smoke.yaml)
 racing_add_baseline(scripted-hop GRAPH DEBUG_SCENARIO scenarios/scripted-hop.yaml)
 racing_add_baseline(b0-gt-pid GRAPH PRECISION_SWEEP DEBUG_SCENARIO scenarios/b0-determinism.yaml)
+racing_add_baseline(b0-shaped-pid GRAPH DEBUG_SCENARIO scenarios/b0-determinism.yaml)
+racing_add_baseline(b0-shaped-research GRAPH DEBUG_SCENARIO scenarios/b0-determinism.yaml)
 
 # score_log: the scoreboard for any baseline's SITL log (sim/score.hpp).
 add_executable(score_log ${CMAKE_CURRENT_SOURCE_DIR}/score/main.cpp)

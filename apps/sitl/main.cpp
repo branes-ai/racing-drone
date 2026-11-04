@@ -1,11 +1,14 @@
 // sitl_<baseline>: run a baseline against a simulated vehicle and write the log.
 //
 //   sitl_<baseline> --scenario <scenario.yaml> --out <run.brlog>
+//   sitl_<baseline>_graph --scenario <scenario.yaml> --out <run.brlog> [--trace <run.brtrace>]
 //   sitl_<baseline>_graph --scenario <scenario.yaml> --print-graph text|mermaid
 //
 // --print-graph builds the stack, prints the graph it runs and exits without
 // flying: `text` is the canonical form its hash is of, `mermaid` a flowchart
-// (anatomy docs/guides/reading-a-graph.md). A slot build has no graph.
+// (anatomy docs/guides/reading-a-graph.md). --trace also writes every edge
+// the stack's firings write, beside the log (anatomy flow/trace.hpp), which
+// trace_compare compares. A slot build has no graph, so it takes neither.
 //
 // The scenario names the course and vehicle (ADR 0001); --course and --vehicle
 // are rejected, so there is one source of truth. The vehicle flies on the
@@ -24,7 +27,9 @@
 
 #include <cstdio>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <utility>
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -50,15 +55,16 @@ int main(int argc, char** argv) {
     if (args->has("course") || args->has("vehicle")) {
         return fail("--course / --vehicle are not accepted: the scenario names them");
     }
-    if (auto bad = args->only({"scenario", "out", "print-graph"})) {
+    if (auto bad = args->only({"scenario", "out", "trace", "print-graph"})) {
         return fail(*bad);
     }
     const auto scenario_path = args->value("scenario");
     const auto out_path = args->value("out");
+    const auto trace_path = args->value("trace");
     const auto graph_form = args->value("print-graph");
-    if (!scenario_path || out_path.has_value() == graph_form.has_value()) {
-        return fail("usage: --scenario <scenario.yaml> --out <run.brlog>, or --scenario <scenario.yaml> "
-                    "--print-graph text|mermaid");
+    if (!scenario_path || out_path.has_value() == graph_form.has_value() || (trace_path && !out_path)) {
+        return fail("usage: --scenario <scenario.yaml> --out <run.brlog> [--trace <run.brtrace>], or "
+                    "--scenario <scenario.yaml> --print-graph text|mermaid");
     }
 
     auto baseline = racing::baseline::check_baseline(RACING_BASELINES_DIR);
@@ -114,6 +120,16 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    // Opened before the log, so a slot build's refusal truncates nothing.
+    std::unique_ptr<racing::flow::trace_writer> trace;
+    if (trace_path) {
+        auto opened = racing::baseline::trace(stack, *trace_path);
+        if (!opened) {
+            return fail(opened.error());
+        }
+        trace = std::move(opened).value();
+    }
+
     racing::log::LogHeader header;
     header.baseline_name = std::string(racing::baseline::name);
     header.composition_hash = racing::baseline::hash(stack);
@@ -134,6 +150,15 @@ int main(int argc, char** argv) {
     const auto records = writer->record_count();
     if (auto closed = writer->close(); !closed) {
         return fail(closed.error().path + ": " + closed.error().message);
+    }
+    if (trace) {
+        if (auto closed = trace->close(); !closed) {
+            return fail(closed.error().path + ": " + closed.error().message);
+        }
+        std::printf("sitl_%s: %llu edges -> %s\n",
+                    std::string(racing::baseline::name).c_str(),
+                    static_cast<unsigned long long>(trace->record_count()),
+                    trace_path->c_str());
     }
     std::printf("sitl_%s: %s, %llu ticks, %llu records -> %s\n",
                 std::string(racing::baseline::name).c_str(),

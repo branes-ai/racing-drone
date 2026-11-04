@@ -9,12 +9,22 @@
 # and the planner (flow/bindings.hpp), anatomy's for the mission-neutral
 # composites (mobility/flow/bindings.hpp). Every slot implementation is an
 # operator of its composite, unchanged, so the names are the slot registry's
-# (cmake/slot_registry.cmake).
+# (cmake/slot_registry.cmake). racing_register_body() records a body of several
+# operators, and racing_register_graph() a research graph (anatomy's
+# flow_register_body and flow_register_graph).
 include_guard(GLOBAL)
 include(${ANATOMY_CMAKE_DIR}/flow.cmake)
 
 function(racing_register_operator name)
     flow_register_operator(racing ${name} ${ARGN})
+endfunction()
+
+function(racing_register_body name)
+    flow_register_body(racing ${name} ${ARGN})
+endfunction()
+
+function(racing_register_graph name)
+    flow_register_graph(racing ${name} ${ARGN})
 endfunction()
 
 set(_null branes/racing/slots/null.hpp)
@@ -46,3 +56,11 @@ racing_register_operator(WaypointPlanner HEADER branes/racing/slots/waypoint.hpp
                          TYPE branes::racing::WaypointPlanner BINDING ${_racing}::PlannerBinding)
 racing_register_operator(CascadedPid HEADER branes/anatomy/glue/cascaded_pid.hpp
                          TYPE branes::anatomy::glue::CascadedPid BINDING ${_neutral}::ControllerBinding)
+
+# Baselines b0-shaped-pid and b0-shaped-research (anatomy docs/plan/flow-testing,
+# T5): a body of two operators for the controller, and a research graph of
+# B0's operators and those two. ShapedPid is also the slot registry's name of
+# the same operators wired by hand.
+racing_register_body(ShapedPid HEADER branes/racing/flow/shaped_pid.hpp TYPE branes::racing::graph::ShapedPidBody)
+racing_register_graph(ShapedPidResearch HEADER branes/racing/flow/shaped_pid.hpp
+                      TYPE branes::racing::graph::ShapedPidResearch)
