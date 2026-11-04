@@ -11,5 +11,14 @@ composition:
   safety_filter: NullSafetyFilter
   daa_tracker: NullDaaTracker
   fc_bridge: NullFcBridge
+class: scoreboard
+graph:
+  estimator: NullEstimator
+  gate_detector: NullGateDetector
+  planner: NullPlanner
+  controller: ScriptedHopController
+  safety_filter: NullSafetyFilter
+  daa_tracker: NullDaaTracker
+  fc_bridge: NullFcBridge
 parameters:
   control_rate_hz: 100

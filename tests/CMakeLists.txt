@@ -78,6 +78,36 @@ add_test(NAME gate.b0.determinism
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_b0
         -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
 
+# ── The graph builds (docs/plan/flow-graph/) ───────────────────────────────
+# Each baseline's graph build is its slot build: its logs equal the slot
+# build's on every scenario but for the hash, its batch's runs are the slot
+# build's, and B0's is as deterministic.
+file(GLOB scenarios CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/scenarios/*.yaml)
+foreach(baseline null scripted-hop b0-gt-pid)
+    add_test(NAME gate.${baseline}.graph
+        COMMAND ${CMAKE_COMMAND}
+            -DSITL=$<TARGET_FILE:sitl_${baseline}>
+            -DSITL_GRAPH=$<TARGET_FILE:sitl_${baseline}_graph>
+            -DBATCH=$<TARGET_FILE:sitl_batch_${baseline}>
+            -DBATCH_GRAPH=$<TARGET_FILE:sitl_batch_${baseline}_graph>
+            -DLOG_COMPARE=$<TARGET_FILE:anatomy_log_compare>
+            "-DSCENARIOS=${scenarios}"
+            -DBATCH_SCENARIOS=${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml
+            -DSEEDS=10
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_${baseline}_graph
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/graph_gate.cmake)
+    set_tests_properties(gate.${baseline}.graph PROPERTIES LABELS "gate" TIMEOUT 900)
+endforeach()
+add_test(NAME gate.b0.determinism.graph
+    COMMAND ${CMAKE_COMMAND}
+        -DSITL=$<TARGET_FILE:sitl_b0-gt-pid_graph>
+        -DREPLAY=$<TARGET_FILE:replay_b0-gt-pid_graph>
+        -DSCORE=$<TARGET_FILE:score_log>
+        -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DSCENARIO=${PROJECT_SOURCE_DIR}/scenarios/b0-determinism.yaml
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_b0_graph
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
+
 # log_dump writes every record of a B0 log as CSV (apps/log_dump/main.cpp).
 # The fixture writes multi-sample references, which no current planner emits.
 add_executable(reference_log_fixture ${CMAKE_CURRENT_SOURCE_DIR}/tools/reference_log_fixture.cpp)
