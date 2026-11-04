@@ -19,9 +19,11 @@
 #include <branes/anatomy/flow/domain.hpp>
 #include <branes/anatomy/flow/graph.hpp>
 #include <branes/anatomy/flow/signature.hpp>
+#include <branes/anatomy/flow/trace.hpp>
 #include <branes/anatomy/harness/args.hpp>
 #include <branes/anatomy/harness/files.hpp>
 #include <branes/anatomy/harness/flight.hpp>
+#include <branes/anatomy/harness/graph.hpp>
 #include <branes/anatomy/harness/parallel.hpp>
 #include <branes/anatomy/harness/replay.hpp>
 #include <branes/anatomy/harness/runner.hpp>
@@ -134,6 +136,7 @@ using anatomy::flow::bounded;
 using anatomy::flow::builder;
 using anatomy::flow::canonical;
 using anatomy::flow::check_baseline;
+using anatomy::flow::compare_traces;
 using anatomy::flow::Composite;
 using anatomy::flow::composite;
 using anatomy::flow::constant;
@@ -149,6 +152,7 @@ using anatomy::flow::element_traits;
 using anatomy::flow::field;
 using anatomy::flow::field_t;
 using anatomy::flow::fire;
+using anatomy::flow::fired;
 using anatomy::flow::Firing;
 using anatomy::flow::fixed_string;
 using anatomy::flow::Graph;
@@ -177,11 +181,14 @@ using anatomy::flow::is_record_v;
 using anatomy::flow::is_registered_v;
 using anatomy::flow::is_signature_v;
 using anatomy::flow::is_state_v;
+using anatomy::flow::kTraceVersion;
 using anatomy::flow::matrix;
 using anatomy::flow::max_elements_v;
+using anatomy::flow::mermaid;
 using anatomy::flow::message_t;
 using anatomy::flow::no_index_space;
 using anatomy::flow::node;
+using anatomy::flow::observer;
 using anatomy::flow::on;
 using anatomy::flow::Output;
 using anatomy::flow::output;
@@ -211,6 +218,11 @@ using anatomy::flow::stored_elements_v;
 using anatomy::flow::structure;
 using anatomy::flow::takes_time;
 using anatomy::flow::time_of;
+using anatomy::flow::trace_codecs;
+using anatomy::flow::trace_header;
+using anatomy::flow::trace_reader;
+using anatomy::flow::trace_record;
+using anatomy::flow::trace_writer;
 using anatomy::flow::value;
 using anatomy::flow::vector;
 
@@ -282,6 +294,7 @@ using anatomy::flow::detail::thunk_fn;
 using anatomy::flow::detail::thunk_of;
 using anatomy::flow::detail::thunks_of;
 using anatomy::flow::detail::time_fn_of;
+using anatomy::flow::detail::types_of;
 using anatomy::flow::detail::values_of;
 
 }  // namespace branes::racing::flow::detail
@@ -294,6 +307,8 @@ using anatomy::harness::FileContent;
 using anatomy::harness::for_each_index;
 using anatomy::harness::Output;
 using anatomy::harness::parse_number;
+using anatomy::harness::print_graph;
+using anatomy::harness::print_graph_option;
 using anatomy::harness::read_with_hash;
 using anatomy::harness::replay_log;
 using anatomy::harness::ReplayOutputs;
