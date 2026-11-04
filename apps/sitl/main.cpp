@@ -48,8 +48,7 @@ int main(int argc, char** argv) {
         return fail("usage: --scenario <scenario.yaml> --out <run.brlog>");
     }
 
-    auto baseline = racing::harness::check_baseline(
-        RACING_BASELINES_DIR, racing::baseline::name, racing::baseline::composition_hash);
+    auto baseline = racing::baseline::check_baseline(RACING_BASELINES_DIR);
     if (!baseline) {
         return fail(baseline.error());
     }
@@ -89,7 +88,7 @@ int main(int argc, char** argv) {
 
     racing::log::LogHeader header;
     header.baseline_name = std::string(racing::baseline::name);
-    header.composition_hash = std::string(racing::baseline::composition_hash);
+    header.composition_hash = racing::baseline::hash(stack);
     header.world_hash = course_file->hash;
     header.vehicle_hash = vehicle_file->hash;
     header.scenario_hash = *scenario_hash;

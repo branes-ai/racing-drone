@@ -4,11 +4,13 @@
 # sitl_<name>, and sitl_batch_<name>, built from the sources in apps/<harness>/
 # against that baseline's generated composition header. DEBUG_SCENARIO is the
 # scenario the Visual Studio debugger runs by default. B0 also gets
-# precision_sweep_b0-gt-pid (docs/plan/precision-sweep/).
+# precision_sweep_b0-gt-pid (docs/plan/precision-sweep/). With GRAPH, a baseline
+# also builds as a graph (docs/plan/flow-graph/): replay_<name>_graph,
+# sitl_<name>_graph and sitl_batch_<name>_graph.
 
-racing_add_baseline(null DEBUG_SCENARIO scenarios/null-smoke.yaml)
-racing_add_baseline(scripted-hop DEBUG_SCENARIO scenarios/scripted-hop.yaml)
-racing_add_baseline(b0-gt-pid PRECISION_SWEEP DEBUG_SCENARIO scenarios/b0-determinism.yaml)
+racing_add_baseline(null GRAPH DEBUG_SCENARIO scenarios/null-smoke.yaml)
+racing_add_baseline(scripted-hop GRAPH DEBUG_SCENARIO scenarios/scripted-hop.yaml)
+racing_add_baseline(b0-gt-pid GRAPH PRECISION_SWEEP DEBUG_SCENARIO scenarios/b0-determinism.yaml)
 
 # score_log: the scoreboard for any baseline's SITL log (sim/score.hpp).
 add_executable(score_log ${CMAKE_CURRENT_SOURCE_DIR}/score/main.cpp)

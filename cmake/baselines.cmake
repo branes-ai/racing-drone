@@ -21,7 +21,20 @@
 #      PRECISION_SWEEP precision_sweep_<name> (the stack in each scalar type of
 #      docs/plan/precision-sweep/; links Universal).
 #
-#   racing_add_baseline(<name> [PRECISION_SWEEP] [DEBUG_SCENARIO <scenarios/file.yaml>])
+# With GRAPH, the file's `class:` and `graph:` give the baseline a second
+# build, its graph's (anatomy docs/adr/0004, step 3; docs/plan/flow-graph/),
+# beside the slot build:
+#
+#   6. anatomy's flow_add_baseline() reads them, over racing's operator registry
+#      (cmake/flow_registry.cmake), and generates
+#      <build>/generated/<name>_graph/racing_baseline.hpp from
+#      cmake/racing_graph.hpp.in, which defines the same names as the slot
+#      build's header, over the graph's stack (flow/graph.hpp);
+#   7. adds replay_<name>_graph, sitl_<name>_graph and sitl_batch_<name>_graph,
+#      from the same sources. A graph reads the SITL-only truth (G9), so it has
+#      no flight_stack, and the precision sweep stays on the slot build.
+#
+#   racing_add_baseline(<name> [GRAPH] [PRECISION_SWEEP] [DEBUG_SCENARIO <scenarios/file.yaml>])
 #
 # Visual Studio starts every harness in the source root, so relative paths such
 # as scenarios/<file>.yaml resolve. DEBUG_SCENARIO (relative to the source root)
@@ -29,9 +42,24 @@
 # <build>/<name>.brlog, which replay_<name> then verifies.
 include_guard(GLOBAL)
 include(${ANATOMY_CMAKE_DIR}/composition.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/flow_registry.cmake)
+
+# The harness <harness>_<name><suffix>, against the generated header in gen_dir.
+function(_racing_add_harness harness name suffix gen_dir)
+    set(target ${harness}_${name}${suffix})
+    add_executable(${target} ${PROJECT_SOURCE_DIR}/apps/${harness}/main.cpp)
+    target_include_directories(${target} PRIVATE ${gen_dir})
+    target_link_libraries(${target} PRIVATE branes::racing branes::anatomy_glue)
+    target_compile_definitions(${target} PRIVATE
+        RACING_BASELINES_DIR="${PROJECT_SOURCE_DIR}/baselines")
+    racing_set_warnings(${target})
+    set_target_properties(${target} PROPERTIES
+        FOLDER "Baselines/${name}"
+        VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+endfunction()
 
 function(racing_add_baseline name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "PRECISION_SWEEP" "DEBUG_SCENARIO" "")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "GRAPH;PRECISION_SWEEP" "DEBUG_SCENARIO" "")
     if(arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "racing_add_baseline(${name}): unexpected arguments '${arg_UNPARSED_ARGUMENTS}'")
     endif()
@@ -56,16 +84,7 @@ function(racing_add_baseline name)
         list(APPEND harnesses precision_sweep)
     endif()
     foreach(harness IN LISTS harnesses)
-        set(target ${harness}_${name})
-        add_executable(${target} ${PROJECT_SOURCE_DIR}/apps/${harness}/main.cpp)
-        target_include_directories(${target} PRIVATE ${gen_dir})
-        target_link_libraries(${target} PRIVATE branes::racing branes::anatomy_glue)
-        target_compile_definitions(${target} PRIVATE
-            RACING_BASELINES_DIR="${PROJECT_SOURCE_DIR}/baselines")
-        racing_set_warnings(${target})
-        set_target_properties(${target} PROPERTIES
-            FOLDER "Baselines/${name}"
-            VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+        _racing_add_harness(${harness} ${name} "" ${gen_dir})
     endforeach()
     if(arg_DEBUG_SCENARIO)
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/${arg_DEBUG_SCENARIO})
@@ -92,4 +111,22 @@ function(racing_add_baseline name)
     if(arg_PRECISION_SWEEP)
         target_link_libraries(precision_sweep_${name} PRIVATE branes::racing_sim Threads::Threads universal::universal)
     endif()
+
+    if(NOT arg_GRAPH)
+        return()
+    endif()
+
+    # ── 6. the graph: what fills it, and its header ─────────────────────
+    set(graph_dir ${CMAKE_BINARY_DIR}/generated/${name}_graph)
+    flow_add_baseline(racing ${name}
+        FILE ${file}
+        TEMPLATE ${PROJECT_SOURCE_DIR}/cmake/racing_graph.hpp.in
+        OUTPUT ${graph_dir}/racing_baseline.hpp)
+
+    # ── 7. the graph build's harnesses ──────────────────────────────────
+    foreach(harness replay sitl sitl_batch)
+        _racing_add_harness(${harness} ${name} _graph ${graph_dir})
+    endforeach()
+    target_link_libraries(sitl_${name}_graph PRIVATE branes::racing_sim)
+    target_link_libraries(sitl_batch_${name}_graph PRIVATE branes::racing_sim Threads::Threads)
 endfunction()
