@@ -81,9 +81,11 @@ add_test(NAME gate.b0.determinism
 # ── The graph builds (docs/plan/flow-graph/) ───────────────────────────────
 # Each baseline's graph build is its slot build: its logs equal the slot
 # build's on every scenario but for the hash, its batch's runs are the slot
-# build's, and B0's is as deterministic.
+# build's, and B0's is as deterministic. b0-shaped-pid's controller is a body
+# of two operators, and b0-shaped-research is a research graph; the slot build
+# of each wires the same operators by hand (anatomy docs/plan/flow-testing, T5).
 file(GLOB scenarios CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/scenarios/*.yaml)
-foreach(baseline null scripted-hop b0-gt-pid)
+foreach(baseline null scripted-hop b0-gt-pid b0-shaped-pid b0-shaped-research)
     add_test(NAME gate.${baseline}.graph
         COMMAND ${CMAKE_COMMAND}
             -DSITL=$<TARGET_FILE:sitl_${baseline}>
@@ -107,6 +109,35 @@ add_test(NAME gate.b0.determinism.graph
         -DSCENARIO=${PROJECT_SOURCE_DIR}/scenarios/b0-determinism.yaml
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_b0_graph
         -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
+foreach(baseline b0-shaped-pid b0-shaped-research)
+    add_test(NAME gate.${baseline}.determinism.graph
+        COMMAND ${CMAKE_COMMAND}
+            -DSITL=$<TARGET_FILE:sitl_${baseline}_graph>
+            -DREPLAY=$<TARGET_FILE:replay_${baseline}_graph>
+            -DSCORE=$<TARGET_FILE:score_log>
+            -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+            -DSCENARIO=${PROJECT_SOURCE_DIR}/scenarios/b0-determinism.yaml
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_${baseline}_graph_determinism
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/sitl_gate.cmake)
+endforeach()
+
+# The edge trace (anatomy flow/trace.hpp): a graph build's --trace is
+# deterministic; b0-gt-pid's and b0-shaped-pid's traces first differ inside
+# the controller's body, the one composite they differ in (P8); the body and
+# the research graph write the same log (P7); a slot build refuses --trace
+# (gate/trace_gate.cmake).
+add_test(NAME gate.trace
+    COMMAND ${CMAKE_COMMAND}
+        -DGT=$<TARGET_FILE:sitl_b0-gt-pid_graph>
+        -DSHAPED=$<TARGET_FILE:sitl_b0-shaped-pid_graph>
+        -DRESEARCH=$<TARGET_FILE:sitl_b0-shaped-research_graph>
+        -DSLOT=$<TARGET_FILE:sitl_b0-shaped-pid>
+        -DTRACE_COMPARE=$<TARGET_FILE:anatomy_trace_compare>
+        -DLOG_COMPARE=$<TARGET_FILE:anatomy_log_compare>
+        -DSCENARIO=${PROJECT_SOURCE_DIR}/scenarios/b0-determinism.yaml
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/gate_trace
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/trace_gate.cmake)
+set_tests_properties(gate.trace PROPERTIES LABELS "gate" TIMEOUT 900)
 
 # log_dump writes every record of a B0 log as CSV (apps/log_dump/main.cpp).
 # The fixture writes multi-sample references, which no current planner emits.
