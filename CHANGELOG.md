@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/branes-ai/racing-drone/compare/v0.10.3...v0.11.0) (2026-11-04)
+
+
+### Features
+
+* **flow:** build null, scripted-hop and b0-gt-pid as graphs ([#99](https://github.com/branes-ai/racing-drone/issues/99)) ([e876f53](https://github.com/branes-ai/racing-drone/commit/e876f534eb07fafe1e3dbeeea1d51b69a98821e6))
+
 ## [0.10.3](https://github.com/branes-ai/racing-drone/compare/v0.10.2...v0.10.3) (2026-11-03)
 
 
