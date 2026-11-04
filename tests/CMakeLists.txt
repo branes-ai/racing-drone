@@ -115,23 +115,23 @@ target_link_libraries(reference_log_fixture PRIVATE branes::racing)
 racing_set_warnings(reference_log_fixture)
 set_target_properties(reference_log_fixture PROPERTIES FOLDER "Tests/tools")
 # --print-graph (anatomy docs/guides/reading-a-graph.md): a graph build
-# prints the graph it runs, as text or as a flowchart, and exits without
+# prints the graph it runs, as text or as a flowchart, and exits 0 without
 # flying; a slot build, a form other than the two, and --out with it are
-# refused.
-set(print_graph_args --scenario ${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml --print-graph)
-add_test(NAME tools.print_graph.text COMMAND sitl_b0-gt-pid_graph ${print_graph_args} text)
-add_test(NAME tools.print_graph.mermaid COMMAND sitl_b0-gt-pid_graph ${print_graph_args} mermaid)
-add_test(NAME tools.print_graph.slot COMMAND sitl_b0-gt-pid ${print_graph_args} text)
-add_test(NAME tools.print_graph.form COMMAND sitl_b0-gt-pid_graph ${print_graph_args} dot)
-add_test(NAME tools.print_graph.out
-    COMMAND sitl_b0-gt-pid_graph ${print_graph_args} text --out ${CMAKE_CURRENT_BINARY_DIR}/print_graph.brlog)
-set_tests_properties(tools.print_graph.text PROPERTIES
-    PASS_REGULAR_EXPRESSION "^flow-graph 1\nmission racing\nclass scoreboard\n")
-set_tests_properties(tools.print_graph.mermaid PROPERTIES
-    PASS_REGULAR_EXPRESSION "^flowchart LR\n    %% flow-graph racing, scoreboard, SITL-only\n")
-set_tests_properties(tools.print_graph.slot PROPERTIES PASS_REGULAR_EXPRESSION "a slot build has no graph")
-set_tests_properties(tools.print_graph.form PROPERTIES PASS_REGULAR_EXPRESSION "takes text or mermaid, not 'dot'")
-set_tests_properties(tools.print_graph.out PROPERTIES PASS_REGULAR_EXPRESSION "usage: ")
+# refused, with exit 1 (gate/print_graph_test.cmake).
+function(racing_print_graph_test name exe form expect_exit expect_output)
+    set(command $<TARGET_FILE:${exe}> --scenario ${PROJECT_SOURCE_DIR}/scenarios/b0-nominal.yaml --print-graph ${form} ${ARGN})
+    add_test(NAME tools.print_graph.${name}
+        COMMAND ${CMAKE_COMMAND}
+            "-DCOMMAND=${command}"
+            -DEXPECT_EXIT=${expect_exit}
+            "-DEXPECT_OUTPUT=${expect_output}"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/gate/print_graph_test.cmake)
+endfunction()
+racing_print_graph_test(text sitl_b0-gt-pid_graph text 0 "^flow-graph 1.mission racing.class scoreboard.")
+racing_print_graph_test(mermaid sitl_b0-gt-pid_graph mermaid 0 "^flowchart LR.    %% flow-graph racing, scoreboard, SITL-only.")
+racing_print_graph_test(slot sitl_b0-gt-pid text 1 "a slot build has no graph")
+racing_print_graph_test(form sitl_b0-gt-pid_graph dot 1 "takes text or mermaid, not 'dot'")
+racing_print_graph_test(out sitl_b0-gt-pid_graph text 1 "usage: " --out ${CMAKE_CURRENT_BINARY_DIR}/print_graph.brlog)
 
 add_test(NAME tools.log_dump
     COMMAND ${CMAKE_COMMAND}

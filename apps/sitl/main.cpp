@@ -26,6 +26,11 @@
 #include <iostream>
 #include <string>
 
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 namespace racing = branes::racing;
 
 namespace {
@@ -94,8 +99,17 @@ int main(int argc, char** argv) {
     }
     auto& stack = *built;
     if (graph_form) {
+#ifdef _WIN32
+        // The text form is what the hash is of: keep its line ends LF.
+        if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+            return fail("cannot set stdout to binary mode");
+        }
+#endif
         if (const auto e = racing::baseline::print_graph(stack, *graph_form, std::cout)) {
             return fail(*e);
+        }
+        if (!std::cout.flush()) {
+            return fail("cannot write the graph to stdout");
         }
         return 0;
     }
