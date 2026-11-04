@@ -6,6 +6,7 @@
 #include <branes/racing/harness/harness.hpp>
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -42,6 +43,13 @@ template <typename T>
 template <typename T>
 [[nodiscard]] std::optional<std::string> print_graph(const Composition<T>&, std::string_view, std::ostream&) {
     return "a slot build has no graph: --print-graph is sitl_" + std::string(name) + "_graph's";
+}
+
+/// --trace: a slot build has no graph whose edges to trace.
+template <typename T>
+[[nodiscard]] result<std::unique_ptr<flow::trace_writer>, std::string> trace(Composition<T>&,
+                                                                            const std::filesystem::path&) {
+    return std::string("a slot build has no graph: --trace is sitl_" + std::string(name) + "_graph's");
 }
 
 }  // namespace branes::racing::baseline

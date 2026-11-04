@@ -1,0 +1,27 @@
+# Baseline b0-shaped-research (anatomy docs/plan/flow-testing, T5): the
+# operators of b0-shaped-pid, each an instance of its own in a research graph
+# (ShapedPidResearch, flow/shaped_pid.hpp), not in the mission's composites.
+# A research baseline isn't on the scoreboard. Its slot build is b0-shaped-pid's
+# composition, wired by hand, and is the oracle of its graph build. SITL only.
+name: b0-shaped-research
+composition:
+  estimator: GroundTruthEstimator
+  gate_detector: NullGateDetector
+  planner: WaypointPlanner
+  controller: ShapedPid
+  safety_filter: NullSafetyFilter
+  daa_tracker: NullDaaTracker
+  fc_bridge: NullFcBridge
+class: research
+graph: ShapedPidResearch
+parameters:
+  control_rate_hz: 250     # position and attitude loops; SimFc runs the rate loop at 1 kHz
+  cruise_speed_m_s: 4.0    # WaypointPlanner
+  corner_speed_m_s: 2.5
+  lookahead_m: 0.3
+  switch_radius_m: 1.0
+  gate_approach_m: 2.0
+  corner_radius_m: 1.5
+  corner_angle_deg: 60
+  max_speed_m_s: 4.5       # CascadedPid: velocity-setpoint cap, under the 5 m/s gate limit
+  feedforward_gain: 0.8    # SetpointShaper: the velocity and acceleration feed-forward's scale

@@ -40,3 +40,8 @@ racing_register_impl(WaypointPlanner SLOT planner HEADER branes/racing/slots/way
                      TYPE branes::racing::WaypointPlanner)
 racing_register_impl(CascadedPid SLOT controller HEADER branes/anatomy/glue/cascaded_pid.hpp
                      TYPE branes::anatomy::glue::CascadedPid)
+
+# Baselines b0-shaped-pid and b0-shaped-research (anatomy docs/plan/flow-testing, T5):
+# SetpointShaper, then CascadedPid, wired by hand, the oracle of their graphs.
+racing_register_impl(ShapedPid SLOT controller HEADER branes/racing/slots/shaped_pid.hpp
+                     TYPE branes::racing::ShapedPid)

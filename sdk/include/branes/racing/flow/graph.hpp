@@ -22,8 +22,14 @@
 /// hands it to the estimator only, the one slot of racing's that reads it
 /// (GroundTruthEstimator).
 ///
-/// A baseline's file names the body of each composite (`graph:`), and
-/// cmake/baselines.cmake configures the header that names their types.
+/// A scoreboard baseline's file names the body of each composite (`graph:`);
+/// a research baseline's names its graph (flow/shaped_pid.hpp), which places
+/// operators of its own between these ports. cmake/baselines.cmake configures
+/// the header that names their types.
+///
+/// trace() writes every edge a stack's firings write to a trace file
+/// (anatomy flow/trace.hpp), with racing's codecs: `--trace` on the SITL
+/// binary of a graph build.
 
 #include <branes/racing/anatomy.hpp>
 #include <branes/racing/anatomy_mobility.hpp>
@@ -33,8 +39,11 @@
 #include <branes/racing/slots/context.hpp>
 
 #include <cassert>
+#include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace branes::racing::graph {
@@ -113,7 +122,8 @@ Ports<T> scoreboard(G& g, const CourseMap<T>& course) {
 /// as they drive the slot stack (RunnableStack, with MobilityProfile). Each
 /// hook hands the stack its input, which runs that input's region; the tick
 /// returns the tick region's outputs. `Baseline` names what fills the graph
-/// (cmake/racing_graph.hpp.in).
+/// (cmake/racing_graph.hpp.in): a scoreboard baseline its bodies, a research
+/// baseline its graph, `research`, whose build() returns the ports.
 ///
 /// Model
 /// -----
@@ -132,16 +142,19 @@ public:
     using scalar_type = T;
     using profile = MobilityProfile;  ///< the slot stack's (compose/stack.hpp)
 
-    static_assert(Baseline::kind == fl::baseline_class::scoreboard,
-                  "racing's graph baselines are scoreboard baselines");
-
     /// Build the graph and its operators from `ctx` (make_slot), and check the
     /// baseline file against the graph (G8); the first failure is returned.
     /// Pre: valid(course). Post: I1, I2 (no tick yet).
     [[nodiscard]] static result<Stack, std::string> create(const CourseMap<T>& course, const SlotContext& ctx) {
         assert(valid(course));  // Pre
         fl::stack_builder<SlotContext> g{"racing", Baseline::kind, ctx};
-        const Ports<T> p = scoreboard<T, typename Baseline::bodies>(g, course);
+        const Ports<T> p = [&] {
+            if constexpr (Baseline::kind == fl::baseline_class::scoreboard) {
+                return scoreboard<T, typename Baseline::bodies>(g, course);
+            } else {
+                return Baseline::research::build(g, course);
+            }
+        }();
         auto built = std::move(g).build_stack();
         if (!built) {
             return built.error().to_string();
@@ -190,6 +203,11 @@ public:
         return stack_;
     }
 
+    /// Hand every firing to `o` from now on (anatomy flow::stack::observe).
+    void observe(fl::observer o) {
+        stack_.observe(std::move(o));
+    }
+
 private:
     Stack(fl::stack s, Ports<T> p) : stack_(std::move(s)), ports_(std::move(p)) {}
 
@@ -197,5 +215,32 @@ private:
     Ports<T> ports_;
     std::optional<Timestamp> last_tick_;
 };
+
+/// The codecs a trace writes racing's messages with: the log's (msg/codec).
+/// The gates and the conflicts have none, so their edges are traced without
+/// their values.
+[[nodiscard]] inline fl::trace_codecs trace_codecs() {
+    fl::trace_codecs c;
+    c.add<StateEstimate<double>>([](const StateEstimate<double>& x) { return codec::encode(x); });
+    c.add<Reference<double>>([](const Reference<double>& r) { return codec::encode(r); });
+    c.add<ThrustRates<double>>([](const ThrustRates<double>& u) { return codec::encode(u); });
+    return c;
+}
+
+/// Write every edge `stack` writes from now on to a trace at `path`, which is
+/// created (truncated). The writer is the stack's observer: it must outlive
+/// the stack's runs, and its close() reports the first write error.
+template <class T, class Baseline>
+[[nodiscard]] result<std::unique_ptr<fl::trace_writer>, std::string> trace(Stack<T, Baseline>& stack,
+                                                                           const std::filesystem::path& path) {
+    static_assert(std::is_same_v<T, double>, "racing's codecs are of double messages");
+    auto opened = fl::trace_writer::open(path, stack.stack().graph(), trace_codecs());
+    if (!opened) {
+        return opened.error().path + ": " + opened.error().message;
+    }
+    auto w = std::make_unique<fl::trace_writer>(std::move(opened).value());
+    stack.observe([p = w.get()](const fl::fired& f) { p->write(f); });
+    return w;
+}
 
 }  // namespace branes::racing::graph
