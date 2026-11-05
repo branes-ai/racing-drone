@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/branes-ai/racing-drone/compare/v0.12.1...v0.13.0) (2026-11-04)
+
+
+### Features
+
+* **flow:** a body of two operators, a research baseline, and --trace ([#104](https://github.com/branes-ai/racing-drone/issues/104)) ([c595398](https://github.com/branes-ai/racing-drone/commit/c595398dc4eda6e2713f517f6e4b0bef7d73527e))
+
 ## [0.12.1](https://github.com/branes-ai/racing-drone/compare/v0.12.0...v0.12.1) (2026-11-04)
 
 
