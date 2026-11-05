@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/branes-ai/racing-drone/compare/v0.13.0...v0.13.1) (2026-11-05)
+
+
+### Documentation
+
+* the shaped baselines and the edge trace ([#107](https://github.com/branes-ai/racing-drone/issues/107)) ([c41e7e8](https://github.com/branes-ai/racing-drone/commit/c41e7e817a6f756cd300b87e0e0656f1c72812dd))
+
 ## [0.13.0](https://github.com/branes-ai/racing-drone/compare/v0.12.1...v0.13.0) (2026-11-04)
 
 
