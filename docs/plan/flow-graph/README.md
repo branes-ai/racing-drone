@@ -90,3 +90,5 @@ Each input fires one region. A region's firings run in the order the graph write
 | Part | What | PR | State |
 |---|---|---|---|
 | 3a | The graph, its builds and its gates, for `null`, `scripted-hop` and `b0-gt-pid` | #99 | complete |
+
+After this plan, anatomy's [flow-testing plan](https://github.com/branes-ai/anatomy/blob/main/docs/plan/flow-testing/README.md) (T5, #104) added `b0-shaped-pid` and `b0-shaped-research`, the first body of several operators and the first research graph in racing, and `--trace` on the graph builds.
