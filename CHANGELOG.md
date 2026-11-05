@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/branes-ai/racing-drone/compare/v0.13.1...v0.13.2) (2026-11-05)
+
+
+### Build System
+
+* **deps:** pin anatomy v0.11.0 by its rewritten sha ([#109](https://github.com/branes-ai/racing-drone/issues/109)) ([4d66956](https://github.com/branes-ai/racing-drone/commit/4d66956f846dcfa7238bd3f51efcfc0e40abd643))
+
 ## [0.13.1](https://github.com/branes-ai/racing-drone/compare/v0.13.0...v0.13.1) (2026-11-05)
 
 
