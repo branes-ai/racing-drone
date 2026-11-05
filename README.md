@@ -132,6 +132,7 @@ $B/sitl_batch_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --min-su
 $B/precision_sweep_b0-gt-pid --scenario scenarios/b0-nominal.yaml --seeds 10 --out-dir sweep  # the stack in float, posits, bfloat16, ...
 $B/flight_stack_b0-gt-pid --course courses/a2rl-2025.yaml --vehicle vehicles/rp1.yaml --cycles 10
 $B/sitl_b0-gt-pid_graph --scenario scenarios/b0-nominal.yaml --print-graph mermaid   # the graph the stack runs, as a flowchart
+$B/sitl_b0-gt-pid_graph --scenario scenarios/b0-determinism.yaml --out run.brlog --trace run.brtrace   # also every edge
 ```
 
 In the Visual Studio solution (`msvc` preset), the harnesses are under `Baselines/<name>`, and `score_log`, `log_dump`, and `trace_export` are under `Tools`. Each starts in the source root with the debugger arguments below filled in. `sitl_<name>`, `sitl_batch_<name>` and `precision_sweep_<name>` take the baseline's `DEBUG_SCENARIO` ([`apps/CMakeLists.txt`](apps/CMakeLists.txt)); `replay_<name>` reads the log `sitl_<name>` writes; `flight_stack_<name>`, `score_log`, `log_dump`, and `trace_export` use the fixed values shown. They differ from the commands above:

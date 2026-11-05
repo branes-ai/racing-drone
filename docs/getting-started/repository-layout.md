@@ -19,6 +19,8 @@ The mission-neutral framework (the data contracts, slots and composition, config
 
 Each baseline with a `graph:` also builds as a graph: `sdk/include/branes/racing/flow/` describes racing's stack as a graph of seven composites, which anatomy checks and runs on its CPU stack. Its builds are `replay_<name>_graph`, `sitl_<name>_graph` and `sitl_batch_<name>_graph`, and the `gate.<name>.graph` tests hold them equal to the slot builds ([plan](../plan/flow-graph/README.md)).
 
+Two baselines exist to test the graph beyond that equality ([anatomy's plan](https://github.com/branes-ai/anatomy/blob/main/docs/plan/flow-testing/README.md), T5). `b0-shaped-pid` is a scoreboard baseline whose controller is a body of two operators, a setpoint shaper and `CascadedPid` (`flow/shaped_pid.hpp`). `b0-shaped-research` places the same operators in a research graph, `ShapedPidResearch`, outside the mission's composites, so it isn't on the scoreboard. The slot build of each, `ShapedPid` (`slots/shaped_pid.hpp`), wires the two operators by hand, and its logs are the oracle for both graphs. `gate.trace` checks that `b0-gt-pid`'s and `b0-shaped-pid`'s traces first differ on an edge inside the controller, and that the two shaped baselines' logs are equal but for their names and hashes.
+
 ## Where the documents are
 
 | Folder | Contents |
