@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.5](https://github.com/branes-ai/racing-drone/compare/v0.13.4...v0.13.5) (2026-11-05)
+
+
+### Continuous Integration
+
+* add Branes.AI CLA check ([#115](https://github.com/branes-ai/racing-drone/issues/115)) ([0be0543](https://github.com/branes-ai/racing-drone/commit/0be05436e7a6f6b33769d717fbeb7bdb630f73c3))
+
 ## [0.13.4](https://github.com/branes-ai/racing-drone/compare/v0.13.3...v0.13.4) (2026-11-05)
 
 
