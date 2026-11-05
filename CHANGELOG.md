@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.4](https://github.com/branes-ai/racing-drone/compare/v0.13.3...v0.13.4) (2026-11-05)
+
+
+### Continuous Integration
+
+* pin docs-kit and architecture by their rewritten shas ([#113](https://github.com/branes-ai/racing-drone/issues/113)) ([cd6d11d](https://github.com/branes-ai/racing-drone/commit/cd6d11dd36d86b114af1abf70e3d488ba534d6c3))
+
 ## [0.13.3](https://github.com/branes-ai/racing-drone/compare/v0.13.2...v0.13.3) (2026-11-05)
 
 
