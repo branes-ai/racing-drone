@@ -16,10 +16,12 @@
 #include <branes/anatomy/config/baseline.hpp>
 #include <branes/anatomy/config/error.hpp>
 #include <branes/anatomy/flow/builder.hpp>
+#include <branes/anatomy/flow/data.hpp>
 #include <branes/anatomy/flow/domain.hpp>
 #include <branes/anatomy/flow/graph.hpp>
 #include <branes/anatomy/flow/signature.hpp>
 #include <branes/anatomy/flow/trace.hpp>
+#include <branes/anatomy/flow/window.hpp>
 #include <branes/anatomy/harness/args.hpp>
 #include <branes/anatomy/harness/files.hpp>
 #include <branes/anatomy/harness/flight.hpp>
@@ -127,6 +129,8 @@ using anatomy::detail::valid_outputs;
 
 namespace branes::racing::flow {
 
+using anatomy::flow::accumulate;
+using anatomy::flow::accumulated;
 using anatomy::flow::at;
 using anatomy::flow::baseline_class;
 using anatomy::flow::binding;
@@ -141,6 +145,7 @@ using anatomy::flow::Composite;
 using anatomy::flow::composite;
 using anatomy::flow::constant;
 using anatomy::flow::constant_port;
+using anatomy::flow::data;
 using anatomy::flow::data_t;
 using anatomy::flow::dim;
 using anatomy::flow::direction;
@@ -225,12 +230,17 @@ using anatomy::flow::trace_record;
 using anatomy::flow::trace_writer;
 using anatomy::flow::value;
 using anatomy::flow::vector;
+using anatomy::flow::window;
+using anatomy::flow::window_domain_t;
+using anatomy::flow::window_t;
 
 }  // namespace branes::racing::flow
 
 namespace branes::racing::flow::detail {
 
 using anatomy::flow::detail::access_fn;
+using anatomy::flow::detail::accumulator_ops;
+using anatomy::flow::detail::accumulator_ops_v;
 using anatomy::flow::detail::any_bounded;
 using anatomy::flow::detail::body_type;
 using anatomy::flow::detail::build_operator;
@@ -243,6 +253,8 @@ using anatomy::flow::detail::describes;
 using anatomy::flow::detail::distinct_nonempty;
 using anatomy::flow::detail::domain_tag;
 using anatomy::flow::detail::edges_match;
+using anatomy::flow::detail::extent_is_bounded;
+using anatomy::flow::detail::extent_or_none;
 using anatomy::flow::detail::extent_product;
 using anatomy::flow::detail::extent_tag;
 using anatomy::flow::detail::factories_of;
@@ -278,9 +290,11 @@ using anatomy::flow::detail::ports_of;
 using anatomy::flow::detail::record_tag;
 using anatomy::flow::detail::registered_tag;
 using anatomy::flow::detail::require_domain;
+using anatomy::flow::detail::ring;
 using anatomy::flow::detail::runs;
 using anatomy::flow::detail::same_message_v;
 using anatomy::flow::detail::signature_tag;
+using anatomy::flow::detail::size_of_extent;
 using anatomy::flow::detail::slot_factory;
 using anatomy::flow::detail::source;
 using anatomy::flow::detail::source_like;
@@ -296,6 +310,7 @@ using anatomy::flow::detail::thunks_of;
 using anatomy::flow::detail::time_fn_of;
 using anatomy::flow::detail::types_of;
 using anatomy::flow::detail::values_of;
+using anatomy::flow::detail::window_element;
 
 }  // namespace branes::racing::flow::detail
 
